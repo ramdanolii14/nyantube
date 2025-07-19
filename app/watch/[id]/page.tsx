@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@/supabase/client";
-import { useSession } from "@supabase/auth-helpers-react";
 import React from "react";
 
 interface Video {
