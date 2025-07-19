@@ -6,9 +6,19 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
+interface User {
+  id: string;
+  email: string;
+}
+
+interface Profile {
+  username: string;
+  avatar_url: string | null;
+}
+
 export default function Navbar() {
-  const [user, setUser] = useState<any>(null);
-  const [profile, setProfile] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const router = useRouter();
@@ -18,18 +28,25 @@ export default function Navbar() {
       const {
         data: { user },
       } = await supabase.auth.getUser();
-      setUser(user);
 
       if (user) {
+        setUser({ id: user.id, email: user.email! });
+
         const { data } = await supabase
           .from("profiles")
           .select("username, avatar_url")
           .eq("id", user.id)
           .single();
 
-        if (data) setProfile(data);
+        if (data) {
+          setProfile({
+            username: data.username,
+            avatar_url: data.avatar_url,
+          });
+        }
       }
     };
+
     getUser();
   }, []);
 
@@ -84,9 +101,9 @@ export default function Navbar() {
 
           {user ? (
             <div className="relative">
-                <Image
+              <Image
                 src={
-                    profile?.avatar_url
+                  profile?.avatar_url
                     ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${profile.avatar_url}`
                     : `https://ui-avatars.com/api/?name=${profile?.username || "User"}`
                 }
@@ -96,8 +113,7 @@ export default function Navbar() {
                 className="rounded-full border cursor-pointer"
                 unoptimized
                 onClick={() => setDropdownOpen((prev) => !prev)}
-                />
-
+              />
 
               {/* Dropdown */}
               {dropdownOpen && (
