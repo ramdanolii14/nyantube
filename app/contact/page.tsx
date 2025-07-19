@@ -1,30 +1,58 @@
+"use client";
+
 export default function ContactPage() {
   return (
-    <div className="max-w-3xl mx-auto mt-20 p-5 bg-white shadow-md rounded-md">
-      <h1 className="text-2xl font-bold mb-4">Kontak Kami</h1>
-      <p className="text-sm text-gray-600 mb-4">
-        Jika Anda memiliki pertanyaan, keluhan, atau masalah hukum terkait <strong>Nyantube</strong>, silakan hubungi kami melalui salah satu metode di bawah ini.
+    <div className="max-w-xl mx-auto p-6">
+      <h1 className="text-2xl font-bold mb-4">Contact Us</h1>
+      <p className="mb-4">
+        If you have any feedback or questions, don&apos;t hesitate to reach out.
+        We&apos;re always happy to hear from you!
       </p>
 
-      <h2 className="text-lg font-semibold mt-4">Email Resmi</h2>
-      <p className="text-sm text-gray-700">📧 ramdan.personal@gmail.com</p>
+      <form className="space-y-4">
+        <div>
+          <label htmlFor="name" className="block text-sm font-medium">
+            Name
+          </label>
+          <input
+            type="text"
+            id="name"
+            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
+            required
+          />
+        </div>
 
-      <h2 className="text-lg font-semibold mt-4">Media Sosial</h2>
-      <p className="text-sm text-gray-700">
-        📷 Instagram: <a href="https://instagram.com/alyciaperucia" target="_blank" className="text-blue-600 hover:underline">@alyciaperucia</a><br />
-      </p>
+        <div>
+          <label htmlFor="email" className="block text-sm font-medium">
+            Email
+          </label>
+          <input
+            type="email"
+            id="email"
+            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
+            required
+          />
+        </div>
 
-      <h2 className="text-lg font-semibold mt-4">Alamat Kantor</h2>
-      <p className="text-sm text-gray-700">
-        Saat ini hanya tersedia online.
-      </p>
+        <div>
+          <label htmlFor="message" className="block text-sm font-medium">
+            Message
+          </label>
+          <textarea
+            id="message"
+            rows={4}
+            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
+            required
+          ></textarea>
+        </div>
 
-      <h2 className="text-lg font-semibold mt-4">Laporan Darurat</h2>
-      <p className="text-sm text-red-600">
-        ❗ Untuk laporan pelanggaran serius atau masalah hukum mendesak, harap kirim email dengan subjek "URGENT: Laporan Hukum".
-      </p>
-
-      <p className="text-xs text-gray-500 mt-6">Terakhir diperbarui: {new Date().toLocaleDateString()}</p>
+        <button
+          type="submit"
+          className="bg-red-600 text-white py-2 px-4 rounded hover:bg-red-700 transition"
+        >
+          Send
+        </button>
+      </form>
     </div>
   );
 }
