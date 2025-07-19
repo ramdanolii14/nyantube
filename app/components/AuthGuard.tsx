@@ -9,8 +9,8 @@ interface User {
 }
 
 export default function AuthGuard({ children }: { children: React.ReactNode }) {
+  const [, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
