@@ -3,12 +3,24 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
+import Image from "next/image";
 
-// ✅ Supabase Client
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
+
+interface User {
+  id: string;
+  email: string;
+}
+
+interface Profile {
+  id: string;
+  username: string;
+  channel_name: string;
+  avatar_url: string | null;
+}
 
 export default function AuthPage() {
   const router = useRouter();
@@ -17,22 +29,20 @@ export default function AuthPage() {
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
   const [channelName, setChannelName] = useState("");
-  const [user, setUser] = useState<any>(null);
-  const [profile, setProfile] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
-  // ✅ Cek apakah sudah login
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       if (data.user) {
-        setUser(data.user);
+        setUser({ id: data.user.id, email: data.user.email! });
         fetchProfile(data.user.id);
       }
     });
   }, []);
 
-  // ✅ Ambil profile dari database
   const fetchProfile = async (userId: string) => {
     const { data, error } = await supabase
       .from("profiles")
@@ -42,7 +52,6 @@ export default function AuthPage() {
     if (!error && data) setProfile(data);
   };
 
-  // ✅ Handle Register (Manual Isi Username & Channel)
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!username.trim() || !channelName.trim()) {
@@ -59,7 +68,6 @@ export default function AuthPage() {
       setMessage(`❌ ${error.message}`);
     } else if (data.user) {
       try {
-        // ✅ Insert ke tabel profiles (avatar_url = null → pakai UI Avatars nanti)
         const { error: profileError } = await supabase.from("profiles").insert([
           {
             id: data.user.id,
@@ -86,7 +94,6 @@ export default function AuthPage() {
     setLoading(false);
   };
 
-  // ✅ Handle Login
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -101,14 +108,13 @@ export default function AuthPage() {
       setMessage(`❌ ${error.message}`);
     } else {
       setMessage("✅ Login berhasil!");
-      setUser(data.user);
+      setUser({ id: data.user!.id, email: data.user!.email! });
       fetchProfile(data.user!.id);
       router.push("/");
     }
     setLoading(false);
   };
 
-  // ✅ Logout
   const handleLogout = async () => {
     await supabase.auth.signOut();
     setUser(null);
@@ -121,17 +127,20 @@ export default function AuthPage() {
   };
 
   if (user && profile) {
+    const avatarUrl = profile.avatar_url
+      ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${profile.avatar_url}`
+      : `https://ui-avatars.com/api/?name=${profile.username}`;
+
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100">
         <div className="bg-white p-6 rounded-lg shadow-md max-w-md w-full text-center">
-          <img
-            src={
-              profile.avatar_url
-                ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${profile.avatar_url}`
-                : `https://ui-avatars.com/api/?name=${profile.username}`
-            }
+          <Image
+            src={avatarUrl}
             alt="Avatar"
-            className="rounded-full w-20 h-20 mx-auto mb-3"
+            width={80}
+            height={80}
+            className="rounded-full mx-auto mb-3"
+            unoptimized
           />
           <h1 className="text-2xl font-bold mb-2">
             Selamat Datang, {profile.channel_name || "User"}
