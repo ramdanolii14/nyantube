@@ -150,7 +150,7 @@ export default function WatchPage() {
   if (!video) return <p className="text-center mt-20">Loading video...</p>;
 
   return (
-    <div className="max-w-6xl mx-auto pt-16 px-4 grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div className="max-w-6xl mx-auto pt-24 px-4 grid grid-cols-1 md:grid-cols-3 gap-6 bg-gray-50">
       {/* ✅ Kolom Kiri: Video + Komentar */}
       <div className="md:col-span-2">
         {/* ✅ Video */}
