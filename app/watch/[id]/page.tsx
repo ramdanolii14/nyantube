@@ -75,9 +75,13 @@ export default function WatchPage() {
         .eq("video_id", id)
         .order("created_at", { ascending: false });
 
-      if (commentsData) setComments(commentsData as Comment[]);
-    };
-
+      if (commentsData)
+        setComments(
+          commentsData.map((c: any) => ({
+            ...c,
+            profiles: Array.isArray(c.profiles) ? c.profiles[0] : c.profiles,
+          })) as Comment[]
+        );
     fetchVideoAndComments();
   }, [id]);
 
