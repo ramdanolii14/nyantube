@@ -1,17 +1,14 @@
+"use client";
+
 import { Suspense } from "react";
-import dynamic from "next/dynamic";
+import SearchClient from "./SearchClient";
 
-const SearchClient = dynamic(() => import("./SearchClient"), {
-  ssr: false,
-});
-
-export const dynamicParams = true;
+export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
-export const revalidate = 0;
 
 export default function Page() {
   return (
-    <Suspense fallback={<p className="p-4 text-center">Loading...</p>}>
+    <Suspense fallback={<div>Loading...</div>}>
       <SearchClient />
     </Suspense>
   );
