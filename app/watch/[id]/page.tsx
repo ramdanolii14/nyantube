@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { supabase } from "@/supabase/client";
 import Image from "next/image";
+import Link from "next/link";
 
 interface Video {
   id: string;
@@ -36,6 +37,7 @@ export default function WatchPage() {
   const { id } = useParams();
   const [video, setVideo] = useState<Video | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
+  const [recommended, setRecommended] = useState<Video[]>([]);
   const [newComment, setNewComment] = useState("");
   const [userId, setUserId] = useState<string | null>(null);
 
@@ -50,10 +52,10 @@ export default function WatchPage() {
     fetchUser();
   }, []);
 
-  // ✅ Ambil video & komentar
+  // ✅ Ambil video, komentar, rekomendasi
   useEffect(() => {
     const fetchVideoAndComments = async () => {
-      // --- Ambil Video ---
+      // --- Ambil Video Utama ---
       const { data: videoData } = await supabase
         .from("videos")
         .select("*, profiles(username, avatar_url)")
@@ -83,6 +85,26 @@ export default function WatchPage() {
             ...c,
             profiles: Array.isArray(c.profiles) ? c.profiles[0] : c.profiles,
           })) as unknown as Comment[]
+        );
+      }
+
+      // --- Ambil Video Rekomendasi ---
+      const { data: recommendedData } = await supabase
+        .from("videos")
+        .select("*, profiles(username, avatar_url)")
+        .neq("id", id)
+        .order("created_at", { ascending: false })
+        .limit(10);
+
+      if (recommendedData) {
+        setRecommended(
+          recommendedData.map((v: any) => ({
+            ...v,
+            profiles: v.profiles || {
+              username: "Unknown",
+              avatar_url: null,
+            },
+          })) as Video[]
         );
       }
     };
@@ -124,63 +146,117 @@ export default function WatchPage() {
   if (!video) return <p className="text-center mt-20">Loading video...</p>;
 
   return (
-    <div className="max-w-4xl mx-auto mt-10 px-4">
-      {/* ✅ Video */}
-      <div
-        className="relative w-full rounded-md overflow-hidden bg-black"
-        style={{ paddingTop: "56.25%" }}
-      >
-        <video
-          src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/videos/${video.video_url}`}
-          controls
-          className="absolute top-0 left-0 w-full h-full"
-        />
+    <div className="max-w-6xl mx-auto mt-10 px-4 grid grid-cols-1 md:grid-cols-3 gap-6">
+      {/* ✅ Kolom Kiri: Video + Komentar */}
+      <div className="md:col-span-2">
+        {/* ✅ Video */}
+        <div
+          className="relative w-full rounded-md overflow-hidden bg-black"
+          style={{ paddingTop: "56.25%" }}
+        >
+          <video
+            src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/videos/${video.video_url}`}
+            controls
+            className="absolute top-0 left-0 w-full h-full"
+          />
+        </div>
+
+        {/* ✅ Info Uploader */}
+        <div className="flex items-center gap-3 mt-4">
+          <Image
+            src={
+              video.profiles?.avatar_url
+                ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${video.profiles.avatar_url}`
+                : `https://ui-avatars.com/api/?name=${video.profiles?.username}`
+            }
+            alt={video.profiles?.username || "Unknown"}
+            width={50}
+            height={50}
+            className="rounded-full"
+            unoptimized
+          />
+          <div>
+            <p className="font-bold">{video.profiles?.username}</p>
+            <p className="text-gray-500 text-sm">
+              Diposting pada {new Date(video.created_at).toLocaleDateString()}
+            </p>
+          </div>
+        </div>
+
+        <h1 className="text-xl font-bold mt-2">{video.title}</h1>
+        <p className="text-gray-600 text-sm">{video.description}</p>
+
+        <hr className="my-4" />
+
+        {/* ✅ Komentar */}
+        <h2 className="text-lg font-bold mb-3">Komentar</h2>
+        {userId && (
+          <div className="mb-4">
+            <textarea
+              value={newComment}
+              onChange={(e) => setNewComment(e.target.value)}
+              placeholder="Tulis komentar..."
+              className="border p-2 rounded w-full mb-2"
+            />
+            <button
+              onClick={handleAddComment}
+              className="bg-blue-600 text-white px-4 py-1 rounded hover:bg-blue-700"
+            >
+              Kirim
+            </button>
+          </div>
+        )}
+
+        <div className="space-y-3">
+          {comments.map((c) => (
+            <div key={c.id} className="flex items-start gap-3">
+              <Image
+                src={
+                  c.profiles.avatar_url
+                    ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${c.profiles.avatar_url}`
+                    : `https://ui-avatars.com/api/?name=${c.profiles.username}`
+                }
+                alt={c.profiles.username}
+                width={40}
+                height={40}
+                className="rounded-full"
+                unoptimized
+              />
+              <div className="bg-gray-100 p-2 rounded w-full">
+                <p className="text-sm font-semibold">{c.profiles.username}</p>
+                <p className="text-sm">{c.content}</p>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
-      <h1 className="text-xl font-bold mt-4">{video.title}</h1>
-      <p className="text-gray-600 text-sm">{video.description}</p>
-
-      <hr className="my-4" />
-
-      {/* ✅ Komentar */}
-      <h2 className="text-lg font-bold mb-3">Komentar</h2>
-      {userId && (
-        <div className="mb-4">
-          <textarea
-            value={newComment}
-            onChange={(e) => setNewComment(e.target.value)}
-            placeholder="Tulis komentar..."
-            className="border p-2 rounded w-full mb-2"
-          />
-          <button
-            onClick={handleAddComment}
-            className="bg-blue-600 text-white px-4 py-1 rounded hover:bg-blue-700"
+      {/* ✅ Kolom Kanan: Video Rekomendasi */}
+      <div className="space-y-4">
+        <h2 className="text-lg font-bold">Video Rekomendasi</h2>
+        {recommended.map((v) => (
+          <Link
+            key={v.id}
+            href={`/watch/${v.id}`}
+            className="flex gap-3 hover:bg-gray-100 rounded p-2"
           >
-            Kirim
-          </button>
-        </div>
-      )}
-
-      <div className="space-y-3">
-        {comments.map((c) => (
-          <div key={c.id} className="flex items-start gap-3">
             <Image
               src={
-                c.profiles.avatar_url
-                  ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${c.profiles.avatar_url}`
-                  : `https://ui-avatars.com/api/?name=${c.profiles.username}`
+                v.thumbnail_url
+                  ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/thumbnails/${v.thumbnail_url}`
+                  : "/default-thumbnail.jpg"
               }
-              alt={c.profiles.username}
-              width={40}
-              height={40}
-              className="rounded-full"
+              alt={v.title}
+              width={120}
+              height={70}
+              className="rounded"
               unoptimized
             />
-            <div className="bg-gray-100 p-2 rounded w-full">
-              <p className="text-sm font-semibold">{c.profiles.username}</p>
-              <p className="text-sm">{c.content}</p>
+            <div>
+              <p className="text-sm font-semibold line-clamp-2">{v.title}</p>
+              <p className="text-xs text-gray-500">{v.profiles?.username}</p>
             </div>
-          </div>
+          </Link>
         ))}
       </div>
     </div>
