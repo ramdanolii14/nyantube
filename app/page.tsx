@@ -6,7 +6,6 @@ import VideoList, { Video } from "@/app/components/VideoList";
 
 export default function Page() {
   const [videos, setVideos] = useState<Video[]>([]);
-  const supabase = createClient();
 
   useEffect(() => {
     const fetchVideos = async () => {
@@ -45,7 +44,7 @@ export default function Page() {
     };
 
     fetchVideos();
-  }, [supabase]);
+  }, []);
 
   return (
     <div className="p-4">
