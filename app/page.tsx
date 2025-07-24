@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/supabase/client"; // ✅ INI FIX
+import { supabase } from "@/supabase/client";
 import VideoList, { Video } from "@/app/components/VideoList";
 
 export default function Page() {
@@ -14,7 +14,7 @@ export default function Page() {
         .select("id, title, url, thumbnail, user_id, profiles(username, avatar_url)");
 
       if (error) console.error(error);
-      else setVideos(data as Video[]);
+      else setVideos(data || []);
     };
 
     fetchVideos();
