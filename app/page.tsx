@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { createClient } from "@/supabase/client";
+import { supabase } from "@/supabase/client";
 import VideoList, { Video } from "@/app/components/VideoList";
 
 export default function Page() {
