@@ -1,12 +1,9 @@
 import { Suspense } from "react";
-import dynamic from "next/dynamic";
+import dynamicImport from "next/dynamic";
 
-const SearchClient = dynamic(() => import("./SearchClient"), {
+const SearchClient = dynamicImport(() => import("./SearchClient"), {
   ssr: false,
 });
-
-export const dynamic = "force-dynamic";
-export const fetchCache = "force-no-store";
 
 export default function Page() {
   return (
