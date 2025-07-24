@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/supabase/client";
+import { supabase } from "@/supabase/client"; // ✅ INI FIX
 import VideoList, { Video } from "@/app/components/VideoList";
 
 export default function Page() {
@@ -9,28 +9,12 @@ export default function Page() {
 
   useEffect(() => {
     const fetchVideos = async () => {
-      const supabase = createClient();
       const { data, error } = await supabase
         .from("videos")
         .select("id, title, url, thumbnail, user_id, profiles(username, avatar_url)");
 
-      if (!error && data) {
-        setVideos(
-          data.map((v: any) => ({
-            id: v.id,
-            title: v.title,
-            url: v.url,
-            thumbnail: v.thumbnail,
-            user_id: v.user_id ?? "", // ✅ fallback biar nggak undefined
-            profile: v.profiles
-              ? {
-                  username: v.profiles.username,
-                  avatar_url: v.profiles.avatar_url,
-                }
-              : undefined,
-          }))
-        );
-      }
+      if (error) console.error(error);
+      else setVideos(data as Video[]);
     };
 
     fetchVideos();
