@@ -196,7 +196,7 @@ export default function UploadPage() {
         disabled={uploading}
         className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 disabled:bg-gray-400"
       >
-        {uploading ? "Mengupload..." : "Upload"}
+        {uploading ? "Mengupload... sabar yaa emang lama banget uploadnya xD" : "Upload"}
       </button>
     </div>
   );
