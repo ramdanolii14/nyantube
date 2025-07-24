@@ -1,33 +1,38 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/supabase/client";
-import VideoList from "@/app/components/VideoList";
-
-interface Video {
-  id: string;
-  title: string;
-  thumbnail_url: string;
-  video_url: string;
-  created_at: string;
-  user_id?: string; // biar sama kayak VideoList
-  profile?: any;
-}
+import { createClient } from "@/supabase/client";
+import VideoList, { Video } from "@/app/components/VideoList";
 
 export default function Page() {
   const [videos, setVideos] = useState<Video[]>([]);
 
   useEffect(() => {
     const fetchVideos = async () => {
+      const supabase = createClient();
       const { data, error } = await supabase
         .from("videos")
-        .select("*")
-        .order("created_at", { ascending: false });
+        .select("id, title, url, thumbnail, user_id, profiles(username, avatar_url)");
 
       if (!error && data) {
-        setVideos(data);
+        setVideos(
+          data.map((v: any) => ({
+            id: v.id,
+            title: v.title,
+            url: v.url,
+            thumbnail: v.thumbnail,
+            user_id: v.user_id ?? "", // ✅ fallback biar nggak undefined
+            profile: v.profiles
+              ? {
+                  username: v.profiles.username,
+                  avatar_url: v.profiles.avatar_url,
+                }
+              : undefined,
+          }))
+        );
       }
     };
+
     fetchVideos();
   }, []);
 
