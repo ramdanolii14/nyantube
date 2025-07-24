@@ -2,25 +2,19 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/supabase/client";
-import VideoList from "@/app/components/VideoList";
-
-interface Video {
-  id: string;
-  title: string;
-  thumbnail_url: string;
-}
+import VideoList, { Video as VideoType } from "@/app/components/VideoList";
 
 export default function Page() {
-  const [videos, setVideos] = useState<Video[]>([]);
+  const [videos, setVideos] = useState<VideoType[]>([]);
 
   useEffect(() => {
     const fetchVideos = async () => {
       const { data, error } = await supabase
         .from("videos")
-        .select("id, title, thumbnail_url");
+        .select("id, title, thumbnail_url, user_id, profile");
 
       if (!error && data) {
-        setVideos(data);
+        setVideos(data as VideoType[]);
       }
     };
 
