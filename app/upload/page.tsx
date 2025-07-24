@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/supabase/client";
 
 export default function UploadPage() {
@@ -11,8 +11,21 @@ export default function UploadPage() {
   const [previewVideo, setPreviewVideo] = useState<string | null>(null);
   const [previewThumbnail, setPreviewThumbnail] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
 
-  // ✅ Handle drag & drop / pilih file video
+  // ✅ Cek apakah user sudah login
+  useEffect(() => {
+    const checkUser = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (user) {
+        setUserId(user.id);
+      }
+    };
+    checkUser();
+  }, []);
+
   const handleVideoChange = (file: File | null) => {
     if (!file) return;
     setVideoFile(file);
@@ -26,6 +39,11 @@ export default function UploadPage() {
   };
 
   const handleUpload = async () => {
+    if (!userId) {
+      alert("Kamu harus login dulu sebelum upload!");
+      return;
+    }
+
     if (!title || !description || !videoFile || !thumbnailFile) {
       alert("Semua field wajib diisi!");
       return;
@@ -50,13 +68,14 @@ export default function UploadPage() {
 
       if (thumbnailError) throw thumbnailError;
 
-      // ✅ Simpan ke Database
+      // ✅ Simpan ke Database (dengan user_id)
       const { error: dbError } = await supabase.from("videos").insert([
         {
           title,
           description,
           video_url: videoFileName,
           thumbnail_url: thumbnailFileName,
+          user_id: userId, // wajib biar kita tahu siapa yg upload
         },
       ]);
 
@@ -75,6 +94,16 @@ export default function UploadPage() {
       setUploading(false);
     }
   };
+
+  // ✅ Kalau belum login, tampilkan pesan
+  if (!userId) {
+    return (
+      <div className="max-w-2xl mx-auto p-6 mt-10 text-center bg-white shadow rounded">
+        <h1 className="text-xl font-bold mb-2">Harus Login</h1>
+        <p className="text-gray-600">Silakan login dulu untuk bisa upload video.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-2xl mx-auto p-6 mt-10 bg-white shadow rounded">
