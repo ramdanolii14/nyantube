@@ -1,11 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { createClient } from "@/supabase/client";
 
-interface Video {
+export interface Video {
   id: string;
   title: string;
   thumbnail_url: string;
@@ -15,37 +13,11 @@ interface Video {
   };
 }
 
-export default function VideoList() {
-  const [videos, setVideos] = useState<Video[]>([]);
-  const [loading, setLoading] = useState(true);
+interface VideoListProps {
+  videos: Video[];
+}
 
-  useEffect(() => {
-    const supabase = createClient();
-
-    const fetchVideos = async () => {
-      const { data, error } = await supabase
-        .from("videos")
-        .select("id, title, thumbnail_url, user_id, profile:profiles(username)");
-
-      if (!error && data) {
-        const fixedData = data.map((v: any) => ({
-          ...v,
-          profile: Array.isArray(v.profile)
-            ? v.profile[0] || { username: "Unknown" }
-            : v.profile,
-        }));
-        setVideos(fixedData as Video[]);
-      }
-      setLoading(false);
-    };
-
-    fetchVideos();
-  }, []);
-
-  if (loading) {
-    return <p className="text-center text-gray-500">Loading...</p>;
-  }
-
+export default function VideoList({ videos }: VideoListProps) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
       {videos.map((video) => (
@@ -64,12 +36,11 @@ export default function VideoList() {
               unoptimized
             />
           </div>
-
           <div className="p-3">
             <h3 className="text-sm font-semibold text-gray-900 line-clamp-2 group-hover:text-red-600 transition">
               {video.title}
             </h3>
-            <p className="text-xs text-gray-600 mt-1">@{video.profile.username}</p>
+            <p className="text-xs text-gray-600 mt-1">@{video.profiles.username}</p>
           </div>
         </Link>
       ))}
