@@ -82,8 +82,10 @@ useEffect(() => {
       setComments(
         commentsData.map((c: any) => ({
           ...c,
-          profiles: Array.isArray(c.profiles) ? c.profiles[0] : c.profiles,
-        })) as Comment[]
+          profiles: Array.isArray(c.profiles)
+            ? c.profiles[0]
+            : c.profiles,
+        })) as unknown as Comment[]
       );
     }
   };
