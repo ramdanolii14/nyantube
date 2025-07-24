@@ -1,48 +1,36 @@
 "use client";
 
-import Image from "next/image";
-import Link from "next/link";
-
 export interface Video {
   id: string;
-  title: string;
-  thumbnail_url: string;
   user_id: string;
-  profile: {
-    username: string;
-  };
+  title: string;
+  description: string;
+  video_url: string;
+  thumbnail_url: string;
+  views: number;
+  created_at: string;
+  is_public: boolean;
+  likes: number;
+  dislikes: number;
 }
 
-interface VideoListProps {
-  videos: Video[];
-}
+export default function VideoList({ videos }: { videos: Video[] }) {
+  if (!videos || videos.length === 0) {
+    return <p className="text-center text-gray-500">No videos found.</p>;
+  }
 
-export default function VideoList({ videos }: VideoListProps) {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
       {videos.map((video) => (
-        <Link
-          key={video.id}
-          href={`/watch/${video.id}`}
-          className="group block rounded-lg overflow-hidden shadow hover:shadow-md transition"
-        >
-          <div className="relative w-full h-48 bg-gray-200">
-            <Image
-              src={video.thumbnail_url}
-              alt={video.title}
-              width={320}
-              height={180}
-              className="object-cover w-full h-full"
-              unoptimized
-            />
-          </div>
-          <div className="p-3">
-            <h3 className="text-sm font-semibold text-gray-900 line-clamp-2 group-hover:text-red-600 transition">
-              {video.title}
-            </h3>
-            <p className="text-xs text-gray-600 mt-1">@{video.profile.username}</p>
-          </div>
-        </Link>
+        <div key={video.id} className="bg-white rounded shadow p-2">
+          <img
+            src={video.thumbnail_url}
+            alt={video.title}
+            className="rounded mb-2"
+          />
+          <h2 className="font-bold">{video.title}</h2>
+          <p className="text-sm text-gray-600">{video.views} views</p>
+        </div>
       ))}
     </div>
   );
