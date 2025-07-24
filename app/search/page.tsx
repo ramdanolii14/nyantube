@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { supabase } from "@/supabase/client";
 import Link from "next/link";
@@ -14,7 +14,7 @@ interface Video {
   views: number;
 }
 
-export default function SearchPage() {
+function SearchContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const q = searchParams.get("q") || "";
@@ -30,7 +30,6 @@ export default function SearchPage() {
     const fetchSearch = async () => {
       if (!q.trim()) return;
 
-      // ✅ Hitung total video untuk pagination
       const { count } = await supabase
         .from("videos")
         .select("*", { count: "exact", head: true })
@@ -38,7 +37,6 @@ export default function SearchPage() {
 
       if (count) setTotalVideos(count);
 
-      // ✅ Ambil video berdasarkan page
       const from = (page - 1) * videosPerPage;
       const to = from + videosPerPage - 1;
 
@@ -46,9 +44,9 @@ export default function SearchPage() {
         .from("videos")
         .select("*")
         .ilike("title", `%${q}%`)
-        .order("created_at", { ascending: false }) // baru diutamakan
-        .order("likes", { ascending: false })      // banyak like naik
-        .order("views", { ascending: false })      // terakhir views
+        .order("created_at", { ascending: false })
+        .order("likes", { ascending: false })
+        .order("views", { ascending: false })
         .range(from, to);
 
       if (!error) setVideos(data || []);
@@ -85,6 +83,25 @@ export default function SearchPage() {
                     }
                     alt={v.title}
                     className="rounded-t w-full h-40 object-cover"
+                    onError={(e) => {
+                      if (!v.thumbnail_url) {
+                        const video = document.createElement("video");
+                        video.src = v.video_url;
+                        video.crossOrigin = "anonymous";
+                        video.currentTime = 1;
+
+                        video.addEventListener("loadeddata", () => {
+                          const canvas = document.createElement("canvas");
+                          canvas.width = video.videoWidth;
+                          canvas.height = video.videoHeight;
+                          const ctx = canvas.getContext("2d");
+                          ctx?.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+                          (e.target as HTMLImageElement).src =
+                            canvas.toDataURL("image/png");
+                        });
+                      }
+                    }}
                   />
                   <div className="p-2">
                     <h2 className="font-semibold line-clamp-2">{v.title}</h2>
@@ -97,7 +114,6 @@ export default function SearchPage() {
             ))}
           </div>
 
-          {/* ✅ PAGINATION */}
           {totalPages > 1 && (
             <div className="flex justify-center items-center gap-2 mt-6">
               <button
@@ -124,5 +140,13 @@ export default function SearchPage() {
         </>
       )}
     </div>
+  );
+}
+
+export default function SearchPage() {
+  return (
+    <Suspense fallback={<p className="text-center mt-20">Loading...</p>}>
+      <SearchContent />
+    </Suspense>
   );
 }
