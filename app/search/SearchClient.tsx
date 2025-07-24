@@ -1,125 +1,67 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { supabase } from "@/supabase/client";
-import Link from "next/link";
 
 interface Video {
   id: string;
   title: string;
-  video_url: string;
   thumbnail_url: string | null;
-  likes: number;
-  views: number;
+  video_url: string;
 }
 
 export default function SearchClient() {
   const searchParams = useSearchParams();
-  const router = useRouter();
-  const q = searchParams.get("q") || "";
-  const page = parseInt(searchParams.get("page") || "1", 10);
-
+  const query = searchParams.get("q") || "";
   const [videos, setVideos] = useState<Video[]>([]);
-  const [totalVideos, setTotalVideos] = useState(0);
-
-  const videosPerPage = 30;
-  const totalPages = Math.ceil(totalVideos / videosPerPage);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchSearch = async () => {
-      if (!q.trim()) return;
+    if (!query) return;
 
-      const { count } = await supabase
-        .from("videos")
-        .select("*", { count: "exact", head: true })
-        .ilike("title", `%${q}%`);
-
-      if (count) setTotalVideos(count);
-
-      const from = (page - 1) * videosPerPage;
-      const to = from + videosPerPage - 1;
-
+    async function fetchVideos() {
+      setLoading(true);
       const { data, error } = await supabase
         .from("videos")
-        .select("*")
-        .ilike("title", `%${q}%`)
-        .order("created_at", { ascending: false })
-        .order("likes", { ascending: false })
-        .order("views", { ascending: false })
-        .range(from, to);
+        .select("id, title, thumbnail_url, video_url")
+        .ilike("title", `%${query}%`);
 
-      if (!error) setVideos(data || []);
-    };
+      if (error) console.error(error);
+      setVideos(data || []);
+      setLoading(false);
+    }
 
-    fetchSearch();
-  }, [q, page]);
+    fetchVideos();
+  }, [query]);
 
-  const handlePageChange = (newPage: number) => {
-    router.push(`/search?q=${encodeURIComponent(q)}&page=${newPage}`);
-  };
+  if (loading) return <p className="p-4 text-center">Loading...</p>;
 
-  if (!q.trim()) return <p className="mt-20 text-center">Masukkan kata kunci</p>;
+  if (videos.length === 0)
+    return <p className="p-4 text-center">No videos found.</p>;
 
   return (
-    <div className="max-w-6xl mx-auto mt-20 px-4">
-      <h1 className="text-xl font-bold mb-4">
-        Hasil pencarian untuk: <span className="text-red-600">{q}</span>
-      </h1>
-
-      {videos.length === 0 ? (
-        <p className="text-gray-500">Tidak ada video ditemukan.</p>
-      ) : (
-        <>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {videos.map((v) => (
-              <Link key={v.id} href={`/watch/${v.id}`}>
-                <div className="bg-white rounded shadow hover:shadow-lg transition">
-                  <img
-                    src={
-                      v.thumbnail_url
-                        ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/thumbnails/${v.thumbnail_url}`
-                        : `${v.video_url}#t=1`
-                    }
-                    alt={v.title}
-                    className="rounded-t w-full h-40 object-cover"
-                  />
-                  <div className="p-2">
-                    <h2 className="font-semibold line-clamp-2">{v.title}</h2>
-                    <p className="text-sm text-gray-500">
-                      👍 {v.likes} | 👁 {v.views}
-                    </p>
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
-
-          {totalPages > 1 && (
-            <div className="flex justify-center items-center gap-2 mt-6">
-              <button
-                onClick={() => handlePageChange(page - 1)}
-                disabled={page === 1}
-                className="px-3 py-1 border rounded disabled:opacity-50"
-              >
-                Prev
-              </button>
-
-              <span className="px-3 py-1">
-                {page} / {totalPages}
-              </span>
-
-              <button
-                onClick={() => handlePageChange(page + 1)}
-                disabled={page === totalPages}
-                className="px-3 py-1 border rounded disabled:opacity-50"
-              >
-                Next
-              </button>
-            </div>
-          )}
-        </>
-      )}
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4">
+      {videos.map((v) => (
+        <div key={v.id} className="border rounded-md overflow-hidden">
+          <video
+            className="w-full h-40 object-cover"
+            src={
+              v.thumbnail_url
+                ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/thumbnails/${v.thumbnail_url}`
+                : v.video_url // fallback ambil detik pertama video
+            }
+            muted
+            playsInline
+            preload="metadata"
+            onLoadedMetadata={(e) => {
+              const videoEl = e.currentTarget;
+              videoEl.currentTime = 1;
+            }}
+          />
+          <div className="p-2 text-sm font-medium">{v.title}</div>
+        </div>
+      ))}
     </div>
   );
 }
