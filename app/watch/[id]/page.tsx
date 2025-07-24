@@ -73,7 +73,11 @@ export default function WatchPage() {
         .order("created_at", { ascending: false });
 
       if (commentData) {
-        setComments(commentData);
+        const mappedComments = commentData.map((comment: any) => ({
+          ...comment,
+          profile: comment.profile[0] || { username: "Unknown" },
+        }));
+        setComments(mappedComments);
       }
     };
 
@@ -101,7 +105,11 @@ export default function WatchPage() {
       .single();
 
     if (!error && insertedComment) {
-      setComments((prev) => [insertedComment, ...prev]);
+      const formattedComment = {
+        ...insertedComment,
+        profile: insertedComment.profile[0] || { username: "Unknown" },
+      };
+      setComments((prev) => [formattedComment, ...prev]);
       setNewComment("");
     }
   };
@@ -123,7 +131,9 @@ export default function WatchPage() {
           <form onSubmit={handleSubmit} className="mb-4">
             <textarea
               value={newComment}
-              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setNewComment(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                setNewComment(e.target.value)
+              }
               placeholder="Add a comment..."
               className="w-full p-2 border rounded-md"
               required
