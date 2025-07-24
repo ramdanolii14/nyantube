@@ -66,28 +66,29 @@ export default function AuthPage() {
 
     if (error) {
       setMessage(`❌ ${error.message}`);
-    } else if (data.user) {
-      try {
-        const { error: profileError } = await supabase.from("profiles").insert([
-          {
-            id: data.user.id,
-            username,
-            channel_name: channelName,
-            avatar_url: null,
-          },
-        ]);
+      setLoading(false);
+      return;
+    }
 
-        if (profileError) {
-          console.error("PROFILE INSERT ERROR:", profileError);
-          setMessage("❌ Gagal membuat profil, coba lagi nanti.");
-        } else {
-          setMessage("✅ Pendaftaran berhasil! Cek email untuk verifikasi.");
-          setMode("login");
-          setUsername("");
-          setChannelName("");
-        }
-      } catch (err) {
-        console.error("REGISTER ERROR:", err);
+    if (data.user) {
+      // ✅ Buat profil user setelah signup
+      const { error: profileError } = await supabase.from("profiles").insert([
+        {
+          id: data.user.id,
+          username,
+          channel_name: channelName,
+          avatar_url: null,
+        },
+      ]);
+
+      if (profileError) {
+        console.error("PROFILE INSERT ERROR:", profileError);
+        setMessage(`❌ Gagal membuat profil: ${profileError.message}`);
+      } else {
+        setMessage("✅ Pendaftaran berhasil! Cek email untuk verifikasi.");
+        setMode("login");
+        setUsername("");
+        setChannelName("");
       }
     }
 
