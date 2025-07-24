@@ -1,170 +1,162 @@
 "use client";
 
-import { useState, DragEvent } from "react";
+import { useState } from "react";
 import { supabase } from "@/supabase/client";
-import { useRouter } from "next/navigation";
 
 export default function UploadPage() {
-  const router = useRouter();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  // ✅ Drag & Drop Handler
-  const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    setIsDragging(true);
-  };
-
-  const handleDragLeave = (e: DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    setIsDragging(false);
-  };
-
-  const handleDrop = (e: DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    setIsDragging(false);
-    const file = e.dataTransfer.files[0];
-    if (file && file.type.startsWith("video/")) {
-      setVideoFile(file);
-    } else {
-      alert("Hanya boleh upload file video!");
-    }
-  };
-
-  // ✅ Upload Handler
   const handleUpload = async () => {
-    if (!title.trim() || !videoFile) {
+    if (!title || !videoFile) {
       alert("Judul dan video wajib diisi!");
       return;
     }
 
-    setIsUploading(true);
+    setLoading(true);
 
     try {
-      const timestamp = Date.now();
+      // ✅ 1. Upload Video ke bucket "videos"
       const videoExt = videoFile.name.split(".").pop();
-      const videoFileName = `${timestamp}.${videoExt}`;
+      const videoFileName = `${Date.now()}.${videoExt}`;
 
-      // ✅ Upload Video ke Bucket "videos"
       const { error: videoError } = await supabase.storage
         .from("videos")
         .upload(videoFileName, videoFile);
 
       if (videoError) throw videoError;
 
-      // ✅ Upload Thumbnail (opsional)
-      let thumbnail_url = null;
+      const videoURL = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/videos/${videoFileName}`;
+
+      let thumbnailURL = "";
+
       if (thumbnailFile) {
+        // ✅ 2A. Kalau user upload thumbnail manual → langsung upload
         const thumbExt = thumbnailFile.name.split(".").pop();
-        const thumbFileName = `${timestamp}.${thumbExt}`;
+        const thumbFileName = `${Date.now()}.${thumbExt}`;
+
         const { error: thumbError } = await supabase.storage
           .from("thumbnails")
           .upload(thumbFileName, thumbnailFile);
 
         if (thumbError) throw thumbError;
-        thumbnail_url = thumbFileName;
+
+        thumbnailURL = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/thumbnails/${thumbFileName}`;
+      } else {
+        // ✅ 2B. Auto-generate thumbnail dari video
+        const generatedThumb = await generateThumbnail(videoFile);
+        const thumbFileName = `${Date.now()}.jpg`;
+
+        const { error: autoThumbError } = await supabase.storage
+          .from("thumbnails")
+          .upload(thumbFileName, generatedThumb);
+
+        if (autoThumbError) throw autoThumbError;
+
+        thumbnailURL = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/thumbnails/${thumbFileName}`;
       }
 
-      // ✅ Ambil User ID (opsional, tapi di db tetap wajib kan?)
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) throw new Error("User belum login!");
-
-      // ✅ Simpan Metadata ke Tabel videos
+      // ✅ 3. Simpan ke tabel videos
       const { error: dbError } = await supabase.from("videos").insert([
         {
-          title: title.trim(),
-          description: description.trim(),
+          title,
+          description,
           video_url: videoFileName,
-          thumbnail_url: thumbnail_url, // ✅ Kalau null, nanti fallback auto-generate
-          user_id: user.id,
+          thumbnail_url: thumbnailURL,
+          views: 0,
+          likes: 0,
+          dislikes: 0,
         },
       ]);
 
       if (dbError) throw dbError;
 
-      alert("✅ Video berhasil diupload!");
-      router.push("/");
-    } catch (err: any) {
+      alert("Video berhasil diupload!");
+      setTitle("");
+      setDescription("");
+      setVideoFile(null);
+      setThumbnailFile(null);
+    } catch (err) {
       console.error(err);
-      alert("❌ Gagal upload video: " + err.message);
-    } finally {
-      setIsUploading(false);
+      alert("Gagal upload video!");
     }
+
+    setLoading(false);
+  };
+
+  // ✅ Fungsi auto-generate thumbnail
+  const generateThumbnail = async (file: File): Promise<File> => {
+    return new Promise((resolve) => {
+      const video = document.createElement("video");
+      video.src = URL.createObjectURL(file);
+      video.currentTime = 0.1;
+      video.crossOrigin = "anonymous";
+
+      video.addEventListener("loadeddata", () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = 320;
+        canvas.height = 180;
+        const ctx = canvas.getContext("2d");
+        if (ctx) ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const thumbFile = new File([blob], "thumbnail.jpg", {
+              type: "image/jpeg",
+            });
+            resolve(thumbFile);
+          }
+        }, "image/jpeg");
+      });
+    });
   };
 
   return (
-    <div className="max-w-2xl mx-auto mt-16 p-6 bg-white rounded shadow">
+    <div className="max-w-lg mx-auto mt-10 p-4 border rounded shadow">
       <h1 className="text-xl font-bold mb-4">Upload Video</h1>
-
       <input
         type="text"
-        placeholder="Judul video"
-        className="border p-2 rounded w-full mb-3"
+        placeholder="Judul"
         value={title}
         onChange={(e) => setTitle(e.target.value)}
+        className="border p-2 rounded w-full mb-2"
       />
-
       <textarea
-        placeholder="Deskripsi video"
-        className="border p-2 rounded w-full mb-3"
+        placeholder="Deskripsi"
         value={description}
         onChange={(e) => setDescription(e.target.value)}
-      />
+        className="border p-2 rounded w-full mb-2"
+      ></textarea>
 
-      {/* ✅ Drag & Drop Area */}
-      <div
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-        className={`border-2 border-dashed p-6 rounded text-center mb-3 ${
-          isDragging ? "border-blue-600 bg-blue-50" : "border-gray-400"
-        }`}
-      >
-        {videoFile ? (
-          <p className="text-green-600 font-semibold">{videoFile.name}</p>
-        ) : (
-          <p className="text-gray-500">
-            Seret & taruh video di sini, atau klik di bawah untuk memilih
-          </p>
-        )}
-      </div>
-      <input
-        type="file"
-        accept="video/*"
-        className="mb-3"
-        onChange={(e) => setVideoFile(e.target.files?.[0] || null)}
-      />
-
-      {/* ✅ Thumbnail Opsional */}
-      <label className="block text-sm font-semibold mb-1">
-        Thumbnail (Opsional)
+      <label className="block mb-2">
+        Pilih Video:
+        <input
+          type="file"
+          accept="video/*"
+          onChange={(e) => setVideoFile(e.target.files?.[0] || null)}
+          className="block mt-1"
+        />
       </label>
-      <input
-        type="file"
-        accept="image/*"
-        className="mb-4"
-        onChange={(e) => setThumbnailFile(e.target.files?.[0] || null)}
-      />
-      {thumbnailFile && (
-        <p className="text-green-600 text-sm mb-3">
-          ✅ Thumbnail: {thumbnailFile.name}
-        </p>
-      )}
+
+      <label className="block mb-2">
+        Thumbnail (opsional):
+        <input
+          type="file"
+          accept="image/*"
+          onChange={(e) => setThumbnailFile(e.target.files?.[0] || null)}
+          className="block mt-1"
+        />
+      </label>
 
       <button
         onClick={handleUpload}
-        disabled={isUploading}
-        className={`w-full py-2 rounded text-white ${
-          isUploading ? "bg-gray-400" : "bg-blue-600 hover:bg-blue-700"
-        }`}
+        disabled={loading}
+        className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
       >
-        {isUploading ? "Mengupload..." : "Upload"}
+        {loading ? "Mengupload..." : "Upload"}
       </button>
     </div>
   );
