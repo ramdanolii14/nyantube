@@ -1,7 +1,9 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { createClient } from "@/supabase/client";
 
 interface Video {
   id: string;
@@ -13,7 +15,37 @@ interface Video {
   };
 }
 
-export default function VideoList({ videos }: { videos: Video[] }) {
+export default function VideoList() {
+  const [videos, setVideos] = useState<Video[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const supabase = createClient();
+
+    const fetchVideos = async () => {
+      const { data, error } = await supabase
+        .from("videos")
+        .select("id, title, thumbnail_url, user_id, profile:profiles(username)");
+
+      if (!error && data) {
+        const fixedData = data.map((v: any) => ({
+          ...v,
+          profile: Array.isArray(v.profile)
+            ? v.profile[0] || { username: "Unknown" }
+            : v.profile,
+        }));
+        setVideos(fixedData as Video[]);
+      }
+      setLoading(false);
+    };
+
+    fetchVideos();
+  }, []);
+
+  if (loading) {
+    return <p className="text-center text-gray-500">Loading...</p>;
+  }
+
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
       {videos.map((video) => (
