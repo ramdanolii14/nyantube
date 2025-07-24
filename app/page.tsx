@@ -23,7 +23,6 @@ export default function Page() {
         return;
       }
 
-      // Format jadi URL PUBLIC dari Supabase Storage
       const formatted = (data || []).map((v: any) => ({
         id: v.id,
         user_id: v.user_id,
