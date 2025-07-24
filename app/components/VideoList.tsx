@@ -30,7 +30,7 @@ export default function VideoList({ videos }: { videos: Video[] }) {
           {video.thumbnail_url ? (
             // ✅ Pakai thumbnail jika ada
             <img
-              src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/thumbnails/${video.thumbnail_url}`}
+              src={video.thumbnail_url}
               alt={video.title}
               className="w-full aspect-video object-cover"
             />
