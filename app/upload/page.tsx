@@ -11,8 +11,8 @@ export default function UploadPage() {
   const [previewVideo, setPreviewVideo] = useState<string | null>(null);
   const [previewThumbnail, setPreviewThumbnail] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
-  const [progress, setProgress] = useState(0); // ✅ Progress upload
 
+  // ✅ Handle drag & drop / pilih file video
   const handleVideoChange = (file: File | null) => {
     if (!file) return;
     setVideoFile(file);
@@ -25,44 +25,6 @@ export default function UploadPage() {
     setPreviewThumbnail(URL.createObjectURL(file));
   };
 
-  const uploadWithProgress = async (
-    bucket: string,
-    path: string,
-    file: File
-  ) => {
-    return new Promise((resolve, reject) => {
-      const xhr = new XMLHttpRequest();
-      xhr.upload.addEventListener("progress", (e) => {
-        if (e.lengthComputable) {
-          const percent = Math.round((e.loaded * 100) / e.total);
-          setProgress(percent);
-        }
-      });
-
-      xhr.onload = () => {
-        if (xhr.status === 200 || xhr.status === 204) {
-          resolve(true);
-        } else {
-          reject(new Error(`Upload gagal: ${xhr.statusText}`));
-        }
-      };
-
-      xhr.onerror = () => reject(new Error("Terjadi kesalahan saat upload"));
-
-      xhr.open(
-        "POST",
-        `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/${bucket}/${path}`
-      );
-      xhr.setRequestHeader(
-        "Authorization",
-        `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`
-      );
-      const formData = new FormData();
-      formData.append("file", file);
-      xhr.send(formData);
-    });
-  };
-
   const handleUpload = async () => {
     if (!title || !description || !videoFile || !thumbnailFile) {
       alert("Semua field wajib diisi!");
@@ -70,17 +32,23 @@ export default function UploadPage() {
     }
 
     setUploading(true);
-    setProgress(0);
 
     try {
-      // ✅ Upload Video
+      // ✅ Upload Video ke bucket "videos"
       const videoFileName = `${Date.now()}-${videoFile.name}`;
-      await uploadWithProgress("videos", videoFileName, videoFile);
+      const { error: videoError } = await supabase.storage
+        .from("videos")
+        .upload(videoFileName, videoFile);
 
-      // ✅ Upload Thumbnail
-      setProgress(0); // reset progress untuk thumbnail
+      if (videoError) throw videoError;
+
+      // ✅ Upload Thumbnail ke bucket "thumbnails"
       const thumbnailFileName = `${Date.now()}-${thumbnailFile.name}`;
-      await uploadWithProgress("thumbnails", thumbnailFileName, thumbnailFile);
+      const { error: thumbnailError } = await supabase.storage
+        .from("thumbnails")
+        .upload(thumbnailFileName, thumbnailFile);
+
+      if (thumbnailError) throw thumbnailError;
 
       // ✅ Simpan ke Database
       const { error: dbError } = await supabase.from("videos").insert([
@@ -91,6 +59,7 @@ export default function UploadPage() {
           thumbnail_url: thumbnailFileName,
         },
       ]);
+
       if (dbError) throw dbError;
 
       alert("Upload berhasil!");
@@ -104,7 +73,6 @@ export default function UploadPage() {
       alert(`Gagal upload: ${err.message}`);
     } finally {
       setUploading(false);
-      setProgress(0);
     }
   };
 
@@ -112,6 +80,7 @@ export default function UploadPage() {
     <div className="max-w-2xl mx-auto p-6 mt-10 bg-white shadow rounded">
       <h1 className="text-2xl font-bold mb-4">Upload Video</h1>
 
+      {/* Title */}
       <div className="mb-3">
         <label className="block font-medium mb-1">Title</label>
         <input
@@ -123,6 +92,7 @@ export default function UploadPage() {
         />
       </div>
 
+      {/* Description */}
       <div className="mb-3">
         <label className="block font-medium mb-1">Description</label>
         <textarea
@@ -134,7 +104,7 @@ export default function UploadPage() {
         />
       </div>
 
-      {/* Video Upload */}
+      {/* Drag & Drop Video */}
       <div
         className="border-2 border-dashed rounded p-4 text-center mb-3 cursor-pointer hover:bg-gray-100"
         onDragOver={(e) => e.preventDefault()}
@@ -162,7 +132,7 @@ export default function UploadPage() {
         />
       </div>
 
-      {/* Thumbnail Upload */}
+      {/* Drag & Drop Thumbnail */}
       <div
         className="border-2 border-dashed rounded p-4 text-center mb-3 cursor-pointer hover:bg-gray-100"
         onDragOver={(e) => e.preventDefault()}
@@ -191,18 +161,6 @@ export default function UploadPage() {
           onChange={(e) => handleThumbnailChange(e.target.files?.[0] || null)}
         />
       </div>
-
-      {/* ✅ Progress Bar */}
-      {uploading && (
-        <div className="w-full bg-gray-200 rounded h-4 mb-3">
-          <div
-            className="bg-red-600 h-4 rounded text-white text-xs text-center"
-            style={{ width: `${progress}%` }}
-          >
-            {progress}%
-          </div>
-        </div>
-      )}
 
       <button
         onClick={handleUpload}
