@@ -66,30 +66,20 @@ export default function AuthPage() {
 
     if (error) {
       setMessage(`❌ ${error.message}`);
-      setLoading(false);
-      return;
-    }
-
-    if (data.user) {
-      // ✅ Buat profil user setelah signup
-      const { error: profileError } = await supabase.from("profiles").insert([
-        {
-          id: data.user.id,
+    } else if (data.user) {
+      // ✅ Update profil sesuai input user (trigger sudah bikin row awal)
+      await supabase
+        .from("profiles")
+        .update({
           username,
           channel_name: channelName,
-          avatar_url: null,
-        },
-      ]);
+        })
+        .eq("id", data.user.id);
 
-      if (profileError) {
-        console.error("PROFILE INSERT ERROR:", profileError);
-        setMessage(`❌ Gagal membuat profil: ${profileError.message}`);
-      } else {
-        setMessage("✅ Pendaftaran berhasil! Cek email untuk verifikasi.");
-        setMode("login");
-        setUsername("");
-        setChannelName("");
-      }
+      setMessage("✅ Pendaftaran berhasil! Cek email untuk verifikasi.");
+      setMode("login");
+      setUsername("");
+      setChannelName("");
     }
 
     setLoading(false);
