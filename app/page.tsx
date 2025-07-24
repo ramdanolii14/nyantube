@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { createClient } from "@/supabase/client"; // pastikan sudah bener
+import { supabase } from "@/supabase/client";
 import VideoList from "@/app/components/VideoList";
 
 interface Video {
