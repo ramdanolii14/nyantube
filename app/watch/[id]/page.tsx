@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { supabase } from "@/supabase/client";
 import Image from "next/image";
-import Link from "next/link";
 
 interface Video {
   id: string;
@@ -52,47 +51,44 @@ export default function WatchPage() {
   }, []);
 
   // ✅ Ambil video & komentar
-useEffect(() => {
-  const fetchVideoAndComments = async () => {
-    // --- Ambil Video ---
-    const { data: videoData } = await supabase
-      .from("videos")
-      .select("*, profiles(username, avatar_url)")
-      .eq("id", id)
-      .single();
+  useEffect(() => {
+    const fetchVideoAndComments = async () => {
+      // --- Ambil Video ---
+      const { data: videoData } = await supabase
+        .from("videos")
+        .select("*, profiles(username, avatar_url)")
+        .eq("id", id)
+        .single();
 
-    if (videoData) {
-      setVideo({
-        ...videoData,
-        profiles:
-          videoData.profiles || { username: "Unknown", avatar_url: null },
-      });
-    }
+      if (videoData) {
+        setVideo({
+          ...videoData,
+          profiles: videoData.profiles || {
+            username: "Unknown",
+            avatar_url: null,
+          },
+        });
+      }
 
-    // --- Ambil Komentar ---
-    const { data: commentsData } = await supabase
-      .from("comments")
-      .select(
-        "id, user_id, content, created_at, profiles(username, avatar_url)"
-      )
-      .eq("video_id", id)
-      .order("created_at", { ascending: false });
+      // --- Ambil Komentar ---
+      const { data: commentsData } = await supabase
+        .from("comments")
+        .select("id, user_id, content, created_at, profiles(username, avatar_url)")
+        .eq("video_id", id)
+        .order("created_at", { ascending: false });
 
-    if (commentsData) {
-      setComments(
-        commentsData.map((c: any) => ({
-          ...c,
-          profiles: Array.isArray(c.profiles)
-            ? c.profiles[0]
-            : c.profiles,
-        })) as unknown as Comment[]
-      );
-    }
-  };
+      if (commentsData) {
+        setComments(
+          commentsData.map((c: any) => ({
+            ...c,
+            profiles: Array.isArray(c.profiles) ? c.profiles[0] : c.profiles,
+          })) as unknown as Comment[]
+        );
+      }
+    };
 
-  // ✅ Panggil di luar fungsi, bukan di dalamnya
-  fetchVideoAndComments();
-}, [id]);
+    fetchVideoAndComments();
+  }, [id]);
 
   // ✅ Tambah Komentar
   const handleAddComment = async () => {
@@ -115,7 +111,14 @@ useEffect(() => {
       .eq("video_id", id)
       .order("created_at", { ascending: false });
 
-    if (data) setComments(data as Comment[]);
+    if (data) {
+      setComments(
+        data.map((c: any) => ({
+          ...c,
+          profiles: Array.isArray(c.profiles) ? c.profiles[0] : c.profiles,
+        })) as unknown as Comment[]
+      );
+    }
   };
 
   if (!video) return <p className="text-center mt-20">Loading video...</p>;
@@ -123,7 +126,10 @@ useEffect(() => {
   return (
     <div className="max-w-4xl mx-auto mt-10 px-4">
       {/* ✅ Video */}
-      <div className="relative w-full rounded-md overflow-hidden bg-black" style={{ paddingTop: "56.25%" }}>
+      <div
+        className="relative w-full rounded-md overflow-hidden bg-black"
+        style={{ paddingTop: "56.25%" }}
+      >
         <video
           src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/videos/${video.video_url}`}
           controls
