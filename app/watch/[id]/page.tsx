@@ -75,7 +75,9 @@ export default function WatchPage() {
       // --- Ambil Komentar ---
       const { data: commentsData } = await supabase
         .from("comments")
-        .select("id, user_id, content, created_at, profiles(username, avatar_url)")
+        .select(
+          "id, user_id, content, created_at, profiles(username, avatar_url)"
+        )
         .eq("video_id", id)
         .order("created_at", { ascending: false });
 
@@ -129,7 +131,9 @@ export default function WatchPage() {
     // Refresh komentar
     const { data } = await supabase
       .from("comments")
-      .select("id, user_id, content, created_at, profiles(username, avatar_url)")
+      .select(
+        "id, user_id, content, created_at, profiles(username, avatar_url)"
+      )
       .eq("video_id", id)
       .order("created_at", { ascending: false });
 
@@ -146,7 +150,7 @@ export default function WatchPage() {
   if (!video) return <p className="text-center mt-20">Loading video...</p>;
 
   return (
-    <div className="max-w-6xl mx-auto mt-10 px-4 grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div className="max-w-6xl mx-auto pt-6 px-4 grid grid-cols-1 md:grid-cols-3 gap-6">
       {/* ✅ Kolom Kiri: Video + Komentar */}
       <div className="md:col-span-2">
         {/* ✅ Video */}
@@ -162,7 +166,7 @@ export default function WatchPage() {
         </div>
 
         {/* ✅ Info Uploader */}
-        <div className="flex items-center gap-3 mt-4">
+        <div className="flex items-center gap-3 mt-6">
           <Image
             src={
               video.profiles?.avatar_url
@@ -183,10 +187,10 @@ export default function WatchPage() {
           </div>
         </div>
 
-        <h1 className="text-xl font-bold mt-2">{video.title}</h1>
+        <h1 className="text-xl font-bold mt-4">{video.title}</h1>
         <p className="text-gray-600 text-sm">{video.description}</p>
 
-        <hr className="my-4" />
+        <hr className="my-6" />
 
         {/* ✅ Komentar */}
         <h2 className="text-lg font-bold mb-3">Komentar</h2>
@@ -233,7 +237,7 @@ export default function WatchPage() {
 
       {/* ✅ Kolom Kanan: Video Rekomendasi */}
       <div className="space-y-4">
-        <h2 className="text-lg font-bold">Video Rekomendasi</h2>
+        <h2 className="text-lg font-bold mb-3">Video Rekomendasi</h2>
         {recommended.map((v) => (
           <Link
             key={v.id}
