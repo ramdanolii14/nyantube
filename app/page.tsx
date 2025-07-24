@@ -13,8 +13,23 @@ export default function Page() {
         .from("videos")
         .select("id, title, url, thumbnail, user_id, profiles(username, avatar_url)");
 
-      if (error) console.error(error);
-      else setVideos(data || []);
+      if (error) {
+        console.error(error);
+      } else {
+        const formatted = (data || []).map((v: any) => ({
+          id: v.id,
+          title: v.title,
+          url: v.url,
+          thumbnail_url: v.thumbnail, // ✅ sesuaikan dengan type Video
+          user_id: v.user_id,
+          profile: {
+            username: v.profiles?.[0]?.username || "",
+            avatar_url: v.profiles?.[0]?.avatar_url || "",
+          },
+        })) as Video[];
+
+        setVideos(formatted);
+      }
     };
 
     fetchVideos();
