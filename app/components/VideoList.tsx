@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 export interface Video {
   id: string;
   user_id: string;
@@ -20,17 +22,19 @@ export default function VideoList({ videos }: { videos: Video[] }) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
       {videos.map((video) => (
-        <div key={video.id} className="border rounded-lg overflow-hidden shadow">
-          <img
-            src={video.thumbnail_url}
-            alt={video.title}
-            className="w-full h-40 object-cover"
-          />
-          <div className="p-2">
-            <h2 className="font-semibold text-sm">{video.title}</h2>
-            <p className="text-xs text-gray-500">{video.views} views</p>
+        <Link key={video.id} href={`/watch/${video.id}`}>
+          <div className="border rounded-lg overflow-hidden shadow hover:shadow-lg transition cursor-pointer">
+            <img
+              src={video.thumbnail_url}
+              alt={video.title}
+              className="w-full h-40 object-cover"
+            />
+            <div className="p-2">
+              <h2 className="font-semibold text-sm line-clamp-2">{video.title}</h2>
+              <p className="text-xs text-gray-500">{video.views} views</p>
+            </div>
           </div>
-        </div>
+        </Link>
       ))}
     </div>
   );
