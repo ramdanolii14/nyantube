@@ -1,10 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { supabase } from "@/supabase/client";
-import { useSession } from "@supabase/auth-helpers-react";
-import React from "react";
+import Image from "next/image";
+import Link from "next/link";
+
+interface Profile {
+  username: string;
+  avatar_url: string | null;
+}
 
 interface Video {
   id: string;
@@ -14,149 +19,204 @@ interface Video {
   thumbnail_url: string;
   user_id: string;
   created_at: string;
-}
-
-interface Profile {
-  username: string;
+  likes: number;
+  dislikes: number;
+  profiles?: Profile;
 }
 
 interface Comment {
   id: string;
+  user_id: string;
   content: string;
   created_at: string;
-  profile: {
-    username: string;
-  };
+  profiles: Profile;
 }
 
 export default function WatchPage() {
-  const { id } = useParams<{ id: string }>();
-  const router = useRouter();
-  const session = useSession();
-
+  const { id } = useParams();
   const [video, setVideo] = useState<Video | null>(null);
-  const [profile, setProfile] = useState<Profile | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
+  const [recommendations, setRecommendations] = useState<Video[]>([]);
   const [newComment, setNewComment] = useState("");
+  const [userId, setUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      const { data } = await supabase.auth.getUser();
+      if (data.user) setUserId(data.user.id);
+    };
+    fetchUser();
+  }, []);
 
   useEffect(() => {
     if (!id) return;
 
-    const fetchData = async () => {
-      const { data: videoData, error: videoError } = await supabase
-        .from("videos")
-        .select("*")
-        .eq("id", id)
-        .single();
+    const fetchAll = async () => {
+      try {
+        // ✅ Ambil video utama
+        const { data: videoData, error: videoError } = await supabase
+          .from("videos")
+          .select("*")
+          .eq("id", id)
+          .single();
 
-      if (videoError || !videoData) {
-        router.push("/not-found");
-        return;
-      }
+        if (videoError || !videoData) return;
 
-      setVideo(videoData);
+        const [profileData, likeCount, dislikeCount, commentsData, recData] =
+          await Promise.all([
+            supabase
+              .from("profiles")
+              .select("username, avatar_url")
+              .eq("id", videoData.user_id)
+              .single(),
+            supabase
+              .from("video_likes")
+              .select("*", { count: "exact", head: true })
+              .eq("video_id", id)
+              .eq("type", "like"),
+            supabase
+              .from("video_likes")
+              .select("*", { count: "exact", head: true })
+              .eq("video_id", id)
+              .eq("type", "dislike"),
+            supabase
+              .from("comments")
+              .select(
+                "id, user_id, content, created_at, profiles(username, avatar_url)"
+              )
+              .eq("video_id", id)
+              .order("created_at", { ascending: false }),
+            supabase
+              .from("videos")
+              .select("*")
+              .neq("id", id)
+              .order("created_at", { ascending: false })
+              .limit(5),
+          ]);
 
-      const { data: profileData } = await supabase
-        .from("profiles")
-        .select("username")
-        .eq("id", videoData.user_id)
-        .single();
+        setVideo({
+          ...videoData,
+          likes: likeCount.count || 0,
+          dislikes: dislikeCount.count || 0,
+          profiles:
+            profileData.data || { username: "Unknown", avatar_url: null },
+        });
 
-      if (profileData) {
-        setProfile(profileData);
-      }
+        if (commentsData.data)
+          setComments(commentsData.data as unknown as Comment[]);
 
-      const { data: commentData } = await supabase
-        .from("comments")
-        .select("id, content, created_at, profile(username)")
-        .eq("video_id", id)
-        .order("created_at", { ascending: false });
-
-      if (commentData) {
-        const mappedComments = commentData.map((comment: any) => ({
-          ...comment,
-          profile: comment.profile[0] || { username: "Unknown" },
-        }));
-        setComments(mappedComments);
+        if (recData.data) setRecommendations(recData.data as Video[]);
+      } catch (err) {
+        console.error("FETCH ERROR:", err);
       }
     };
 
-    fetchData();
-  }, [id, router]);
+    fetchAll();
+  }, [id]);
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-
-    if (!session?.user) {
-      router.push("/auth/login");
-      return;
-    }
-
-    const { data: insertedComment, error } = await supabase
-      .from("comments")
-      .insert([
-        {
-          content: newComment,
-          video_id: id,
-          user_id: session.user.id,
-        },
-      ])
-      .select("id, content, created_at, profile(username)")
-      .single();
-
-    if (!error && insertedComment) {
-      const formattedComment = {
-        ...insertedComment,
-        profile: insertedComment.profile[0] || { username: "Unknown" },
-      };
-      setComments((prev) => [formattedComment, ...prev]);
-      setNewComment("");
-    }
-  };
-
-  if (!video) return <p className="text-center mt-10">Loading...</p>;
+  if (!video) return <p className="text-center mt-20">Loading video...</p>;
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-6">
-      <h1 className="text-2xl font-bold mb-2">{video.title}</h1>
-      <p className="text-sm text-gray-600 mb-4">By @{profile?.username}</p>
-      <video src={video.video_url} controls className="w-full rounded-md mb-6" />
+    <div className="max-w-6xl mx-auto mt-20 grid grid-cols-1 md:grid-cols-3 gap-6 px-3">
+      {/* ✅ VIDEO PLAYER */}
+      <div className="md:col-span-2">
+        <div className="relative w-full rounded-md overflow-hidden bg-black aspect-video">
+          <video
+            src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/videos/${video.video_url}`}
+            controls
+            className="absolute top-0 left-0 w-full h-full"
+          />
+        </div>
 
-      <p className="text-gray-700 mb-6">{video.description}</p>
-
-      <div className="mb-6">
-        <h2 className="text-lg font-semibold mb-2">Comments</h2>
-
-        {session && (
-          <form onSubmit={handleSubmit} className="mb-4">
-            <textarea
-              value={newComment}
-              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
-                setNewComment(e.target.value)
+        {/* ✅ Channel Info */}
+        <div className="flex items-center gap-3 mt-4">
+          <Link
+            href={`/profile/${video.user_id}`}
+            className="flex items-center gap-3 hover:opacity-80 transition"
+          >
+            <Image
+              src={
+                video.profiles?.avatar_url
+                  ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${video.profiles.avatar_url}`
+                  : `https://ui-avatars.com/api/?name=${video.profiles?.username}`
               }
-              placeholder="Add a comment..."
-              className="w-full p-2 border rounded-md"
-              required
+              alt={video.profiles?.username || "Channel"}
+              width={45}
+              height={45}
+              className="rounded-full"
+              unoptimized
             />
-            <button
-              type="submit"
-              className="mt-2 bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition"
-            >
-              Post Comment
-            </button>
-          </form>
-        )}
-
-        {comments.length === 0 ? (
-          <p className="text-gray-500">No comments yet.</p>
-        ) : (
-          comments.map((comment) => (
-            <div key={comment.id} className="mb-4 border-b pb-2">
-              <p className="text-sm font-semibold">@{comment.profile.username}</p>
-              <p className="text-sm text-gray-700">{comment.content}</p>
+            <div>
+              <p className="font-bold">{video.profiles?.username}</p>
+              <p className="text-sm text-gray-500">Lihat Channel</p>
             </div>
-          ))
-        )}
+          </Link>
+        </div>
+
+        <p className="text-sm text-gray-500 mt-2">{video.description}</p>
+
+        <div className="flex gap-4 mt-3">
+          <button className="bg-green-500 text-white px-3 py-1 rounded">
+            👍 {video.likes}
+          </button>
+          <button className="bg-red-500 text-white px-3 py-1 rounded">
+            👎 {video.dislikes}
+          </button>
+        </div>
+
+        {/* ✅ KOMENTAR */}
+        <hr className="my-5" />
+        <h2 className="text-xl font-bold mb-3">Komentar</h2>
+        <div className="space-y-3">
+          {comments.map((c) => (
+            <div key={c.id} className="flex items-start gap-3">
+              <Image
+                src={
+                  c.profiles.avatar_url
+                    ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${c.profiles.avatar_url}`
+                    : `https://ui-avatars.com/api/?name=${c.profiles.username}`
+                }
+                alt={c.profiles.username}
+                width={40}
+                height={40}
+                className="rounded-full"
+                unoptimized
+              />
+              <div className="bg-gray-100 p-2 rounded w-full">
+                <p className="text-sm font-semibold">{c.profiles.username}</p>
+                <p className="text-sm">{c.content}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ✅ Rekomendasi */}
+      <div className="space-y-4">
+        <h2 className="text-lg font-bold mb-2">Rekomendasi</h2>
+        {recommendations.map((v) => (
+          <Link
+            key={v.id}
+            href={`/watch/${v.id}`}
+            className="flex gap-3 hover:bg-gray-100 p-2 rounded"
+          >
+            <Image
+              src={
+                v.thumbnail_url
+                  ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/thumbnails/${v.thumbnail_url}`
+                  : "/default-thumbnail.png"
+              }
+              alt={v.title}
+              width={120}
+              height={70}
+              className="rounded"
+            />
+            <div>
+              <p className="text-sm font-semibold line-clamp-2">{v.title}</p>
+              <p className="text-xs text-gray-500">{v.likes} Likes</p>
+            </div>
+          </Link>
+        ))}
       </div>
     </div>
   );
