@@ -30,7 +30,7 @@ export default function VideoList({ videos }: { videos: Video[] }) {
           <img
             src={video.thumbnail_url}
             alt={video.title}
-            className="w-full h-40 object-cover"
+            className="w-full aspect-video object-cover"
           />
           <div className="p-2">
             <h2 className="font-semibold text-sm line-clamp-2">{video.title}</h2>
