@@ -1,9 +1,8 @@
 "use client";
 
-import Navbar from "@/app/components/Navbar";
-import VideoList from "@/app/components/VideoList";
 import { useEffect, useState } from "react";
-import { createClient } from "@/supabase/client";
+import { createClient } from "@/supabase/client"; // pastikan sudah bener
+import VideoList from "@/app/components/VideoList";
 
 interface Video {
   id: string;
@@ -22,30 +21,42 @@ export default function Page() {
   useEffect(() => {
     const fetchVideos = async () => {
       const supabase = createClient();
+
       const { data, error } = await supabase
         .from("videos")
-        .select("id, title, thumbnail_url, user_id, profile(username)");
+        .select(`
+          id,
+          title,
+          thumbnail_url,
+          user_id,
+          profile:profiles(username)
+        `);
 
       if (!error && data) {
-        setVideos(data as Video[]);
+        // ✅ Convert array profile[] -> object profile
+        const formattedData: Video[] = data.map((video: any) => ({
+          id: video.id,
+          title: video.title,
+          thumbnail_url: video.thumbnail_url,
+          user_id: video.user_id,
+          profile: {
+            username: video.profile?.[0]?.username || "Unknown",
+          },
+        }));
+
+        setVideos(formattedData);
       }
+
       setLoading(false);
     };
 
     fetchVideos();
   }, []);
 
-  if (loading) {
-    return (
-      <main className="bg-gray-100 min-h-screen flex items-center justify-center">
-        <p className="text-gray-600">Loading videos...</p>
-      </main>
-    );
-  }
+  if (loading) return <p className="text-center mt-10">Loading Video...</p>;
 
   return (
     <main className="bg-gray-100 min-h-screen">
-      <Navbar />
       <div className="container mx-auto px-4 py-6">
         <VideoList videos={videos} />
       </div>
