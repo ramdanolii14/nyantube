@@ -27,13 +27,32 @@ export default function VideoList({ videos }: { videos: Video[] }) {
           href={`/watch/${video.id}`}
           className="block border rounded-lg overflow-hidden shadow hover:shadow-lg transition cursor-pointer"
         >
-          <img
-            src={video.thumbnail_url}
-            alt={video.title}
-            className="w-full aspect-video object-cover"
-          />
+          {video.thumbnail_url ? (
+            // ✅ Pakai thumbnail jika ada
+            <img
+              src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/thumbnails/${video.thumbnail_url}`}
+              alt={video.title}
+              className="w-full aspect-video object-cover"
+            />
+          ) : (
+            // ✅ Kalau nggak ada thumbnail → pakai detik pertama video
+            <video
+              src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/videos/${video.video_url}#t=0.1`}
+              className="w-full aspect-video object-cover"
+              muted
+              playsInline
+              onLoadedMetadata={(e) => {
+                const vid = e.currentTarget;
+                vid.currentTime = 0.1; // biar nggak hitam
+                vid.pause(); // langsung pause di frame pertama
+              }}
+            />
+          )}
+
           <div className="p-2">
-            <h2 className="font-semibold text-sm line-clamp-2">{video.title}</h2>
+            <h2 className="font-semibold text-sm line-clamp-2">
+              {video.title}
+            </h2>
             <p className="text-xs text-gray-500">{video.views} views</p>
           </div>
         </Link>
