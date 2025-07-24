@@ -40,7 +40,7 @@ export default function VideoList({ videos }: VideoListProps) {
             <h3 className="text-sm font-semibold text-gray-900 line-clamp-2 group-hover:text-red-600 transition">
               {video.title}
             </h3>
-            <p className="text-xs text-gray-600 mt-1">@{video.profiles.username}</p>
+            <p className="text-xs text-gray-600 mt-1">@{video.profile.username}</p>
           </div>
         </Link>
       ))}
