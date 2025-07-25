@@ -23,6 +23,10 @@ export default function TermsPage() {
       <p className="text-sm text-gray-700">
         Layanan ini mengikuti hukum yang berlaku di negara tempat layanan ini dioperasikan.
       </p>
+      <h2 className="text-lg font-semibold mt-4">5. Penggunaan nama aneh.</h2>
+      <p className="text-sm text-gray-700">
+        Kami melarang penggunaan nama-nama aneh seperti penggunaan kata-kata kasar, jorok, tidak sesuai dengan norma sosial. Akan langsung terkena permanent banned dari kami.
+      </p>
       <p className="text-xs text-gray-500 mt-6">Terakhir diperbarui: {new Date().toLocaleDateString()}</p>
     </div>
   );
