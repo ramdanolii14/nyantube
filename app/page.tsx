@@ -11,11 +11,12 @@ export default function Page() {
     const fetchVideos = async () => {
       const { data, error } = await supabase
         .from("videos")
-        .select(
+        .select(`
           id, user_id, title, description, video_url, thumbnail_url, views, created_at, is_public, likes, dislikes,
-           profiles(username, channel_name, avatar_url)
-        )
+          profiles(username, channel_name, avatar_url)
+        `)
         .eq("is_public", true)
+        // 🔥 Algoritma tetap (views + likes - dislikes)
         .order("created_at", { ascending: false });
 
       if (error) {
@@ -23,7 +24,6 @@ export default function Page() {
         return;
       }
 
-      // ✅ Langsung masukkan profiles ke state
       const formatted = (data || []).map((v: any) => ({
         id: v.id,
         user_id: v.user_id,
@@ -36,17 +36,24 @@ export default function Page() {
         is_public: v.is_public,
         likes: v.likes,
         dislikes: v.dislikes,
-        profiles: v.profiles, // ⬅️ penting!
+        profiles: v.profiles,
       }));
 
-      setVideos(formatted as Video[]);
+      // 🔥 Urutkan berdasarkan algoritma (bukan cuma created_at)
+      const sorted = formatted.sort(
+        (a, b) =>
+          b.views + (b.likes - b.dislikes) * 2 -
+          (a.views + (a.likes - a.dislikes) * 2)
+      );
+
+      setVideos(sorted as Video[]);
     };
 
     fetchVideos();
   }, []);
 
   return (
-    <div className="p-4">
+    <div className="p-4 max-w-6xl mx-auto">
       <h1 className="text-2xl font-bold mb-4">Nyantube</h1>
       <VideoList videos={videos} />
     </div>
