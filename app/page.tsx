@@ -1,77 +1,54 @@
 "use client";
 
-import Link from "next/link";
+import { useEffect, useState } from "react";
+import { supabase } from "@/supabase/client";
+import VideoList, { Video } from "@/app/components/VideoList";
 
-export interface Video {
-  id: string;
-  user_id: string;
-  title: string;
-  description: string;
-  video_url: string;
-  thumbnail_url: string;
-  views: number;
-  created_at: string;
-  is_public: boolean;
-  likes: number;
-  dislikes: number;
-  profiles?: {
-    username: string;
-    channel_name: string | null;
-    avatar_url: string | null;
-  };
-}
+export default function Page() {
+  const [videos, setVideos] = useState<Video[]>([]);
 
-export default function VideoList({ videos }: { videos: Video[] }) {
-  if (!videos.length)
-    return <p className="text-center mt-10">Antara emang sunyi atau database error T-T</p>;
+  useEffect(() => {
+    const fetchVideos = async () => {
+      const { data, error } = await supabase
+        .from("videos")
+        .select(
+          `id, user_id, title, description, video_url, thumbnail_url, views, created_at, is_public, likes, dislikes,
+           profiles(username, channel_name, avatar_url)`
+        )
+        .eq("is_public", true)
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("FETCH ERROR:", error);
+        return;
+      }
+
+      // ✅ Langsung masukkan profiles ke state
+      const formatted = (data || []).map((v: any) => ({
+        id: v.id,
+        user_id: v.user_id,
+        title: v.title,
+        description: v.description,
+        video_url: v.video_url, // biar VideoList yang handle public URL
+        thumbnail_url: v.thumbnail_url,
+        views: v.views,
+        created_at: v.created_at,
+        is_public: v.is_public,
+        likes: v.likes,
+        dislikes: v.dislikes,
+        profiles: v.profiles, // ⬅️ penting!
+      }));
+
+      setVideos(formatted as Video[]);
+    };
+
+    fetchVideos();
+  }, []);
 
   return (
-    <div className="px-6 md:px-12 lg:px-20">
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
-        {videos.map((video) => {
-          const channelName =
-            video.profiles?.channel_name ||
-            video.profiles?.username ||
-            "Unknown";
-
-          const avatarSrc = video.profiles?.avatar_url
-            ? video.profiles.avatar_url
-            : `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                channelName
-              )}&background=random`;
-
-          return (
-            <Link
-              key={video.id}
-              href={`/watch/${video.id}`}
-              className="block rounded-lg overflow-hidden hover:shadow-lg transition bg-white"
-            >
-              {/* ✅ Thumbnail */}
-              <img
-                src={video.thumbnail_url}
-                alt={video.title}
-                className="w-full aspect-video object-cover"
-              />
-
-              {/* ✅ Info Video */}
-              <div className="flex p-2">
-                <img
-                  src={avatarSrc}
-                  alt={channelName}
-                  className="w-8 h-8 rounded-full mr-2"
-                />
-                <div className="flex-1">
-                  <h2 className="font-semibold text-sm line-clamp-2 leading-tight">
-                    {video.title}
-                  </h2>
-                  <p className="text-xs text-gray-600">{channelName}</p>
-                  <p className="text-xs text-gray-500">{video.views} views</p>
-                </div>
-              </div>
-            </Link>
-          );
-        })}
-      </div>
+    <div className="p-4">
+      <h1 className="text-2xl font-bold mb-4">Nyantube</h1>
+      <VideoList videos={videos} />
     </div>
   );
 }
