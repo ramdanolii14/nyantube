@@ -109,13 +109,13 @@ export default function WatchPage() {
         );
       }
 
-      // --- Ambil Video Rekomendasi ---
+      // --- Ambil Video Rekomendasi (LIMIT 5) ---
       const { data: recommendedData } = await supabase
         .from("videos")
         .select("*, profiles(username, avatar_url)")
         .neq("id", id)
         .order("created_at", { ascending: false })
-        .limit(10);
+        .limit(5);
 
       if (recommendedData) {
         setRecommended(
@@ -330,16 +330,16 @@ export default function WatchPage() {
         </div>
       </div>
 
-      {/* ✅ Kolom Kanan: Rekomendasi (Landscape & Info Uploader) */}
+      {/* ✅ Kolom Kanan: Rekomendasi (Kecil & Limit 5) */}
       <div className="space-y-4">
         <h2 className="text-lg font-bold mb-3">Video Rekomendasi</h2>
         {recommended.map((v) => (
           <Link
             key={v.id}
             href={`/watch/${v.id}`}
-            className="block hover:bg-gray-100 rounded overflow-hidden"
+            className="flex gap-3 hover:bg-gray-100 rounded p-2"
           >
-            <div className="relative w-full" style={{ paddingTop: "56.25%" }}>
+            <div className="relative w-40 h-24 flex-shrink-0">
               <Image
                 src={
                   v.thumbnail_url
@@ -348,11 +348,11 @@ export default function WatchPage() {
                 }
                 alt={v.title}
                 fill
-                className="object-cover"
+                className="object-cover rounded"
                 unoptimized
               />
             </div>
-            <div className="p-2">
+            <div className="flex-1">
               <p className="text-sm font-semibold line-clamp-2">{v.title}</p>
               <div className="flex items-center gap-2 mt-1">
                 <Image
@@ -362,12 +362,14 @@ export default function WatchPage() {
                       : `https://ui-avatars.com/api/?name=${v.profiles?.username}`
                   }
                   alt={v.profiles?.username || "Unknown"}
-                  width={20}
-                  height={20}
+                  width={18}
+                  height={18}
                   className="rounded-full"
                   unoptimized
                 />
-                <p className="text-xs text-gray-500">{v.profiles?.username}</p>
+                <p className="text-xs text-gray-500 truncate">
+                  {v.profiles?.username}
+                </p>
               </div>
             </div>
           </Link>
