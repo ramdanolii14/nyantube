@@ -11,7 +11,6 @@ export interface Video {
   thumbnail_url: string;
   views: number;
   created_at: string;
-  created_at: string;
   is_public: boolean;
   likes: number;
   dislikes: number;
