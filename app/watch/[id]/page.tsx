@@ -165,23 +165,15 @@ export default function WatchPage() {
     }
   };
 
-  // ✅ Hapus Komentar (oleh uploader video ATAU pemilik komentar)
+  // ✅ Hapus Komentar
   const handleDeleteComment = async (commentId: string, commentUserId: string) => {
     if (!userId) return;
-
-    const isUploader = video?.user_id === userId;
-    const isCommentOwner = commentUserId === userId;
-
-    if (!isUploader && !isCommentOwner) {
-      alert("Kamu tidak punya izin menghapus komentar ini.");
+    if (userId !== commentUserId && userId !== video?.user_id) {
+      alert("Kamu tidak memiliki izin untuk menghapus komentar ini.");
       return;
     }
 
-    const confirmed = confirm("Yakin ingin menghapus komentar ini?");
-    if (!confirmed) return;
-
     await supabase.from("comments").delete().eq("id", commentId);
-
     setComments((prev) => prev.filter((c) => c.id !== commentId));
   };
 
@@ -345,8 +337,7 @@ export default function WatchPage() {
                 <p className="text-sm font-semibold">{c.profiles.username}</p>
                 <p className="text-sm">{c.content}</p>
               </div>
-
-              {(userId === c.user_id || userId === video.user_id) && (
+              {userId && (userId === c.user_id || userId === video.user_id) && (
                 <button
                   onClick={() => handleDeleteComment(c.id, c.user_id)}
                   className="absolute top-1 right-1 text-xs text-red-600 hover:underline"
