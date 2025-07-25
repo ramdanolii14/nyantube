@@ -12,7 +12,8 @@ export default function Page() {
       const { data, error } = await supabase
         .from("videos")
         .select(
-          "id, user_id, title, description, video_url, thumbnail_url, views, created_at, is_public, likes, dislikes"
+          `id, user_id, title, description, video_url, thumbnail_url, views, created_at, is_public, likes, dislikes,
+           profiles(username, channel_name, avatar_url)`
         )
         .eq("is_public", true)
         .order("created_at", { ascending: false });
@@ -22,22 +23,20 @@ export default function Page() {
         return;
       }
 
+      // ✅ Langsung masukkan profiles ke state
       const formatted = (data || []).map((v: any) => ({
         id: v.id,
         user_id: v.user_id,
         title: v.title,
         description: v.description,
-        video_url: supabase.storage
-          .from("videos")
-          .getPublicUrl(v.video_url).data.publicUrl,
-        thumbnail_url: supabase.storage
-          .from("thumbnails")
-          .getPublicUrl(v.thumbnail_url).data.publicUrl,
+        video_url: v.video_url, // biar VideoList yang handle public URL
+        thumbnail_url: v.thumbnail_url,
         views: v.views,
         created_at: v.created_at,
         is_public: v.is_public,
         likes: v.likes,
         dislikes: v.dislikes,
+        profiles: v.profiles, // ⬅️ penting!
       }));
 
       setVideos(formatted as Video[]);
