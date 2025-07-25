@@ -41,10 +41,11 @@ export default function WatchPage() {
   const [recommended, setRecommended] = useState<Video[]>([]);
   const [newComment, setNewComment] = useState("");
   const [replyContent, setReplyContent] = useState<{ [key: string]: string }>({});
+  const [editContent, setEditContent] = useState<{ [key: string]: string }>({});
+  const [isEditing, setIsEditing] = useState<{ [key: string]: boolean }>({});
   const [userId, setUserId] = useState<string | null>(null);
   const [userLikeType, setUserLikeType] = useState<"like" | "dislike" | null>(null);
 
-  // ✅ State untuk toggle view replies dan pagination reply
   const [visibleReplies, setVisibleReplies] = useState<{ [key: string]: boolean }>({});
   const [replyLimit, setReplyLimit] = useState<{ [key: string]: number }>({});
 
@@ -58,92 +59,52 @@ export default function WatchPage() {
 
   useEffect(() => {
     if (!id) return;
-
-    const fetchVideoAndComments = async () => {
-      const { data: videoData } = await supabase
-        .from("videos")
-        .select("*, profiles(username, avatar_url)")
-        .eq("id", id)
-        .single();
-
-      if (videoData) {
-        setVideo({
-          ...videoData,
-          profiles: videoData.profiles || { username: "Unknown", avatar_url: null },
-        });
-
-        await supabase.rpc("increment_views", { video_id_input: id });
-
-        if (userId) {
-          const { data: likeData } = await supabase
-            .from("video_likes")
-            .select("type")
-            .eq("video_id", id)
-            .eq("user_id", userId)
-            .maybeSingle();
-          if (likeData) setUserLikeType(likeData.type);
-        }
-      }
-
-      const { data: commentsData } = await supabase
-        .from("comments")
-        .select("id, user_id, content, created_at, parent_id, profiles(username, avatar_url)")
-        .eq("video_id", id)
-        .order("created_at", { ascending: false });
-
-      if (commentsData) {
-        setComments(
-          commentsData.map((c: any) => ({
-            ...c,
-            profiles: Array.isArray(c.profiles) ? c.profiles[0] : c.profiles,
-          })) as Comment[]
-        );
-      }
-
-      const { data: recommendedData } = await supabase
-        .from("videos")
-        .select("*, profiles(username, avatar_url)")
-        .neq("id", id)
-        .order("created_at", { ascending: false })
-        .limit(5);
-
-      if (recommendedData) {
-        setRecommended(
-          recommendedData.map((v: any) => ({
-            ...v,
-            profiles: v.profiles || { username: "Unknown", avatar_url: null },
-          })) as Video[]
-        );
-      }
-    };
-
     fetchVideoAndComments();
   }, [id, userId]);
 
-  const handleAddComment = async () => {
-    if (!newComment.trim() || !userId) return;
+  const fetchVideoAndComments = async () => {
+    const { data: videoData } = await supabase
+      .from("videos")
+      .select("*, profiles(username, avatar_url)")
+      .eq("id", id)
+      .single();
 
-    await supabase.from("comments").insert([
-      { video_id: id, user_id: userId, content: newComment.trim(), parent_id: null },
-    ]);
-    setNewComment("");
+    if (videoData) {
+      setVideo({
+        ...videoData,
+        profiles: videoData.profiles || { username: "Unknown", avatar_url: null },
+      });
+
+      await supabase.rpc("increment_views", { video_id_input: id });
+
+      if (userId) {
+        const { data: likeData } = await supabase
+          .from("video_likes")
+          .select("type")
+          .eq("video_id", id)
+          .eq("user_id", userId)
+          .maybeSingle();
+        if (likeData) setUserLikeType(likeData.type);
+      }
+    }
+
     refreshComments();
-  };
 
-  const handleReplyComment = async (parentId: string) => {
-    if (!replyContent[parentId]?.trim() || !userId) return;
+    const { data: recommendedData } = await supabase
+      .from("videos")
+      .select("*, profiles(username, avatar_url)")
+      .neq("id", id)
+      .order("created_at", { ascending: false })
+      .limit(5);
 
-    await supabase.from("comments").insert([
-      {
-        video_id: id,
-        user_id: userId,
-        content: replyContent[parentId].trim(),
-        parent_id: parentId,
-      },
-    ]);
-
-    setReplyContent((prev) => ({ ...prev, [parentId]: "" }));
-    refreshComments();
+    if (recommendedData) {
+      setRecommended(
+        recommendedData.map((v: any) => ({
+          ...v,
+          profiles: v.profiles || { username: "Unknown", avatar_url: null },
+        })) as Video[]
+      );
+    }
   };
 
   const refreshComments = async () => {
@@ -161,6 +122,46 @@ export default function WatchPage() {
         })) as Comment[]
       );
     }
+  };
+
+  const handleAddComment = async () => {
+    if (!newComment.trim() || !userId) return;
+    await supabase.from("comments").insert([
+      { video_id: id, user_id: userId, content: newComment.trim(), parent_id: null },
+    ]);
+    setNewComment("");
+    refreshComments();
+  };
+
+  const handleReplyComment = async (parentId: string) => {
+    if (!replyContent[parentId]?.trim() || !userId) return;
+    await supabase.from("comments").insert([
+      {
+        video_id: id,
+        user_id: userId,
+        content: replyContent[parentId].trim(),
+        parent_id: parentId,
+      },
+    ]);
+    setReplyContent((prev) => ({ ...prev, [parentId]: "" }));
+    refreshComments();
+  };
+
+  const handleEditComment = async (commentId: string) => {
+    if (!editContent[commentId]?.trim()) return;
+    await supabase
+      .from("comments")
+      .update({ content: editContent[commentId].trim() })
+      .eq("id", commentId)
+      .eq("user_id", userId);
+    setIsEditing((prev) => ({ ...prev, [commentId]: false }));
+    refreshComments();
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    if (!confirm("Yakin ingin menghapus komentar ini?")) return;
+    await supabase.from("comments").delete().eq("id", commentId);
+    refreshComments();
   };
 
   const handleLikeDislike = async (type: "like" | "dislike") => {
@@ -217,6 +218,7 @@ export default function WatchPage() {
 
   return (
     <div className="max-w-6xl mx-auto pt-24 px-4 grid grid-cols-1 md:grid-cols-3 gap-6 bg-gray-50">
+      {/* ✅ Kolom Video Utama */}
       <div className="md:col-span-2">
         <div
           className="relative w-full rounded-md overflow-hidden bg-black"
@@ -281,6 +283,7 @@ export default function WatchPage() {
 
         <hr className="my-6" />
 
+        {/* ✅ Kolom Komentar */}
         <h2 className="text-lg font-bold mb-3">Komentar</h2>
         {userId && (
           <div className="mb-4">
@@ -299,14 +302,13 @@ export default function WatchPage() {
           </div>
         )}
 
-        {/* ✅ Komentar dan Reply */}
         <div className="space-y-4">
           {comments
             .filter((c) => !c.parent_id)
             .map((c) => {
               const replies = comments.filter((r) => r.parent_id === c.id);
               const isVisible = visibleReplies[c.id];
-              const limit = replyLimit[c.id] || 2; // default 2 reply dulu
+              const limit = replyLimit[c.id] || 2;
 
               return (
                 <div key={c.id} className="border-b pb-3">
@@ -325,20 +327,73 @@ export default function WatchPage() {
                     />
                     <div className="flex-1">
                       <p className="text-sm font-semibold">{c.profiles.username}</p>
-                      <p className="text-sm">{c.content}</p>
-                      {userId && (
-                        <button
-                          onClick={() =>
-                            setReplyContent((prev) => ({
-                              ...prev,
-                              [c.id]: prev[c.id] || "",
-                            }))
-                          }
-                          className="text-xs text-blue-600 mt-1"
-                        >
-                          Balas
-                        </button>
+
+                      {isEditing[c.id] ? (
+                        <>
+                          <textarea
+                            value={editContent[c.id]}
+                            onChange={(e) =>
+                              setEditContent((prev) => ({
+                                ...prev,
+                                [c.id]: e.target.value,
+                              }))
+                            }
+                            className="border p-1 rounded w-full text-sm"
+                          />
+                          <div className="flex gap-2 mt-1">
+                            <button
+                              onClick={() => handleEditComment(c.id)}
+                              className="text-xs bg-blue-600 text-white px-2 py-1 rounded"
+                            >
+                              Simpan
+                            </button>
+                            <button
+                              onClick={() =>
+                                setIsEditing((prev) => ({ ...prev, [c.id]: false }))
+                              }
+                              className="text-xs text-gray-500"
+                            >
+                              Batal
+                            </button>
+                          </div>
+                        </>
+                      ) : (
+                        <p className="text-sm">{c.content}</p>
                       )}
+
+                      <div className="flex items-center gap-2 mt-1">
+                        {userId && (
+                          <button
+                            onClick={() =>
+                              setReplyContent((prev) => ({ ...prev, [c.id]: prev[c.id] || "" }))
+                            }
+                            className="text-xs text-blue-600"
+                          >
+                            Balas
+                          </button>
+                        )}
+                        {userId === c.user_id && (
+                          <>
+                            <button
+                              onClick={() => {
+                                setIsEditing((prev) => ({ ...prev, [c.id]: true }));
+                                setEditContent((prev) => ({ ...prev, [c.id]: c.content }));
+                              }}
+                              className="text-xs text-green-600"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => handleDeleteComment(c.id)}
+                              className="text-xs text-red-600"
+                            >
+                              Hapus
+                            </button>
+                          </>
+                        )}
+                      </div>
+
+                      {/* ✅ Balas Komentar */}
                       {replyContent[c.id] !== undefined && (
                         <div className="mt-2">
                           <textarea
@@ -388,11 +443,66 @@ export default function WatchPage() {
                                     className="rounded-full"
                                     unoptimized
                                   />
-                                  <div className="bg-gray-100 p-2 rounded">
+                                  <div className="flex-1 bg-gray-100 p-2 rounded">
                                     <p className="text-xs font-semibold">
                                       {r.profiles.username}
                                     </p>
-                                    <p className="text-xs">{r.content}</p>
+
+                                    {isEditing[r.id] ? (
+                                      <>
+                                        <textarea
+                                          value={editContent[r.id]}
+                                          onChange={(e) =>
+                                            setEditContent((prev) => ({
+                                              ...prev,
+                                              [r.id]: e.target.value,
+                                            }))
+                                          }
+                                          className="border p-1 rounded w-full text-xs"
+                                        />
+                                        <div className="flex gap-2 mt-1">
+                                          <button
+                                            onClick={() => handleEditComment(r.id)}
+                                            className="text-xs bg-blue-600 text-white px-2 py-1 rounded"
+                                          >
+                                            Simpan
+                                          </button>
+                                          <button
+                                            onClick={() =>
+                                              setIsEditing((prev) => ({ ...prev, [r.id]: false }))
+                                            }
+                                            className="text-xs text-gray-500"
+                                          >
+                                            Batal
+                                          </button>
+                                        </div>
+                                      </>
+                                    ) : (
+                                      <p className="text-xs">{r.content}</p>
+                                    )}
+
+                                    {userId === r.user_id && (
+                                      <div className="flex gap-2 mt-1">
+                                        <button
+                                          onClick={() => {
+                                            setIsEditing((prev) => ({ ...prev, [r.id]: true }));
+                                            setEditContent((prev) => ({
+                                              ...prev,
+                                              [r.id]: r.content,
+                                            }));
+                                          }}
+                                          className="text-xs text-green-600"
+                                        >
+                                          Edit
+                                        </button>
+                                        <button
+                                          onClick={() => handleDeleteComment(r.id)}
+                                          className="text-xs text-red-600"
+                                        >
+                                          Hapus
+                                        </button>
+                                      </div>
+                                    )}
                                   </div>
                                 </div>
                               ))}
