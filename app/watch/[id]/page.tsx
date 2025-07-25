@@ -27,6 +27,7 @@ interface Comment {
   user_id: string;
   content: string;
   created_at: string;
+  parent_id: string | null;
   profiles: {
     username: string;
     avatar_url: string | null;
@@ -39,28 +40,26 @@ export default function WatchPage() {
   const [comments, setComments] = useState<Comment[]>([]);
   const [recommended, setRecommended] = useState<Video[]>([]);
   const [newComment, setNewComment] = useState("");
+  const [replyContent, setReplyContent] = useState<{ [key: string]: string }>({});
   const [userId, setUserId] = useState<string | null>(null);
-  const [userLikeType, setUserLikeType] = useState<"like" | "dislike" | null>(
-    null
-  );
+  const [userLikeType, setUserLikeType] = useState<"like" | "dislike" | null>(null);
 
-  // ✅ Ambil user login
+  // ✅ State untuk toggle view replies dan pagination reply
+  const [visibleReplies, setVisibleReplies] = useState<{ [key: string]: boolean }>({});
+  const [replyLimit, setReplyLimit] = useState<{ [key: string]: number }>({});
+
   useEffect(() => {
     const fetchUser = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const { data: { user } } = await supabase.auth.getUser();
       if (user) setUserId(user.id);
     };
     fetchUser();
   }, []);
 
-  // ✅ Ambil video, komentar, rekomendasi
   useEffect(() => {
     if (!id) return;
 
     const fetchVideoAndComments = async () => {
-      // --- Ambil Video Utama ---
       const { data: videoData } = await supabase
         .from("videos")
         .select("*, profiles(username, avatar_url)")
@@ -70,16 +69,11 @@ export default function WatchPage() {
       if (videoData) {
         setVideo({
           ...videoData,
-          profiles: videoData.profiles || {
-            username: "Unknown",
-            avatar_url: null,
-          },
+          profiles: videoData.profiles || { username: "Unknown", avatar_url: null },
         });
 
-        // ✅ Update views (+1 setiap load)
         await supabase.rpc("increment_views", { video_id_input: id });
 
-        // ✅ Ambil status like user
         if (userId) {
           const { data: likeData } = await supabase
             .from("video_likes")
@@ -91,12 +85,9 @@ export default function WatchPage() {
         }
       }
 
-      // --- Ambil Komentar ---
       const { data: commentsData } = await supabase
         .from("comments")
-        .select(
-          "id, user_id, content, created_at, profiles(username, avatar_url)"
-        )
+        .select("id, user_id, content, created_at, parent_id, profiles(username, avatar_url)")
         .eq("video_id", id)
         .order("created_at", { ascending: false });
 
@@ -109,7 +100,6 @@ export default function WatchPage() {
         );
       }
 
-      // --- Ambil Video Rekomendasi (LIMIT 5) ---
       const { data: recommendedData } = await supabase
         .from("videos")
         .select("*, profiles(username, avatar_url)")
@@ -121,10 +111,7 @@ export default function WatchPage() {
         setRecommended(
           recommendedData.map((v: any) => ({
             ...v,
-            profiles: v.profiles || {
-              username: "Unknown",
-              avatar_url: null,
-            },
+            profiles: v.profiles || { username: "Unknown", avatar_url: null },
           })) as Video[]
         );
       }
@@ -133,25 +120,36 @@ export default function WatchPage() {
     fetchVideoAndComments();
   }, [id, userId]);
 
-  // ✅ Tambah Komentar
   const handleAddComment = async () => {
     if (!newComment.trim() || !userId) return;
+
+    await supabase.from("comments").insert([
+      { video_id: id, user_id: userId, content: newComment.trim(), parent_id: null },
+    ]);
+    setNewComment("");
+    refreshComments();
+  };
+
+  const handleReplyComment = async (parentId: string) => {
+    if (!replyContent[parentId]?.trim() || !userId) return;
 
     await supabase.from("comments").insert([
       {
         video_id: id,
         user_id: userId,
-        content: newComment.trim(),
+        content: replyContent[parentId].trim(),
+        parent_id: parentId,
       },
     ]);
 
-    setNewComment("");
+    setReplyContent((prev) => ({ ...prev, [parentId]: "" }));
+    refreshComments();
+  };
 
+  const refreshComments = async () => {
     const { data } = await supabase
       .from("comments")
-      .select(
-        "id, user_id, content, created_at, profiles(username, avatar_url)"
-      )
+      .select("id, user_id, content, created_at, parent_id, profiles(username, avatar_url)")
       .eq("video_id", id)
       .order("created_at", { ascending: false });
 
@@ -165,19 +163,6 @@ export default function WatchPage() {
     }
   };
 
-  // ✅ Hapus Komentar
-  const handleDeleteComment = async (commentId: string, commentUserId: string) => {
-    if (!userId) return;
-    if (userId !== commentUserId && userId !== video?.user_id) {
-      alert("Kamu tidak memiliki izin untuk menghapus komentar ini.");
-      return;
-    }
-
-    await supabase.from("comments").delete().eq("id", commentId);
-    setComments((prev) => prev.filter((c) => c.id !== commentId));
-  };
-
-  // ✅ Like & Dislike anti-spam
   const handleLikeDislike = async (type: "like" | "dislike") => {
     if (!userId) {
       alert("Kamu harus login untuk memberikan like atau dislike.");
@@ -200,10 +185,7 @@ export default function WatchPage() {
       await supabase.from("video_likes").delete().eq("id", existing.id);
       setUserLikeType(null);
     } else {
-      await supabase
-        .from("video_likes")
-        .update({ type: type })
-        .eq("id", existing.id);
+      await supabase.from("video_likes").update({ type: type }).eq("id", existing.id);
       setUserLikeType(type);
     }
 
@@ -235,7 +217,6 @@ export default function WatchPage() {
 
   return (
     <div className="max-w-6xl mx-auto pt-24 px-4 grid grid-cols-1 md:grid-cols-3 gap-6 bg-gray-50">
-      {/* ✅ Kolom Kiri */}
       <div className="md:col-span-2">
         <div
           className="relative w-full rounded-md overflow-hidden bg-black"
@@ -318,39 +299,130 @@ export default function WatchPage() {
           </div>
         )}
 
-        <div className="space-y-3">
-          {comments.map((c) => (
-            <div key={c.id} className="flex items-start gap-3 relative">
-              <Image
-                src={
-                  c.profiles.avatar_url
-                    ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${c.profiles.avatar_url}`
-                    : `https://ui-avatars.com/api/?name=${c.profiles.username}`
-                }
-                alt={c.profiles.username}
-                width={40}
-                height={40}
-                className="rounded-full"
-                unoptimized
-              />
-              <div className="bg-gray-100 p-2 rounded w-full">
-                <p className="text-sm font-semibold">{c.profiles.username}</p>
-                <p className="text-sm">{c.content}</p>
-              </div>
-              {userId && (userId === c.user_id || userId === video.user_id) && (
-                <button
-                  onClick={() => handleDeleteComment(c.id, c.user_id)}
-                  className="absolute top-1 right-1 text-xs text-red-600 hover:underline"
-                >
-                  Hapus
-                </button>
-              )}
-            </div>
-          ))}
+        {/* ✅ Komentar dan Reply */}
+        <div className="space-y-4">
+          {comments
+            .filter((c) => !c.parent_id)
+            .map((c) => {
+              const replies = comments.filter((r) => r.parent_id === c.id);
+              const isVisible = visibleReplies[c.id];
+              const limit = replyLimit[c.id] || 2; // default 2 reply dulu
+
+              return (
+                <div key={c.id} className="border-b pb-3">
+                  <div className="flex items-start gap-3">
+                    <Image
+                      src={
+                        c.profiles.avatar_url
+                          ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${c.profiles.avatar_url}`
+                          : `https://ui-avatars.com/api/?name=${c.profiles.username}`
+                      }
+                      alt={c.profiles.username}
+                      width={40}
+                      height={40}
+                      className="rounded-full"
+                      unoptimized
+                    />
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold">{c.profiles.username}</p>
+                      <p className="text-sm">{c.content}</p>
+                      {userId && (
+                        <button
+                          onClick={() =>
+                            setReplyContent((prev) => ({
+                              ...prev,
+                              [c.id]: prev[c.id] || "",
+                            }))
+                          }
+                          className="text-xs text-blue-600 mt-1"
+                        >
+                          Balas
+                        </button>
+                      )}
+                      {replyContent[c.id] !== undefined && (
+                        <div className="mt-2">
+                          <textarea
+                            value={replyContent[c.id]}
+                            onChange={(e) =>
+                              setReplyContent((prev) => ({
+                                ...prev,
+                                [c.id]: e.target.value,
+                              }))
+                            }
+                            placeholder="Tulis balasan..."
+                            className="border p-2 rounded w-full mb-1 text-sm"
+                          />
+                          <button
+                            onClick={() => handleReplyComment(c.id)}
+                            className="bg-blue-600 text-white px-3 py-1 text-xs rounded"
+                          >
+                            Kirim Balasan
+                          </button>
+                        </div>
+                      )}
+
+                      {replies.length > 0 && (
+                        <>
+                          {!isVisible ? (
+                            <button
+                              onClick={() =>
+                                setVisibleReplies((prev) => ({ ...prev, [c.id]: true }))
+                              }
+                              className="text-xs text-gray-500 mt-1"
+                            >
+                              Lihat {replies.length} balasan
+                            </button>
+                          ) : (
+                            <div className="mt-2 space-y-2">
+                              {replies.slice(0, limit).map((r) => (
+                                <div key={r.id} className="flex items-start gap-2 ml-10">
+                                  <Image
+                                    src={
+                                      r.profiles.avatar_url
+                                        ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${r.profiles.avatar_url}`
+                                        : `https://ui-avatars.com/api/?name=${r.profiles.username}`
+                                    }
+                                    alt={r.profiles.username}
+                                    width={30}
+                                    height={30}
+                                    className="rounded-full"
+                                    unoptimized
+                                  />
+                                  <div className="bg-gray-100 p-2 rounded">
+                                    <p className="text-xs font-semibold">
+                                      {r.profiles.username}
+                                    </p>
+                                    <p className="text-xs">{r.content}</p>
+                                  </div>
+                                </div>
+                              ))}
+
+                              {limit < replies.length && (
+                                <button
+                                  onClick={() =>
+                                    setReplyLimit((prev) => ({
+                                      ...prev,
+                                      [c.id]: limit + 5,
+                                    }))
+                                  }
+                                  className="text-xs text-gray-500 ml-10"
+                                >
+                                  Tampilkan 5 balasan lagi
+                                </button>
+                              )}
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
         </div>
       </div>
 
-      {/* ✅ Kolom Kanan: Rekomendasi */}
+      {/* ✅ Kolom Rekomendasi */}
       <div className="space-y-4">
         <h2 className="text-lg font-bold mb-3">Video Rekomendasi</h2>
         {recommended.map((v) => (
