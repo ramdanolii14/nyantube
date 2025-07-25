@@ -15,31 +15,34 @@ export default function Page() {
           `id, user_id, title, description, video_url, thumbnail_url, views, created_at, is_public, likes, dislikes,
            profiles(username, channel_name, avatar_url)`
         )
-        .eq("is_public", true)
-        .order("created_at", { ascending: false });
+        .eq("is_public", true);
 
       if (error) {
         console.error("FETCH ERROR:", error);
         return;
       }
 
-      // ✅ Langsung masukkan profiles ke state
       const formatted = (data || []).map((v: any) => ({
         id: v.id,
         user_id: v.user_id,
         title: v.title,
         description: v.description,
-        video_url: v.video_url, // biar VideoList yang handle public URL
+        video_url: v.video_url,
         thumbnail_url: v.thumbnail_url,
         views: v.views,
         created_at: v.created_at,
         is_public: v.is_public,
         likes: v.likes,
         dislikes: v.dislikes,
-        profiles: v.profiles, // ⬅️ penting!
+        profiles: v.profiles,
+        // ✅ Hitung skor untuk ranking
+        score: v.views * 0.5 + v.likes * 2 - v.dislikes * 1.5,
       }));
 
-      setVideos(formatted as Video[]);
+      // ✅ Urutkan berdasarkan skor tertinggi
+      const sorted = formatted.sort((a, b) => b.score - a.score);
+
+      setVideos(sorted as Video[]);
     };
 
     fetchVideos();
