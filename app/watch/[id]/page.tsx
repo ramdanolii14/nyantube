@@ -27,7 +27,7 @@ interface Comment {
   user_id: string;
   content: string;
   created_at: string;
-  parent_id: string | null;
+  parent_id?: string | null;
   profiles: {
     username: string;
     avatar_url: string | null;
@@ -45,20 +45,6 @@ export default function WatchPage() {
     null
   );
 
-  // Reply & Edit States
-  const [replyContent, setReplyContent] = useState<{ [key: string]: string }>(
-    {}
-  );
-  const [replyVisible, setReplyVisible] = useState<{ [key: string]: boolean }>(
-    {}
-  );
-  const [replyLoaded, setReplyLoaded] = useState<{ [key: string]: number }>(
-    {}
-  );
-
-  const [isEditing, setIsEditing] = useState<{ [key: string]: boolean }>({});
-  const [editContent, setEditContent] = useState<{ [key: string]: string }>({});
-
   // ✅ Ambil user login
   useEffect(() => {
     const fetchUser = async () => {
@@ -73,67 +59,41 @@ export default function WatchPage() {
   // ✅ Ambil video, komentar, rekomendasi
   useEffect(() => {
     if (!id) return;
-
-    const fetchVideoAndComments = async () => {
-      const { data: videoData } = await supabase
-        .from("videos")
-        .select("*, profiles(username, avatar_url)")
-        .eq("id", id)
-        .single();
-
-      if (videoData) {
-        setVideo({
-          ...videoData,
-          profiles: videoData.profiles || {
-            username: "Unknown",
-            avatar_url: null,
-          },
-        });
-
-        await supabase.rpc("increment_views", { video_id_input: id });
-
-        if (userId) {
-          const { data: likeData } = await supabase
-            .from("video_likes")
-            .select("type")
-            .eq("video_id", id)
-            .eq("user_id", userId)
-            .maybeSingle();
-          if (likeData) setUserLikeType(likeData.type);
-        }
-      }
-
-      await refreshComments();
-
-      const { data: recommendedData } = await supabase
-        .from("videos")
-        .select("*, profiles(username, avatar_url)")
-        .neq("id", id)
-        .order("created_at", { ascending: false })
-        .limit(5);
-
-      if (recommendedData) {
-        setRecommended(
-          recommendedData.map((v: any) => ({
-            ...v,
-            profiles: v.profiles || {
-              username: "Unknown",
-              avatar_url: null,
-            },
-          })) as Video[]
-        );
-      }
-    };
-
     fetchVideoAndComments();
   }, [id, userId]);
 
-  const refreshComments = async () => {
+  const fetchVideoAndComments = async () => {
+    const { data: videoData } = await supabase
+      .from("videos")
+      .select("*, profiles(username, avatar_url)")
+      .eq("id", id)
+      .single();
+
+    if (videoData) {
+      setVideo({
+        ...videoData,
+        profiles: videoData.profiles || {
+          username: "Unknown",
+          avatar_url: null,
+        },
+      });
+
+      await supabase.rpc("increment_views", { video_id_input: id });
+
+      if (userId) {
+        const { data: likeData } = await supabase
+          .from("video_likes")
+          .select("type")
+          .eq("video_id", id)
+          .eq("user_id", userId)
+          .maybeSingle();
+        if (likeData) setUserLikeType(likeData.type);
+      }
+    }
+
     const { data: commentsData } = await supabase
       .from("comments")
-      .select(
-        "id, user_id, content, created_at, parent_id, profiles(username, avatar_url)"
-      )
+      .select("id, user_id, content, created_at, parent_id, profiles(username, avatar_url)")
       .eq("video_id", id)
       .order("created_at", { ascending: false });
 
@@ -145,49 +105,63 @@ export default function WatchPage() {
         })) as Comment[]
       );
     }
+
+    const { data: recommendedData } = await supabase
+      .from("videos")
+      .select("*, profiles(username, avatar_url)")
+      .neq("id", id)
+      .order("created_at", { ascending: false })
+      .limit(5);
+
+    if (recommendedData) {
+      setRecommended(
+        recommendedData.map((v: any) => ({
+          ...v,
+          profiles: v.profiles || {
+            username: "Unknown",
+            avatar_url: null,
+          },
+        })) as Video[]
+      );
+    }
   };
 
   // ✅ Tambah Komentar
   const handleAddComment = async () => {
     if (!newComment.trim() || !userId) return;
-    await supabase.from("comments").insert([
-      { video_id: id, user_id: userId, content: newComment.trim() },
-    ]);
-    setNewComment("");
-    refreshComments();
-  };
 
-  // ✅ Reply Komentar
-  const handleReply = async (parentId: string) => {
-    if (!replyContent[parentId]?.trim() || !userId) return;
     await supabase.from("comments").insert([
       {
         video_id: id,
         user_id: userId,
-        content: replyContent[parentId].trim(),
-        parent_id: parentId,
+        content: newComment.trim(),
       },
     ]);
-    setReplyContent((prev) => ({ ...prev, [parentId]: "" }));
-    refreshComments();
+
+    setNewComment("");
+    fetchVideoAndComments();
   };
 
-  // ✅ Edit Komentar
-  const handleEditComment = async (commentId: string) => {
-    if (!editContent[commentId]?.trim()) return;
-    await supabase
-      .from("comments")
-      .update({ content: editContent[commentId].trim() })
-      .eq("id", commentId);
-    setIsEditing((prev) => ({ ...prev, [commentId]: false }));
-    refreshComments();
-  };
-
-  // ✅ Delete Komentar
+  // ✅ Delete Komentar (Parent + Reply)
   const handleDeleteComment = async (commentId: string) => {
     if (!confirm("Yakin ingin menghapus komentar ini?")) return;
+
+    // 🔥 Hapus reply dulu
+    await supabase.from("comments").delete().eq("parent_id", commentId);
+
+    // 🔥 Baru hapus parent
     await supabase.from("comments").delete().eq("id", commentId);
-    refreshComments();
+
+    fetchVideoAndComments();
+  };
+
+  // ✅ Delete Reply (satu-satu aja)
+  const handleDeleteReply = async (replyId: string) => {
+    if (!confirm("Yakin ingin menghapus balasan ini?")) return;
+
+    await supabase.from("comments").delete().eq("id", replyId);
+
+    fetchVideoAndComments();
   };
 
   // ✅ Like & Dislike anti-spam
@@ -241,107 +215,6 @@ export default function WatchPage() {
       prev
         ? { ...prev, likes: likeCount || 0, dislikes: dislikeCount || 0 }
         : prev
-    );
-  };
-
-  const renderReplies = (parentId: string) => {
-    const replies = comments
-      .filter((c) => c.parent_id === parentId)
-      .slice(0, replyLoaded[parentId] || 2);
-
-    const totalReplies = comments.filter((c) => c.parent_id === parentId).length;
-
-    return (
-      <div className="ml-10 mt-2 space-y-2">
-        {replies.map((r) => (
-          <div key={r.id} className="flex items-start gap-2">
-            <Image
-              src={
-                r.profiles.avatar_url
-                  ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${r.profiles.avatar_url}`
-                  : `https://ui-avatars.com/api/?name=${r.profiles.username}`
-              }
-              alt={r.profiles.username}
-              width={32}
-              height={32}
-              className="rounded-full"
-              unoptimized
-            />
-            <div className="bg-gray-100 p-2 rounded w-full">
-              <p className="text-xs font-semibold">{r.profiles.username}</p>
-              {isEditing[r.id] ? (
-                <div>
-                  <textarea
-                    value={editContent[r.id] || ""}
-                    onChange={(e) =>
-                      setEditContent((prev) => ({
-                        ...prev,
-                        [r.id]: e.target.value,
-                      }))
-                    }
-                    className="border p-1 rounded w-full text-sm"
-                  />
-                  <div className="flex gap-2 mt-1">
-                    <button
-                      onClick={() => handleEditComment(r.id)}
-                      className="text-xs text-green-600"
-                    >
-                      Simpan
-                    </button>
-                    <button
-                      onClick={() =>
-                        setIsEditing((prev) => ({
-                          ...prev,
-                          [r.id]: false,
-                        }))
-                      }
-                      className="text-xs text-gray-600"
-                    >
-                      Batal
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <p className="text-sm">{r.content}</p>
-              )}
-              {userId === r.user_id && (
-                <div className="flex gap-2 mt-1">
-                  <button
-                    onClick={() =>
-                      setIsEditing((prev) => ({
-                        ...prev,
-                        [r.id]: !prev[r.id],
-                      }))
-                    }
-                    className="text-xs text-green-600"
-                  >
-                    {isEditing[r.id] ? "Batal" : "Edit"}
-                  </button>
-                  <button
-                    onClick={() => handleDeleteComment(r.id)}
-                    className="text-xs text-red-600"
-                  >
-                    Hapus
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        ))}
-        {totalReplies > (replyLoaded[parentId] || 2) && (
-          <button
-            onClick={() =>
-              setReplyLoaded((prev) => ({
-                ...prev,
-                [parentId]: (prev[parentId] || 2) + 5,
-              }))
-            }
-            className="text-xs text-blue-600 ml-2 mt-1"
-          >
-            Lihat balasan lainnya
-          </button>
-        )}
-      </div>
     );
   };
 
@@ -414,6 +287,7 @@ export default function WatchPage() {
 
         <hr className="my-6" />
 
+        {/* ✅ Komentar */}
         <h2 className="text-lg font-bold mb-3">Komentar</h2>
         {userId && (
           <div className="mb-4">
@@ -434,135 +308,68 @@ export default function WatchPage() {
 
         <div className="space-y-3">
           {comments
-            .filter((c) => c.parent_id === null)
+            .filter((c) => !c.parent_id)
             .map((c) => (
-              <div key={c.id} className="flex items-start gap-3">
-                <Image
-                  src={
-                    c.profiles.avatar_url
-                      ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${c.profiles.avatar_url}`
-                      : `https://ui-avatars.com/api/?name=${c.profiles.username}`
-                  }
-                  alt={c.profiles.username}
-                  width={40}
-                  height={40}
-                  className="rounded-full"
-                  unoptimized
-                />
-                <div className="bg-gray-100 p-2 rounded w-full">
-                  <p className="text-sm font-semibold">{c.profiles.username}</p>
-                  {isEditing[c.id] ? (
-                    <div>
-                      <textarea
-                        value={editContent[c.id] || ""}
-                        onChange={(e) =>
-                          setEditContent((prev) => ({
-                            ...prev,
-                            [c.id]: e.target.value,
-                          }))
-                        }
-                        className="border p-1 rounded w-full text-sm"
-                      />
-                      <div className="flex gap-2 mt-1">
-                        <button
-                          onClick={() => handleEditComment(c.id)}
-                          className="text-xs text-green-600"
-                        >
-                          Simpan
-                        </button>
-                        <button
-                          onClick={() =>
-                            setIsEditing((prev) => ({
-                              ...prev,
-                              [c.id]: false,
-                            }))
-                          }
-                          className="text-xs text-gray-600"
-                        >
-                          Batal
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
+              <div key={c.id} className="bg-gray-100 p-3 rounded">
+                <div className="flex items-start gap-3">
+                  <Image
+                    src={
+                      c.profiles.avatar_url
+                        ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${c.profiles.avatar_url}`
+                        : `https://ui-avatars.com/api/?name=${c.profiles.username}`
+                    }
+                    alt={c.profiles.username}
+                    width={40}
+                    height={40}
+                    className="rounded-full"
+                    unoptimized
+                  />
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold">{c.profiles.username}</p>
                     <p className="text-sm">{c.content}</p>
-                  )}
-
-                  <div className="flex gap-2 mt-1">
-                    <button
-                      onClick={() =>
-                        setReplyVisible((prev) => ({
-                          ...prev,
-                          [c.id]: !prev[c.id],
-                        }))
-                      }
-                      className="text-xs text-blue-600"
-                    >
-                      {replyVisible[c.id] ? "Tutup" : "Balas"}
-                    </button>
-                    {userId === c.user_id && (
-                      <>
-                        <button
-                          onClick={() =>
-                            setIsEditing((prev) => ({
-                              ...prev,
-                              [c.id]: !prev[c.id],
-                            }))
-                          }
-                          className="text-xs text-green-600"
-                        >
-                          {isEditing[c.id] ? "Batal" : "Edit"}
-                        </button>
-                        <button
-                          onClick={() => handleDeleteComment(c.id)}
-                          className="text-xs text-red-600"
-                        >
-                          Hapus
-                        </button>
-                      </>
+                    {(c.user_id === userId || video.user_id === userId) && (
+                      <button
+                        onClick={() => handleDeleteComment(c.id)}
+                        className="text-xs text-red-500 mt-1 hover:underline"
+                      >
+                        Hapus
+                      </button>
                     )}
                   </div>
+                </div>
 
-                  {replyVisible[c.id] && (
-                    <div className="mt-2">
-                      <textarea
-                        value={replyContent[c.id] || ""}
-                        onChange={(e) =>
-                          setReplyContent((prev) => ({
-                            ...prev,
-                            [c.id]: e.target.value,
-                          }))
-                        }
-                        placeholder="Tulis balasan..."
-                        className="border p-1 rounded w-full text-sm mb-1"
-                      />
-                      <button
-                        onClick={() => handleReply(c.id)}
-                        className="bg-blue-600 text-white px-2 py-1 rounded text-xs hover:bg-blue-700"
-                      >
-                        Balas
-                      </button>
-                    </div>
-                  )}
-
-                  {/* ✅ Render Reply */}
-                  {comments.some((r) => r.parent_id === c.id) && (
-                    <div className="mt-2">
-                      <button
-                        onClick={() =>
-                          setReplyLoaded((prev) => ({
-                            ...prev,
-                            [c.id]: prev[c.id] ? 0 : 2,
-                          }))
-                        }
-                        className="text-xs text-gray-600"
-                      >
-                        {replyLoaded[c.id]
-                          ? "Sembunyikan balasan"
-                          : `Lihat ${comments.filter((r) => r.parent_id === c.id).length} balasan`}
-                      </button>
-                      {replyLoaded[c.id] ? renderReplies(c.id) : null}
-                    </div>
-                  )}
+                {/* ✅ List Reply */}
+                <div className="pl-12 mt-2 space-y-2">
+                  {comments
+                    .filter((r) => r.parent_id === c.id)
+                    .map((r) => (
+                      <div key={r.id} className="flex items-start gap-2">
+                        <Image
+                          src={
+                            r.profiles.avatar_url
+                              ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${r.profiles.avatar_url}`
+                              : `https://ui-avatars.com/api/?name=${r.profiles.username}`
+                          }
+                          alt={r.profiles.username}
+                          width={30}
+                          height={30}
+                          className="rounded-full"
+                          unoptimized
+                        />
+                        <div className="bg-white p-2 rounded flex-1">
+                          <p className="text-sm font-semibold">{r.profiles.username}</p>
+                          <p className="text-sm">{r.content}</p>
+                          {(r.user_id === userId || video.user_id === userId) && (
+                            <button
+                              onClick={() => handleDeleteReply(r.id)}
+                              className="text-xs text-red-500 mt-1 hover:underline"
+                            >
+                              Hapus
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
                 </div>
               </div>
             ))}
