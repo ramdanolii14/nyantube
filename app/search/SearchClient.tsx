@@ -44,21 +44,11 @@ export default function SearchClient() {
     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4">
       {videos.map((v) => (
         <div key={v.id} className="border rounded-md overflow-hidden">
-          <video
-            className="w-full h-40 object-cover"
-            src={
-              v.thumbnail_url
-                ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/thumbnails/${v.thumbnail_url}`
-                : v.video_url // fallback ambil detik pertama video
-            }
-            muted
-            playsInline
-            preload="metadata"
-            onLoadedMetadata={(e) => {
-              const videoEl = e.currentTarget;
-              videoEl.currentTime = 1;
-            }}
-          />
+              <img
+                className="w-full h-40 object-cover"
+                src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/thumbnails/${v.thumbnail_url}`}
+                alt={v.title}
+              />
           <div className="p-2 text-sm font-medium">{v.title}</div>
         </div>
       ))}
