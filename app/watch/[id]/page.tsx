@@ -165,6 +165,26 @@ export default function WatchPage() {
     }
   };
 
+  // ✅ Hapus Komentar (oleh uploader video ATAU pemilik komentar)
+  const handleDeleteComment = async (commentId: string, commentUserId: string) => {
+    if (!userId) return;
+
+    const isUploader = video?.user_id === userId;
+    const isCommentOwner = commentUserId === userId;
+
+    if (!isUploader && !isCommentOwner) {
+      alert("Kamu tidak punya izin menghapus komentar ini.");
+      return;
+    }
+
+    const confirmed = confirm("Yakin ingin menghapus komentar ini?");
+    if (!confirmed) return;
+
+    await supabase.from("comments").delete().eq("id", commentId);
+
+    setComments((prev) => prev.filter((c) => c.id !== commentId));
+  };
+
   // ✅ Like & Dislike anti-spam
   const handleLikeDislike = async (type: "like" | "dislike") => {
     if (!userId) {
@@ -308,7 +328,7 @@ export default function WatchPage() {
 
         <div className="space-y-3">
           {comments.map((c) => (
-            <div key={c.id} className="flex items-start gap-3">
+            <div key={c.id} className="flex items-start gap-3 relative">
               <Image
                 src={
                   c.profiles.avatar_url
@@ -325,12 +345,21 @@ export default function WatchPage() {
                 <p className="text-sm font-semibold">{c.profiles.username}</p>
                 <p className="text-sm">{c.content}</p>
               </div>
+
+              {(userId === c.user_id || userId === video.user_id) && (
+                <button
+                  onClick={() => handleDeleteComment(c.id, c.user_id)}
+                  className="absolute top-1 right-1 text-xs text-red-600 hover:underline"
+                >
+                  Hapus
+                </button>
+              )}
             </div>
           ))}
         </div>
       </div>
 
-      {/* ✅ Kolom Kanan: Rekomendasi (Kecil & Limit 5) */}
+      {/* ✅ Kolom Kanan: Rekomendasi */}
       <div className="space-y-4">
         <h2 className="text-lg font-bold mb-3">Video Rekomendasi</h2>
         {recommended.map((v) => (
