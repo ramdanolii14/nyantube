@@ -61,16 +61,11 @@ export default function WatchPage() {
 
     const fetchVideoAndComments = async () => {
       // --- Ambil Video Utama ---
-      const { data: videoData, error: videoError } = await supabase
+      const { data: videoData } = await supabase
         .from("videos")
         .select("*, profiles(username, avatar_url)")
         .eq("id", id)
         .single();
-
-      if (videoError) {
-        console.error("VIDEO FETCH ERROR:", videoError);
-        return;
-      }
 
       if (videoData) {
         setVideo({
@@ -268,7 +263,6 @@ export default function WatchPage() {
         <h1 className="text-xl font-bold mt-4">{video.title}</h1>
         <p className="text-gray-600 text-sm">{video.description}</p>
 
-        {/* ✅ Like & Dislike */}
         <div className="flex items-center gap-4 mt-3">
           <button
             onClick={() => handleLikeDislike("like")}
@@ -294,7 +288,6 @@ export default function WatchPage() {
 
         <hr className="my-6" />
 
-        {/* ✅ Komentar */}
         <h2 className="text-lg font-bold mb-3">Komentar</h2>
         {userId && (
           <div className="mb-4">
@@ -337,30 +330,45 @@ export default function WatchPage() {
         </div>
       </div>
 
-      {/* ✅ Kolom Kanan: Rekomendasi */}
+      {/* ✅ Kolom Kanan: Rekomendasi (Landscape & Info Uploader) */}
       <div className="space-y-4">
         <h2 className="text-lg font-bold mb-3">Video Rekomendasi</h2>
         {recommended.map((v) => (
           <Link
             key={v.id}
             href={`/watch/${v.id}`}
-            className="flex gap-3 hover:bg-gray-100 rounded p-2"
+            className="block hover:bg-gray-100 rounded overflow-hidden"
           >
-            <Image
-              src={
-                v.thumbnail_url
-                  ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/thumbnails/${v.thumbnail_url}`
-                  : "/default-thumbnail.jpg"
-              }
-              alt={v.title}
-              width={120}
-              height={70}
-              className="rounded"
-              unoptimized
-            />
-            <div>
+            <div className="relative w-full" style={{ paddingTop: "56.25%" }}>
+              <Image
+                src={
+                  v.thumbnail_url
+                    ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/thumbnails/${v.thumbnail_url}`
+                    : "/default-thumbnail.jpg"
+                }
+                alt={v.title}
+                fill
+                className="object-cover"
+                unoptimized
+              />
+            </div>
+            <div className="p-2">
               <p className="text-sm font-semibold line-clamp-2">{v.title}</p>
-              <p className="text-xs text-gray-500">{v.profiles?.username}</p>
+              <div className="flex items-center gap-2 mt-1">
+                <Image
+                  src={
+                    v.profiles?.avatar_url
+                      ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${v.profiles.avatar_url}`
+                      : `https://ui-avatars.com/api/?name=${v.profiles?.username}`
+                  }
+                  alt={v.profiles?.username || "Unknown"}
+                  width={20}
+                  height={20}
+                  className="rounded-full"
+                  unoptimized
+                />
+                <p className="text-xs text-gray-500">{v.profiles?.username}</p>
+              </div>
             </div>
           </Link>
         ))}
