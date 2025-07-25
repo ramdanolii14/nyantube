@@ -34,12 +34,15 @@ interface Comment {
 }
 
 export default function WatchPage() {
-  const { id } = useParams();
+  const { id } = useParams() as { id: string };
   const [video, setVideo] = useState<Video | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
   const [recommended, setRecommended] = useState<Video[]>([]);
   const [newComment, setNewComment] = useState("");
   const [userId, setUserId] = useState<string | null>(null);
+  const [userLikeType, setUserLikeType] = useState<"like" | "dislike" | null>(
+    null
+  );
 
   // ✅ Ambil user login
   useEffect(() => {
@@ -54,13 +57,20 @@ export default function WatchPage() {
 
   // ✅ Ambil video, komentar, rekomendasi
   useEffect(() => {
+    if (!id) return;
+
     const fetchVideoAndComments = async () => {
       // --- Ambil Video Utama ---
-      const { data: videoData } = await supabase
+      const { data: videoData, error: videoError } = await supabase
         .from("videos")
         .select("*, profiles(username, avatar_url)")
         .eq("id", id)
         .single();
+
+      if (videoError) {
+        console.error("VIDEO FETCH ERROR:", videoError);
+        return;
+      }
 
       if (videoData) {
         setVideo({
@@ -70,6 +80,20 @@ export default function WatchPage() {
             avatar_url: null,
           },
         });
+
+        // ✅ Update views (+1 setiap load)
+        await supabase.rpc("increment_views", { video_id_input: id });
+
+        // ✅ Ambil status like user
+        if (userId) {
+          const { data: likeData } = await supabase
+            .from("video_likes")
+            .select("type")
+            .eq("video_id", id)
+            .eq("user_id", userId)
+            .maybeSingle();
+          if (likeData) setUserLikeType(likeData.type);
+        }
       }
 
       // --- Ambil Komentar ---
@@ -86,7 +110,7 @@ export default function WatchPage() {
           commentsData.map((c: any) => ({
             ...c,
             profiles: Array.isArray(c.profiles) ? c.profiles[0] : c.profiles,
-          })) as unknown as Comment[]
+          })) as Comment[]
         );
       }
 
@@ -112,7 +136,7 @@ export default function WatchPage() {
     };
 
     fetchVideoAndComments();
-  }, [id]);
+  }, [id, userId]);
 
   // ✅ Tambah Komentar
   const handleAddComment = async () => {
@@ -128,7 +152,6 @@ export default function WatchPage() {
 
     setNewComment("");
 
-    // Refresh komentar
     const { data } = await supabase
       .from("comments")
       .select(
@@ -142,18 +165,71 @@ export default function WatchPage() {
         data.map((c: any) => ({
           ...c,
           profiles: Array.isArray(c.profiles) ? c.profiles[0] : c.profiles,
-        })) as unknown as Comment[]
+        })) as Comment[]
       );
     }
+  };
+
+  // ✅ Like & Dislike anti-spam
+  const handleLikeDislike = async (type: "like" | "dislike") => {
+    if (!userId) {
+      alert("Kamu harus login untuk memberikan like atau dislike.");
+      return;
+    }
+
+    const { data: existing } = await supabase
+      .from("video_likes")
+      .select("*")
+      .eq("video_id", id)
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (!existing) {
+      await supabase.from("video_likes").insert([
+        { video_id: id, user_id: userId, type: type },
+      ]);
+      setUserLikeType(type);
+    } else if (existing.type === type) {
+      await supabase.from("video_likes").delete().eq("id", existing.id);
+      setUserLikeType(null);
+    } else {
+      await supabase
+        .from("video_likes")
+        .update({ type: type })
+        .eq("id", existing.id);
+      setUserLikeType(type);
+    }
+
+    const { count: likeCount } = await supabase
+      .from("video_likes")
+      .select("*", { count: "exact", head: true })
+      .eq("video_id", id)
+      .eq("type", "like");
+
+    const { count: dislikeCount } = await supabase
+      .from("video_likes")
+      .select("*", { count: "exact", head: true })
+      .eq("video_id", id)
+      .eq("type", "dislike");
+
+    await supabase
+      .from("videos")
+      .update({ likes: likeCount || 0, dislikes: dislikeCount || 0 })
+      .eq("id", id);
+
+    setVideo((prev) =>
+      prev
+        ? { ...prev, likes: likeCount || 0, dislikes: dislikeCount || 0 }
+        : prev
+    );
   };
 
   if (!video) return <p className="text-center mt-20">Loading video...</p>;
 
   return (
     <div className="max-w-6xl mx-auto pt-24 px-4 grid grid-cols-1 md:grid-cols-3 gap-6 bg-gray-50">
-      {/* ✅ Kolom Kiri: Video + Komentar */}
+      {/* ✅ Kolom Kiri */}
       <div className="md:col-span-2">
-        {/* ✅ Video */}
         <div
           className="relative w-full rounded-md overflow-hidden bg-black"
           style={{ paddingTop: "56.25%" }}
@@ -165,8 +241,10 @@ export default function WatchPage() {
           />
         </div>
 
-        {/* ✅ Info Uploader */}
-        <div className="flex items-center gap-3 mt-6">
+        <Link
+          href={`/profile/${video.user_id}`}
+          className="flex items-center gap-3 mt-6 hover:opacity-80"
+        >
           <Image
             src={
               video.profiles?.avatar_url
@@ -185,10 +263,34 @@ export default function WatchPage() {
               Diposting pada {new Date(video.created_at).toLocaleDateString()}
             </p>
           </div>
-        </div>
+        </Link>
 
         <h1 className="text-xl font-bold mt-4">{video.title}</h1>
         <p className="text-gray-600 text-sm">{video.description}</p>
+
+        {/* ✅ Like & Dislike */}
+        <div className="flex items-center gap-4 mt-3">
+          <button
+            onClick={() => handleLikeDislike("like")}
+            className={`px-3 py-1 rounded flex items-center gap-1 ${
+              userLikeType === "like"
+                ? "bg-blue-600 text-white"
+                : "bg-gray-200 text-gray-700"
+            }`}
+          >
+            👍 {video.likes}
+          </button>
+          <button
+            onClick={() => handleLikeDislike("dislike")}
+            className={`px-3 py-1 rounded flex items-center gap-1 ${
+              userLikeType === "dislike"
+                ? "bg-red-600 text-white"
+                : "bg-gray-200 text-gray-700"
+            }`}
+          >
+            👎 {video.dislikes}
+          </button>
+        </div>
 
         <hr className="my-6" />
 
@@ -235,7 +337,7 @@ export default function WatchPage() {
         </div>
       </div>
 
-      {/* ✅ Kolom Kanan: Video Rekomendasi */}
+      {/* ✅ Kolom Kanan: Rekomendasi */}
       <div className="space-y-4">
         <h2 className="text-lg font-bold mb-3">Video Rekomendasi</h2>
         {recommended.map((v) => (
