@@ -40,12 +40,12 @@ export default function WatchPage() {
   const [relatedVideos, setRelatedVideos] = useState<Video[]>([]);
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState("");
-  const [replyOpen, setReplyOpen] = useState<Record<string, boolean>>({});
-  const [replyText, setReplyText] = useState<Record<string, string>>({});
-  const [replyLimit, setReplyLimit] = useState<Record<string, number>>({});
+
+  const [likes, setLikes] = useState(0);
+  const [dislikes, setDislikes] = useState(0);
+  const [userVote, setUserVote] = useState<"like" | "dislike" | null>(null);
+
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
-  const [editingText, setEditingText] = useState("");
 
   useEffect(() => {
     if (!id) return;
@@ -69,6 +69,7 @@ export default function WatchPage() {
           : { id: "", username: "Unknown", avatar_url: null, channel_name: "" },
       });
 
+      // Tambah views
       await supabase
         .from("videos")
         .update({ views: (videoData.views || 0) + 1 })
@@ -123,19 +124,79 @@ export default function WatchPage() {
       setCurrentUserId(data.user?.id || null);
     };
 
+    const fetchLikes = async () => {
+      const { data: likesData } = await supabase
+        .from("video_likes")
+        .select("type, user_id")
+        .eq("video_id", id);
+
+      const likeCount = likesData?.filter((v) => v.type === "like").length || 0;
+      const dislikeCount =
+        likesData?.filter((v) => v.type === "dislike").length || 0;
+
+      setLikes(likeCount);
+      setDislikes(dislikeCount);
+
+      const current = likesData?.find((v) => v.user_id === currentUserId);
+      setUserVote(current ? (current.type as "like" | "dislike") : null);
+    };
+
     fetchVideo();
     fetchRelatedVideos();
     fetchComments();
-    fetchUser();
-  }, [id]);
+    fetchUser().then(fetchLikes);
+  }, [id, currentUserId]);
 
-  const refreshComments = async () => {
+  const handleVote = async (type: "like" | "dislike") => {
+    if (!currentUserId) {
+      alert("You need to log in to like or dislike");
+      return;
+    }
+
+    if (userVote === type) {
+      // Unvote
+      await supabase
+        .from("video_likes")
+        .delete()
+        .eq("video_id", id)
+        .eq("user_id", currentUserId);
+
+      if (type === "like") setLikes((prev) => prev - 1);
+      else setDislikes((prev) => prev - 1);
+
+      setUserVote(null);
+    } else {
+      // Upsert (insert or update)
+      await supabase.from("video_likes").upsert({
+        video_id: id,
+        user_id: currentUserId,
+        type,
+      });
+
+      if (type === "like") {
+        if (userVote === "dislike") setDislikes((prev) => prev - 1);
+        setLikes((prev) => prev + 1);
+      } else {
+        if (userVote === "like") setLikes((prev) => prev - 1);
+        setDislikes((prev) => prev + 1);
+      }
+
+      setUserVote(type);
+    }
+  };
+
+  const handleAddComment = async () => {
+    if (!newComment.trim()) return;
+    await supabase.from("comments").insert({
+      video_id: id,
+      content: newComment,
+    });
+    setNewComment("");
     const { data } = await supabase
       .from("comments")
       .select("*, profiles(id, username, avatar_url)")
       .eq("video_id", id)
       .order("created_at", { ascending: false });
-
     setComments(
       data?.map((c) => ({
         ...c,
@@ -148,51 +209,6 @@ export default function WatchPage() {
           : { id: "", username: "Unknown", avatar_url: null },
       })) || []
     );
-  };
-
-  const handleAddComment = async () => {
-    if (!newComment.trim()) return;
-    await supabase.from("comments").insert({
-      video_id: id,
-      content: newComment,
-    });
-    setNewComment("");
-    refreshComments();
-  };
-
-  const handleReply = async (parentId: string) => {
-    if (!replyText[parentId]?.trim()) return;
-    await supabase.from("comments").insert({
-      video_id: id,
-      content: replyText[parentId],
-      parent_id: parentId,
-    });
-    setReplyText((prev) => ({ ...prev, [parentId]: "" }));
-    refreshComments();
-  };
-
-  const handleEditComment = async (commentId: string) => {
-    if (!editingText.trim()) return;
-    await supabase
-      .from("comments")
-      .update({ content: editingText, edited: true })
-      .eq("id", commentId);
-    setEditingCommentId(null);
-    setEditingText("");
-    refreshComments();
-  };
-
-  const handleDeleteComment = async (commentId: string) => {
-    if (!confirm("Yakin ingin menghapus komentar ini?")) return;
-    await supabase.from("comments").delete().eq("id", commentId);
-    refreshComments();
-  };
-
-  const loadMoreReplies = (parentId: string) => {
-    setReplyLimit((prev) => ({
-      ...prev,
-      [parentId]: (prev[parentId] || 2) + 3,
-    }));
   };
 
   if (!video) return <p className="text-center mt-10">Loading...</p>;
@@ -222,16 +238,40 @@ export default function WatchPage() {
               height={40}
               className="rounded-full w-10 h-10 object-cover"
             />
-            <div>
+            <div className="flex-1">
               <p className="font-semibold">{video.profiles.username}</p>
               <p className="text-sm text-gray-500">
                 {video.views} views • {new Date(video.created_at).toLocaleString()}
               </p>
             </div>
+
+            {/* Like Dislike */}
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => handleVote("like")}
+                className={`flex items-center gap-1 px-2 py-1 rounded ${
+                  userVote === "like"
+                    ? "bg-blue-100 text-blue-600"
+                    : "bg-gray-100 text-gray-600"
+                }`}
+              >
+                👍 {likes}
+              </button>
+              <button
+                onClick={() => handleVote("dislike")}
+                className={`flex items-center gap-1 px-2 py-1 rounded ${
+                  userVote === "dislike"
+                    ? "bg-red-100 text-red-600"
+                    : "bg-gray-100 text-gray-600"
+                }`}
+              >
+                👎 {dislikes}
+              </button>
+            </div>
           </div>
           <p className="mb-6">{video.description}</p>
 
-          {/* Comments Section */}
+          {/* Comments */}
           <div className="mt-6">
             <h2 className="font-semibold mb-3">Comments</h2>
             <div className="flex gap-2 mb-4">
@@ -250,176 +290,25 @@ export default function WatchPage() {
               </button>
             </div>
 
-            {comments
-              .filter((c) => !c.parent_id)
-              .map((c) => {
-                const replies = comments.filter((r) => r.parent_id === c.id);
-                const limitedReplies = replies.slice(
-                  0,
-                  replyLimit[c.id] || 2
-                );
-                return (
-                  <div key={c.id} className="mb-4">
-                    <div className="flex gap-2">
-                      <Image
-                        src={
-                          c.profiles.avatar_url
-                            ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${c.profiles.avatar_url}`
-                            : "/default-avatar.png"
-                        }
-                        alt="avatar"
-                        width={32}
-                        height={32}
-                        className="rounded-full w-8 h-8 object-cover"
-                      />
-                      <div className="flex-1">
-                        <p className="font-semibold text-sm">
-                          {c.profiles.username}{" "}
-                          {c.edited && (
-                            <span className="text-gray-400 text-xs">[edit]</span>
-                          )}
-                        </p>
-                        {editingCommentId === c.id ? (
-                          <div className="space-y-1">
-                            <textarea
-                              value={editingText}
-                              onChange={(e) => setEditingText(e.target.value)}
-                              className="border rounded w-full text-sm p-1"
-                            />
-                            <div className="flex gap-2">
-                              <button
-                                onClick={() => handleEditComment(c.id)}
-                                className="text-xs text-blue-600"
-                              >
-                                Save
-                              </button>
-                              <button
-                                onClick={() => setEditingCommentId(null)}
-                                className="text-xs text-gray-500"
-                              >
-                                Cancel
-                              </button>
-                            </div>
-                          </div>
-                        ) : (
-                          <p className="text-sm">{c.content}</p>
-                        )}
-                        <div className="flex gap-3 mt-1 text-xs text-blue-600">
-                          <button
-                            onClick={() =>
-                              setReplyOpen((prev) => ({
-                                ...prev,
-                                [c.id]: !prev[c.id],
-                              }))
-                            }
-                          >
-                            Reply
-                          </button>
-                          {currentUserId === c.user_id && (
-                            <>
-                              <button
-                                onClick={() => {
-                                  setEditingCommentId(c.id);
-                                  setEditingText(c.content);
-                                }}
-                                className="text-green-600"
-                              >
-                                Edit
-                              </button>
-                              <button
-                                onClick={() => handleDeleteComment(c.id)}
-                                className="text-red-600"
-                              >
-                                Delete
-                              </button>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Reply Form */}
-                    {replyOpen[c.id] && (
-                      <div className="ml-10 mt-2">
-                        <textarea
-                          value={replyText[c.id] || ""}
-                          onChange={(e) =>
-                            setReplyText((prev) => ({
-                              ...prev,
-                              [c.id]: e.target.value,
-                            }))
-                          }
-                          placeholder="Write a reply..."
-                          className="border p-1 rounded w-full text-sm"
-                        />
-                        <button
-                          onClick={() => handleReply(c.id)}
-                          className="text-xs text-blue-600 mt-1"
-                        >
-                          Post Reply
-                        </button>
-                      </div>
-                    )}
-
-                    {/* Replies */}
-                    <div className="ml-10 mt-2 space-y-2">
-                      {limitedReplies.map((r) => (
-                        <div key={r.id} className="flex gap-2">
-                          <Image
-                            src={
-                              r.profiles.avatar_url
-                                ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${r.profiles.avatar_url}`
-                                : "/default-avatar.png"
-                            }
-                            alt="avatar"
-                            width={28}
-                            height={28}
-                            className="rounded-full w-7 h-7 object-cover"
-                          />
-                          <div>
-                            <p className="font-semibold text-xs">
-                              {r.profiles.username}{" "}
-                              {r.edited && (
-                                <span className="text-gray-400 text-[10px]">
-                                  [edit]
-                                </span>
-                              )}
-                            </p>
-                            <p className="text-xs">{r.content}</p>
-                            {currentUserId === r.user_id && (
-                              <div className="flex gap-2 text-[10px] mt-1">
-                                <button
-                                  onClick={() => {
-                                    setEditingCommentId(r.id);
-                                    setEditingText(r.content);
-                                  }}
-                                  className="text-green-600"
-                                >
-                                  Edit
-                                </button>
-                                <button
-                                  onClick={() => handleDeleteComment(r.id)}
-                                  className="text-red-600"
-                                >
-                                  Delete
-                                </button>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                      {replies.length > (replyLimit[c.id] || 2) && (
-                        <button
-                          onClick={() => loadMoreReplies(c.id)}
-                          className="text-xs text-gray-500"
-                        >
-                          View More Replies
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
+            {comments.map((c) => (
+              <div key={c.id} className="flex gap-2 mb-3">
+                <Image
+                  src={
+                    c.profiles.avatar_url
+                      ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${c.profiles.avatar_url}`
+                      : "/default-avatar.png"
+                  }
+                  alt="avatar"
+                  width={32}
+                  height={32}
+                  className="rounded-full w-8 h-8 object-cover"
+                />
+                <div>
+                  <p className="font-semibold">{c.profiles.username}</p>
+                  <p>{c.content}</p>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 
