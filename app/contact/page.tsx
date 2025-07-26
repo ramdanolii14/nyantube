@@ -4,10 +4,7 @@ export default function ContactPage() {
   return (
     <div className="max-w-xl mx-auto p-6">
       <h1 className="text-2xl font-bold mb-4">Contact Us</h1>
-      <p className="mb-4">
-        If you have any feedback or questions, don&apos;t hesitate to reach out.
-        We&apos;re always happy to hear from you!
-      </p>
+      <p className="mb-4">Untuk sementara masih belum bisa ya, kalau mau contact developer bisa chat whatsapp aja +62 857-9618-2078.</p>
 
       <form className="space-y-4">
         <div>
