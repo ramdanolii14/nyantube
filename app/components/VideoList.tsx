@@ -1,15 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
 import { supabase } from "@/supabase/client";
 import Image from "next/image";
+import Link from "next/link";
 
 interface Video {
   id: string;
   title: string;
-  description: string;
-  video_url: string;
+  thumbnail_url: string;
   views: number;
   created_at: string;
   profiles?: {
@@ -19,38 +18,21 @@ interface Video {
   };
 }
 
-interface Comment {
-  id: string;
-  user_id: string;
-  content: string;
-  created_at: string;
-  parent_id: string | null;
-  profiles: {
-    username: string;
-    avatar_url: string | null;
-  };
-}
-
-export default function WatchPage() {
-  const { id: videoId } = useParams();
-  const [video, setVideo] = useState<Video | null>(null);
-  const [comments, setComments] = useState<Comment[]>([]);
+export default function VideoList() {
+  const [videos, setVideos] = useState<Video[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchVideoAndComments = async () => {
+    const fetchVideos = async () => {
       try {
-        console.log("🔄 Fetching video & comments for ID:", videoId);
-
-        // ✅ Ambil video
-        const { data: videoData, error: videoError } = await supabase
+        console.log("🔄 Fetching all videos...");
+        const { data, error } = await supabase
           .from("videos")
           .select(
             `
             id,
             title,
-            description,
-            video_url,
+            thumbnail_url,
             views,
             created_at,
             profiles (
@@ -60,149 +42,87 @@ export default function WatchPage() {
             )
           `
           )
-          .eq("id", videoId)
-          .single();
+          .order("created_at", { ascending: false });
 
-        if (videoError) throw videoError;
-        console.log("✅ Video data:", videoData);
+        if (error) throw error;
+        console.log("✅ Videos data:", data);
 
-        if (videoData) {
-          const mappedVideo: Video = {
-            ...videoData,
-            profiles: videoData.profiles
-              ? Array.isArray(videoData.profiles)
-                ? videoData.profiles[0]
-                : videoData.profiles
+        setVideos(
+          (data || []).map((v: any) => ({
+            ...v,
+            profiles: v.profiles
+              ? Array.isArray(v.profiles)
+                ? v.profiles[0]
+                : v.profiles
               : {
                   username: "Unknown",
                   avatar_url: null,
                   channel_name: "Unknown",
                 },
-          };
-          setVideo(mappedVideo);
-        }
-
-        // ✅ Ambil komentar
-        const { data: commentsData, error: commentsError } = await supabase
-          .from("comments")
-          .select(
-            `
-            id,
-            user_id,
-            content,
-            created_at,
-            parent_id,
-            profiles (
-              username,
-              avatar_url
-            )
-          `
-          )
-          .eq("video_id", videoId)
-          .order("created_at", { ascending: true });
-
-        if (commentsError) throw commentsError;
-        console.log("✅ Comments data:", commentsData);
-
-        if (commentsData) {
-          const mappedComments: Comment[] = commentsData.map((c: any) => ({
-            ...c,
-            profiles: Array.isArray(c.profiles)
-              ? c.profiles[0]
-              : c.profiles,
-          }));
-          setComments(mappedComments);
-        }
+          }))
+        );
       } catch (error) {
-        console.error("❌ Error fetching video or comments:", error);
+        console.error("❌ Error fetching videos:", error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchVideoAndComments();
-  }, [videoId]);
+    fetchVideos();
+  }, []);
 
-  // ✅ Fallback UI
   if (loading) {
-    return <div className="text-center mt-8">Loading video...</div>;
+    return <p className="text-center mt-8">Loading videos...</p>;
   }
 
-  if (!video) {
+  if (videos.length === 0) {
     return (
-      <div className="text-center mt-8 text-red-500">
-        Video not found or failed to load.
-      </div>
+      <p className="text-center mt-8 text-gray-500">
+        No videos uploaded yet.
+      </p>
     );
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-4">
-      <video
-        src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/videos/${video.video_url}`}
-        controls
-        className="w-full rounded-md"
-      />
-      <h1 className="text-xl font-bold mt-4">{video.title}</h1>
-      <p className="text-sm text-gray-500">
-        {video.views}x ditonton •{" "}
-        {new Date(video.created_at).toLocaleDateString()}
-      </p>
-
-      <div className="flex items-center gap-2 mt-2">
-        <Image
-          src={
-            video.profiles?.avatar_url
-              ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${video.profiles.avatar_url}`
-              : `https://ui-avatars.com/api/?name=${
-                  video.profiles?.username || "Unknown"
-                }`
-          }
-          alt={video.profiles?.username || "Unknown"}
-          width={40}
-          height={40}
-          className="rounded-full"
-        />
-        <div>
-          <p className="font-semibold">{video.profiles?.channel_name || "Unknown"}</p>
-          <p className="text-xs text-gray-500">
-            {video.profiles?.username || "Unknown"}
-          </p>
-        </div>
-      </div>
-
-      <p className="mt-4">{video.description}</p>
-
-      <hr className="my-4" />
-      <h2 className="text-lg font-bold">Comments</h2>
-      <div className="space-y-4 mt-2">
-        {comments.length > 0 ? (
-          comments.map((c) => (
-            <div key={c.id} className="flex gap-2">
-              <Image
-                src={
-                  c.profiles?.avatar_url
-                    ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${c.profiles.avatar_url}`
-                    : `https://ui-avatars.com/api/?name=${c.profiles?.username || "Unknown"}`
-                }
-                alt={c.profiles?.username || "Unknown"}
-                width={32}
-                height={32}
-                className="rounded-full"
-              />
-              <div>
-                <p className="text-sm font-semibold">{c.profiles?.username || "Unknown"}</p>
-                <p className="text-xs text-gray-500">
-                  {new Date(c.created_at).toLocaleString()}
-                </p>
-                <p>{c.content}</p>
-              </div>
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-4">
+      {videos.map((video) => (
+        <Link
+          key={video.id}
+          href={`/watch/${video.id}`}
+          className="bg-white rounded-md shadow hover:shadow-lg transition p-2"
+        >
+          <div className="relative w-full aspect-video bg-gray-200 rounded overflow-hidden">
+            <Image
+              src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/thumbnails/${video.thumbnail_url}`}
+              alt={video.title}
+              fill
+              className="object-cover"
+            />
+          </div>
+          <div className="flex items-center gap-2 mt-2">
+            <Image
+              src={
+                video.profiles?.avatar_url
+                  ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${video.profiles.avatar_url}`
+                  : `https://ui-avatars.com/api/?name=${
+                      video.profiles?.username || "Unknown"
+                    }`
+              }
+              alt={video.profiles?.username || "Unknown"}
+              width={32}
+              height={32}
+              className="rounded-full"
+            />
+            <div>
+              <p className="font-semibold text-sm line-clamp-2">{video.title}</p>
+              <p className="text-xs text-gray-500">
+                {video.views} views •{" "}
+                {new Date(video.created_at).toLocaleDateString()}
+              </p>
             </div>
-          ))
-        ) : (
-          <p className="text-sm text-gray-500">No comments yet.</p>
-        )}
-      </div>
+          </div>
+        </Link>
+      ))}
     </div>
   );
 }
