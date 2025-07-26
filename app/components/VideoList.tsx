@@ -45,7 +45,16 @@ export default function VideoList() {
           .limit(20);
 
         if (error) throw error;
-        setVideos(data || []);
+
+        // ✅ FIX: Pastikan profiles bukan array
+        const mapped = (data || []).map((v: any) => ({
+          ...v,
+          profiles: Array.isArray(v.profiles)
+            ? v.profiles[0]
+            : v.profiles,
+        }));
+
+        setVideos(mapped);
       } catch (err) {
         console.error("❌ Error fetching videos:", err);
       } finally {
