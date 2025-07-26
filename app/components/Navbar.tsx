@@ -101,19 +101,25 @@ export default function Navbar() {
 
           {user ? (
             <div className="relative">
-              <Image
-                src={
-                  profile?.avatar_url
-                    ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${profile.avatar_url}`
-                    : `https://ui-avatars.com/api/?name=${profile?.username || "User"}`
-                }
-                alt={profile?.username || "User"}
-                width={36}
-                height={36}
-                className="rounded-full border cursor-pointer object-cover"
-                unoptimized
+              {/* Avatar - fix landscape */}
+              <div
+                className="w-9 h-9 rounded-full overflow-hidden border cursor-pointer"
                 onClick={() => setDropdownOpen((prev) => !prev)}
-              />
+              >
+                <Image
+                  src={
+                    profile?.avatar_url
+                      ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${profile.avatar_url}`
+                      : `https://ui-avatars.com/api/?name=${profile?.username || "User"}`
+                  }
+                  alt={profile?.username || "User"}
+                  width={36}
+                  height={36}
+                  className="object-cover w-full h-full"
+                  unoptimized
+                />
+              </div>
+
               {/* Dropdown */}
               {dropdownOpen && (
                 <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border">
