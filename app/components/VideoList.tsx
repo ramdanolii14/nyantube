@@ -1,80 +1,63 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { supabase } from "@/supabase/client"; // sesuaikan path supabase-mu
-import Image from "next/image";
 import Link from "next/link";
+import Image from "next/image";
 
-interface Video {
+export interface Video {
   id: string;
-  user_id: string;
   title: string;
-  description: string;
-  video_url: string;
+  thumbnail_url: string;
   views: number;
   created_at: string;
-  is_public: boolean;
-  likes: number;
-  dislikes: number;
-  thumbnail_url: string;
+  profiles?: {
+    username: string;
+    avatar_url: string | null;
+  };
 }
 
-export default function VideoList() {
-  const [videos, setVideos] = useState<Video[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchVideos = async () => {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from("videos")
-        .select("*")
-        .eq("is_public", true) // hanya ambil video publik
-        .order("created_at", { ascending: false });
-
-      if (error) {
-        console.error("Error fetching videos:", error.message);
-      } else if (data) {
-        setVideos(data as Video[]);
-      }
-      setLoading(false);
-    };
-
-    fetchVideos();
-  }, []);
-
-  if (loading) {
-    return <p className="text-center text-gray-500">Loading videos...</p>;
-  }
-
-  if (videos.length === 0) {
-    return <p className="text-center text-gray-500">No videos found.</p>;
-  }
-
+export default function VideoList({ videos }: { videos: Video[] }) {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
       {videos.map((video) => (
-        <div
+        <Link
           key={video.id}
-          className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition"
+          href={`/watch/${video.id}`}
+          className="block bg-white rounded-md overflow-hidden shadow hover:shadow-md transition"
         >
-          <Link href={`/watch/${video.id}`}>
-            <div className="relative w-full h-48">
-              <Image
-                src={video.thumbnail_url || "/default-thumbnail.jpg"}
-                alt={video.title}
-                fill
-                className="object-cover"
-              />
-            </div>
-            <div className="p-2">
-              <h3 className="text-sm font-semibold line-clamp-2">{video.title}</h3>
-              <p className="text-xs text-gray-500 mt-1">
-                {video.views} views • {new Date(video.created_at).toLocaleDateString()}
+          <div className="relative w-full bg-gray-200" style={{ paddingTop: "56.25%" }}>
+            <Image
+              src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/thumbnails/${video.thumbnail_url}`}
+              alt={video.title}
+              fill
+              className="object-cover"
+              unoptimized
+            />
+          </div>
+          <div className="p-2 flex gap-2">
+            <Image
+              src={
+                video.profiles?.avatar_url
+                  ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${video.profiles.avatar_url}`
+                  : `https://ui-avatars.com/api/?name=${video.profiles?.username || "Unknown"}`
+              }
+              alt={video.profiles?.username || "Unknown"}
+              width={36}
+              height={36}
+              className="rounded-full"
+              unoptimized
+            />
+            <div className="flex-1">
+              <p className="text-sm font-semibold line-clamp-2">{video.title}</p>
+              <p className="text-xs text-gray-500">
+                {video.profiles?.username || "Unknown"}
+              </p>
+              <p className="text-xs text-gray-400">
+                {video.views}x ditonton •{" "}
+                {new Date(video.created_at).toLocaleDateString()}
               </p>
             </div>
-          </Link>
-        </div>
+          </div>
+        </Link>
       ))}
     </div>
   );
