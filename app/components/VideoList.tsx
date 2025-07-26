@@ -5,16 +5,18 @@ import { supabase } from "@/supabase/client";
 import Link from "next/link";
 import Image from "next/image";
 
+interface Profile {
+  channel_name: string;
+  avatar_url: string | null;
+}
+
 interface Video {
   id: string;
   title: string;
   video_url: string;
   thumbnail_url: string | null;
   views: number;
-  profiles: {
-    channel_name: string;
-    avatar_url: string | null;
-  } | null;
+  profiles: Profile[]; // ✅ Tetap array sesuai permintaanmu
 }
 
 export default function VideoList() {
@@ -35,7 +37,7 @@ export default function VideoList() {
 
         if (count) setTotalVideos(count);
 
-        // ✅ Ambil video + data profile (relasi 1:1)
+        // ✅ Ambil video (pakai array untuk profiles)
         const from = (page - 1) * videosPerPage;
         const to = from + videosPerPage - 1;
 
@@ -48,7 +50,7 @@ export default function VideoList() {
               video_url,
               thumbnail_url,
               views,
-              profiles:profiles!videos_user_id_fkey (
+              profiles (
                 channel_name,
                 avatar_url
               )
@@ -58,7 +60,14 @@ export default function VideoList() {
           .range(from, to);
 
         if (error) throw error;
-        setVideos(data || []);
+
+        // ✅ Pastikan profiles selalu array
+        const mappedData: Video[] = (data || []).map((v: any) => ({
+          ...v,
+          profiles: Array.isArray(v.profiles) ? v.profiles : [v.profiles],
+        }));
+
+        setVideos(mappedData);
       } catch (err) {
         console.error("❌ Error fetching videos:", err);
       }
@@ -86,22 +95,22 @@ export default function VideoList() {
               <div className="p-2">
                 <h2 className="font-semibold line-clamp-2">{v.title}</h2>
 
-                {/* ✅ Avatar + Nama Channel */}
+                {/* ✅ Avatar + Nama Channel (Pakai profiles[0]) */}
                 <div className="flex items-center gap-2 mt-1">
                   <Image
                     src={
-                      v.profiles?.avatar_url
-                        ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${v.profiles.avatar_url}`
-                        : `https://ui-avatars.com/api/?name=${v.profiles?.channel_name || "Channel"}`
+                      v.profiles[0]?.avatar_url
+                        ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${v.profiles[0].avatar_url}`
+                        : `https://ui-avatars.com/api/?name=${v.profiles[0]?.channel_name || "Channel"}`
                     }
-                    alt={v.profiles?.channel_name || "Channel"}
+                    alt={v.profiles[0]?.channel_name || "Channel"}
                     width={22}
                     height={22}
                     className="rounded-full"
                     unoptimized
                   />
                   <p className="text-xs text-gray-600 line-clamp-1">
-                    {v.profiles?.channel_name || "Unknown Channel"}
+                    {v.profiles[0]?.channel_name || "Unknown Channel"}
                   </p>
                 </div>
 
