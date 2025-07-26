@@ -11,7 +11,7 @@ interface Video {
   thumbnail_url: string;
   views: number;
   created_at: string;
-  profiles?: {
+  profiles: {
     username: string;
     avatar_url: string | null;
     channel_name?: string;
@@ -28,13 +28,15 @@ export default function VideoList() {
         console.log("🔄 Fetching videos...");
         const { data, error } = await supabase
           .from("videos")
-          .select("id, title, thumbnail_url, views, created_at, profiles(username, avatar_url, channel_name)")
+          .select(
+            `id, title, thumbnail_url, views, created_at,
+             profiles!videos_user_id_fkey (username, avatar_url, channel_name)`
+          )
           .order("created_at", { ascending: false });
 
         if (error) throw error;
         console.log("✅ Videos fetched:", data);
 
-        // ✅ Pastikan relasi profiles aman
         const mapped = (data || []).map((v: any) => ({
           id: v.id,
           title: v.title || "Untitled",
