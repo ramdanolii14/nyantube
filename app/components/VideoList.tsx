@@ -41,17 +41,25 @@ export default function VideoList() {
               channel_name
             )
           `)
-          .order("created_at", { ascending: false })
-          .limit(20);
+          .order("created_at", { ascending: false });
 
         if (error) throw error;
 
-        // ✅ FIX: Pastikan profiles bukan array
+        console.log("✅ Videos data:", data); // 🔥 Debug
+
         const mapped = (data || []).map((v: any) => ({
           ...v,
-          profiles: Array.isArray(v.profiles)
-            ? v.profiles[0]
-            : v.profiles,
+          profiles: v.profiles
+            ? {
+                username: v.profiles.username || "Unknown",
+                avatar_url: v.profiles.avatar_url || null,
+                channel_name: v.profiles.channel_name || "",
+              }
+            : {
+                username: "Unknown",
+                avatar_url: null,
+                channel_name: "",
+              },
         }));
 
         setVideos(mapped);
@@ -65,21 +73,18 @@ export default function VideoList() {
     fetchVideos();
   }, []);
 
-  if (loading) {
-    return <p className="text-center mt-8">Loading videos...</p>;
-  }
+  if (loading) return <p className="text-center mt-6">Loading videos...</p>;
 
-  if (!videos.length) {
-    return <p className="text-center mt-8 text-gray-500">No videos found.</p>;
-  }
+  if (videos.length === 0)
+    return <p className="text-center mt-6 text-gray-500">No videos found.</p>;
 
   return (
-    <div className="max-w-6xl mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-4">
       {videos.map((video) => (
         <Link
           key={video.id}
           href={`/watch/${video.id}`}
-          className="bg-white rounded-lg shadow hover:shadow-md transition p-2"
+          className="bg-white rounded shadow hover:shadow-md transition p-2"
         >
           <div className="relative w-full h-40 bg-gray-200 rounded overflow-hidden">
             <Image
@@ -89,26 +94,25 @@ export default function VideoList() {
               className="object-cover"
             />
           </div>
-          <div className="flex items-center gap-2 mt-2">
+          <h3 className="mt-2 font-semibold text-sm line-clamp-2">
+            {video.title}
+          </h3>
+          <p className="text-xs text-gray-500">{video.views} views</p>
+          <div className="flex items-center gap-2 mt-1">
             <Image
               src={
-                video.profiles?.avatar_url
+                video.profiles.avatar_url
                   ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${video.profiles.avatar_url}`
-                  : `https://ui-avatars.com/api/?name=${video.profiles?.username}`
+                  : `https://ui-avatars.com/api/?name=${video.profiles.username}`
               }
-              alt={video.profiles?.username}
-              width={32}
-              height={32}
+              alt={video.profiles.username}
+              width={24}
+              height={24}
               className="rounded-full"
             />
-            <div>
-              <p className="text-sm font-semibold line-clamp-2">
-                {video.title}
-              </p>
-              <p className="text-xs text-gray-500">
-                {video.profiles?.username} • {video.views} views
-              </p>
-            </div>
+            <p className="text-xs text-gray-700">
+              {video.profiles.channel_name || video.profiles.username}
+            </p>
           </div>
         </Link>
       ))}
