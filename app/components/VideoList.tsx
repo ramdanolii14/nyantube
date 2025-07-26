@@ -1,66 +1,80 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/supabase/client";
+import { supabase } from "@/supabase/client"; // sesuaikan path supabase-mu
+import Image from "next/image";
 import Link from "next/link";
 
 interface Video {
   id: string;
-  title: string;
-  video_url: string;
-  thumbnail_url: string | null;
-  views: number;
   user_id: string;
+  title: string;
+  description: string;
+  video_url: string;
+  views: number;
+  created_at: string;
+  is_public: boolean;
+  likes: number;
+  dislikes: number;
+  thumbnail_url: string;
 }
 
 export default function VideoList() {
   const [videos, setVideos] = useState<Video[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchVideos = async () => {
-      try {
-        console.log("🔄 Fetching videos...");
-        const { data, error } = await supabase
-          .from("videos")
-          .select("*")
-          .order("created_at", { ascending: false });
+      setLoading(true);
+      const { data, error } = await supabase
+        .from("videos")
+        .select("*")
+        .eq("is_public", true) // hanya ambil video publik
+        .order("created_at", { ascending: false });
 
-        if (error) throw error;
-
-        console.log("✅ Videos fetched:", data);
-        setVideos(data || []);
-      } catch (err) {
-        console.error("❌ Error fetching videos:", err);
+      if (error) {
+        console.error("Error fetching videos:", error.message);
+      } else if (data) {
+        setVideos(data as Video[]);
       }
+      setLoading(false);
     };
 
     fetchVideos();
   }, []);
 
+  if (loading) {
+    return <p className="text-center text-gray-500">Loading videos...</p>;
+  }
+
   if (videos.length === 0) {
-    return <div className="text-center mt-8 text-gray-500">No videos found.</div>;
+    return <p className="text-center text-gray-500">No videos found.</p>;
   }
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
-      {videos.map((v) => (
-        <Link key={v.id} href={`/watch/${v.id}`}>
-          <div className="bg-white rounded shadow hover:shadow-lg transition">
-            <img
-              src={
-                v.thumbnail_url
-                  ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/thumbnails/${v.thumbnail_url}`
-                  : "/default-thumbnail.png"
-              }
-              alt={v.title}
-              className="rounded-t w-full h-40 object-cover"
-            />
-            <div className="p-2">
-              <h2 className="font-semibold line-clamp-2">{v.title}</h2>
-              <p className="text-sm text-gray-500 mt-1">Views {v.views}</p>
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-4">
+      {videos.map((video) => (
+        <div
+          key={video.id}
+          className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition"
+        >
+          <Link href={`/watch/${video.id}`}>
+            <div className="relative w-full h-48">
+              <Image
+                src={video.thumbnail_url || "/default-thumbnail.jpg"}
+                alt={video.title}
+                fill
+                className="object-cover"
+              />
             </div>
-          </div>
-        </Link>
+            <div className="p-2">
+              <h3 className="text-sm font-semibold line-clamp-2">{video.title}</h3>
+              <p className="text-xs text-gray-500 mt-1">
+                {video.views} views • {new Date(video.created_at).toLocaleDateString()}
+              </p>
+            </div>
+          </Link>
+        </div>
       ))}
     </div>
   );
