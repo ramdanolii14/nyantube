@@ -147,79 +147,95 @@ export default function WatchPage() {
   if (!video) return <p className="text-center mt-10">Loading video...</p>;
 
   return (
-    <div className="max-w-6xl mx-auto p-4 grid grid-cols-1 md:grid-cols-3 gap-6">
-      {/* ✅ VIDEO UTAMA */}
-      <div className="md:col-span-2">
-        <video src={video.video_url} controls className="w-full rounded-md" />
+  <div className="max-w-6xl mx-auto p-4 grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+    {/* ✅ VIDEO UTAMA */}
+    <div className="md:col-span-2">
+      <video src={video.video_url} controls className="w-full rounded-md" />
 
-        <h1 className="text-lg font-semibold mt-3">{video.title}</h1>
-        <p className="text-sm text-gray-500">
-          {video.views}x ditonton • {new Date(video.created_at).toLocaleDateString()}
-        </p>
+      <h1 className="text-lg font-semibold mt-3">{video.title}</h1>
+      <p className="text-sm text-gray-500">
+        {video.views}x ditonton • {new Date(video.created_at).toLocaleDateString()}
+      </p>
 
-        <div className="flex items-center gap-2 mt-3">
-          <Image
-            src={
-              video.profiles?.avatar_url
-                ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${video.profiles.avatar_url}`
-                : `https://ui-avatars.com/api/?name=${video.profiles?.username || "Unknown"}`
-            }
-            alt={video.profiles?.username || "Unknown"}
-            width={40}
-            height={40}
-            className="rounded-full"
-            unoptimized
-          />
-          <div>
-            <p className="text-sm font-semibold">{video.profiles?.channel_name || "Unknown"}</p>
-            <p className="text-xs text-gray-500">{video.profiles?.username}</p>
-          </div>
-        </div>
-
-        <p className="mt-4 text-sm text-gray-700 whitespace-pre-line">{video.description}</p>
-
-        {/* ✅ KOMENTAR */}
-        <div className="mt-6">
-          <h2 className="text-md font-semibold mb-2">Komentar</h2>
-          <div className="flex gap-2 mb-4">
-            <input
-              type="text"
-              placeholder="Tulis komentar..."
-              value={newComment}
-              onChange={(e) => setNewComment(e.target.value)}
-              className="flex-1 border rounded-md px-3 py-2 text-sm"
-            />
-            <button
-              onClick={handleComment}
-              className="bg-red-500 text-white px-4 py-2 rounded-md text-sm"
-            >
-              Kirim
-            </button>
-          </div>
-
-          {comments.map((c) => (
-            <div key={c.id} className="flex gap-2 mb-3">
-              <Image
-                src={
-                  c.profiles.avatar_url
-                    ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${c.profiles.avatar_url}`
-                    : `https://ui-avatars.com/api/?name=${c.profiles.username}`
-                }
-                alt={c.profiles.username}
-                width={32}
-                height={32}
-                className="rounded-full"
-                unoptimized
-              />
-              <div>
-                <p className="text-sm font-semibold">{c.profiles.username}</p>
-                <p className="text-sm">{c.content}</p>
-              </div>
-            </div>
-          ))}
+      <div className="flex items-center gap-2 mt-3">
+        <Image
+          src={
+            video.profiles?.avatar_url
+              ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${video.profiles.avatar_url}`
+              : `https://ui-avatars.com/api/?name=${video.profiles?.username || "Unknown"}`
+          }
+          alt={video.profiles?.username || "Unknown"}
+          width={40}
+          height={40}
+          className="rounded-full"
+          unoptimized
+        />
+        <div>
+          <p className="text-sm font-semibold">{video.profiles?.channel_name || "Unknown"}</p>
+          <p className="text-xs text-gray-500">{video.profiles?.username}</p>
         </div>
       </div>
 
+      <p className="mt-4 text-sm text-gray-700 whitespace-pre-line">{video.description}</p>
+
+      {/* ✅ KOMENTAR */}
+      <div className="mt-6">
+        <h2 className="text-md font-semibold mb-2">Komentar</h2>
+        <div className="flex gap-2 mb-4">
+          <input
+            type="text"
+            placeholder="Tulis komentar..."
+            value={newComment}
+            onChange={(e) => setNewComment(e.target.value)}
+            className="flex-1 border rounded-md px-3 py-2 text-sm"
+          />
+          <button
+            onClick={handleComment}
+            className="bg-red-500 text-white px-4 py-2 rounded-md text-sm"
+          >
+            Kirim
+          </button>
+        </div>
+
+        {comments.map((c) => {
+          const isOwner = c.user_id === video.profiles?.id; // kreator video
+          const isSelf = c.user_id === (await supabase.auth.getUser()).data.user?.id; // pengomentar
+
+          return (
+              <div key={c.id} className="flex justify-between items-start gap-2 mb-3">
+                <div className="flex gap-2">
+                  <Image
+                    src={
+                      c.profiles.avatar_url
+                        ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${c.profiles.avatar_url}`
+                        : `https://ui-avatars.com/api/?name=${c.profiles.username}`
+                    }
+                    alt={c.profiles.username}
+                    width={32}
+                    height={32}
+                    className="rounded-full"
+                    unoptimized
+                  />
+                  <div>
+                    <p className="text-sm font-semibold">{c.profiles.username}</p>
+                    <p className="text-sm">{c.content}</p>
+                  </div>
+                </div>
+  
+                {(isOwner || isSelf) && (
+                  <button
+                    onClick={() => handleDeleteComment(c.id)}
+                    className="text-xs text-red-500 hover:underline"
+                  >
+                    Hapus
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+  
       {/* ✅ VIDEO REKOMENDASI */}
       <div className="space-y-3">
         {relatedVideos.map((v) => (
