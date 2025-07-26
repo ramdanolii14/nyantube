@@ -8,13 +8,12 @@ import { supabase } from "@/supabase/client";
 interface Video {
   id: string;
   title: string;
+  video_url: string;
   thumbnail_url: string;
   views: number;
-  created_at: string;
   profiles: {
-    username: string;
+    channel_name: string;
     avatar_url: string | null;
-    channel_name?: string;
   };
 }
 
@@ -29,34 +28,24 @@ export default function VideoList() {
         const { data, error } = await supabase
           .from("videos")
           .select(
-            `id, title, thumbnail_url, views, created_at,
-             profiles!videos_user_id_fkey (username, avatar_url, channel_name)`
+            `
+            id,
+            title,
+            video_url,
+            thumbnail_url,
+            views,
+            profiles!videos_user_id_fkey (
+              channel_name,
+              avatar_url
+            )
+          `
           )
           .order("created_at", { ascending: false });
 
         if (error) throw error;
         console.log("✅ Videos fetched:", data);
 
-        const mapped = (data || []).map((v: any) => ({
-          id: v.id,
-          title: v.title || "Untitled",
-          thumbnail_url: v.thumbnail_url || "",
-          views: v.views || 0,
-          created_at: v.created_at,
-          profiles: v.profiles
-            ? {
-                username: v.profiles.username || "Unknown",
-                avatar_url: v.profiles.avatar_url || null,
-                channel_name: v.profiles.channel_name || "",
-              }
-            : {
-                username: "Unknown",
-                avatar_url: null,
-                channel_name: "",
-              },
-        }));
-
-        setVideos(mapped);
+        setVideos(data || []);
       } catch (err) {
         console.error("❌ Error fetching videos:", err);
       } finally {
@@ -86,11 +75,7 @@ export default function VideoList() {
         >
           <div className="relative w-full h-48 bg-gray-200 rounded overflow-hidden">
             <Image
-              src={
-                v.thumbnail_url
-                  ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/thumbnails/${v.thumbnail_url}`
-                  : "/default-thumbnail.png"
-              }
+              src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/thumbnails/${v.thumbnail_url}`}
               alt={v.title}
               fill
               className="object-cover"
@@ -104,15 +89,17 @@ export default function VideoList() {
                 v.profiles?.avatar_url
                   ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${v.profiles.avatar_url}`
                   : `https://ui-avatars.com/api/?name=${
-                      v.profiles?.username || "Unknown"
+                      v.profiles?.channel_name || "Unknown"
                     }`
               }
-              alt={v.profiles?.username || "Unknown"}
+              alt={v.profiles?.channel_name || "Unknown"}
               width={24}
               height={24}
               className="rounded-full"
             />
-            <p className="text-xs text-gray-600">{v.profiles?.username}</p>
+            <p className="text-xs text-gray-600">
+              {v.profiles?.channel_name || "Unknown"}
+            </p>
           </div>
         </Link>
       ))}
