@@ -18,8 +18,7 @@ interface Video {
   title: string;
   video_url: string;
   thumbnail_url: string | null;
-  likes: number;
-  dislikes: number;
+  views: number;
   created_at: string;
 }
 
@@ -42,7 +41,7 @@ export default function ProfilePage() {
     const fetchVideos = async () => {
       const { data } = await supabase
         .from("videos")
-        .select("*")
+        .select("id, title, thumbnail_url, views, created_at")
         .eq("user_id", id)
         .order("created_at", { ascending: false });
       if (data) setVideos(data as Video[]);
@@ -59,6 +58,19 @@ export default function ProfilePage() {
     fetchVideos();
     fetchUser();
   }, [id]);
+
+  const handleDeleteVideo = async (videoId: string) => {
+    const confirmDelete = confirm("Yakin ingin menghapus video ini?");
+    if (!confirmDelete) return;
+
+    const { error } = await supabase.from("videos").delete().eq("id", videoId);
+    if (!error) {
+      setVideos((prev) => prev.filter((v) => v.id !== videoId));
+      alert("Video berhasil dihapus!");
+    } else {
+      alert("Gagal menghapus video!");
+    }
+  };
 
   if (!profile) return <p className="text-center mt-10">Loading profile...</p>;
 
@@ -97,36 +109,50 @@ export default function ProfilePage() {
       <hr className="my-5" />
 
       {/* ✅ User's Videos */}
-      <h2 className="text-xl font-bold mb-3">Video dari {profile.channel_name}</h2>
+      <h2 className="text-xl font-bold mb-3">
+        Video dari {profile.channel_name}
+      </h2>
       {videos.length === 0 ? (
         <p className="text-gray-500">Belum ada video diunggah.</p>
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
           {videos.map((v) => (
-            <Link
+            <div
               key={v.id}
-              href={`/watch/${v.id}`}
-              className="border rounded-md overflow-hidden hover:shadow-md transition"
+              className="border rounded-md overflow-hidden hover:shadow-md transition relative group"
             >
-              <Image
-                src={
-                  v.thumbnail_url
-                    ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/thumbnails/${v.thumbnail_url}`
-                    : "/default-thumbnail.jpg"
-                }
-                alt={v.title}
-                width={400}
-                height={225}
-                className="w-full h-40 object-cover"
-                unoptimized
-              />
-              <div className="p-2">
-                <h3 className="font-semibold text-sm">{v.title}</h3>
-                <p className="text-xs text-gray-500">
-                  👍 {v.likes} | 👎 {v.dislikes}
-                </p>
-              </div>
-            </Link>
+              <Link href={`/watch/${v.id}`}>
+                <Image
+                  src={
+                    v.thumbnail_url
+                      ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/thumbnails/${v.thumbnail_url}`
+                      : "/default-thumbnail.jpg"
+                  }
+                  alt={v.title}
+                  width={400}
+                  height={225}
+                  className="w-full h-40 object-cover"
+                  unoptimized
+                />
+                <div className="p-2">
+                  <h3 className="font-semibold text-sm line-clamp-2">
+                    {v.title}
+                  </h3>
+                  <p className="text-xs text-gray-500">{v.views} views</p>
+                </div>
+              </Link>
+
+              {/* ✅ Tombol Hapus (hanya pemilik video yang bisa lihat) */}
+              {userId === id && (
+                <button
+                  onClick={() => handleDeleteVideo(v.id)}
+                  className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded hover:bg-red-600 opacity-0 group-hover:opacity-100 transition"
+                  title="Hapus Video"
+                >
+                  🗑
+                </button>
+              )}
+            </div>
           ))}
         </div>
       )}
