@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { createClient } from "@/supabase/client";
+import { supabase } from "@/supabase/client";
 import Image from "next/image";
 
 interface Comment {
@@ -39,7 +39,6 @@ export default function WatchPage() {
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const supabase = createClient();
 
   useEffect(() => {
     const fetchVideoAndComments = async () => {
