@@ -24,6 +24,11 @@ export default function AboutPage() {
         Nyantube beroperasi sesuai hukum yang berlaku dan mematuhi ketentuan hak cipta, privasi, serta perlindungan konsumen.
       </p>
 
+      <h2 className="text-lg font-semibold mt-4">Verified Badge</h2>
+      <p className="text-sm text-gray-700">
+        Untuk Request Verified badge bisa chat +62 857-9618-2078. Dan Lampirkan informasi seperti username dan email kamu. Setelah dikonfirmasi, maka kamu akan langsung mendapatkan verified badge.
+      </p>
+
       <p className="text-xs text-gray-500 mt-6">Terakhir diperbarui: {new Date().toLocaleDateString()}</p>
     </div>
   );
