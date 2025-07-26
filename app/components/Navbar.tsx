@@ -110,11 +110,10 @@ export default function Navbar() {
                 alt={profile?.username || "User"}
                 width={36}
                 height={36}
-                className="rounded-full border cursor-pointer"
+                className="rounded-full border cursor-pointer object-cover"
                 unoptimized
                 onClick={() => setDropdownOpen((prev) => !prev)}
               />
-
               {/* Dropdown */}
               {dropdownOpen && (
                 <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border">
