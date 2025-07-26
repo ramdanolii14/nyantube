@@ -5,17 +5,20 @@ import { supabase } from "@/supabase/client";
 import Image from "next/image";
 import Link from "next/link";
 
+interface Profile {
+  username: string;
+  avatar_url: string | null;
+  channel_name?: string;
+}
+
 interface Video {
   id: string;
   title: string;
   thumbnail_url: string;
   views: number;
   created_at: string;
-  profiles?: {
-    username: string;
-    avatar_url: string | null;
-    channel_name?: string;
-  };
+  user_id: string;
+  profiles: Profile;
 }
 
 export default function VideoList() {
@@ -25,42 +28,38 @@ export default function VideoList() {
   useEffect(() => {
     const fetchVideos = async () => {
       try {
-        console.log("🔄 Fetching all videos...");
-        const { data, error } = await supabase
+        console.log("🔄 Fetching videos...");
+
+        // ✅ Ambil semua video dulu
+        const { data: videoData, error: videoError } = await supabase
           .from("videos")
-          .select(
-            `
-            id,
-            title,
-            thumbnail_url,
-            views,
-            created_at,
-            profiles (
-              username,
-              avatar_url,
-              channel_name
-            )
-          `
-          )
+          .select("*")
           .order("created_at", { ascending: false });
 
-        if (error) throw error;
-        console.log("✅ Videos data:", data);
+        if (videoError) throw videoError;
 
-        setVideos(
-          (data || []).map((v: any) => ({
-            ...v,
-            profiles: v.profiles
-              ? Array.isArray(v.profiles)
-                ? v.profiles[0]
-                : v.profiles
-              : {
-                  username: "Unknown",
-                  avatar_url: null,
-                  channel_name: "Unknown",
-                },
-          }))
+        // ✅ Ambil profil masing-masing video (manual join)
+        const videosWithProfiles = await Promise.all(
+          (videoData || []).map(async (v: any) => {
+            const { data: profileData } = await supabase
+              .from("profiles")
+              .select("username, avatar_url, channel_name")
+              .eq("id", v.user_id)
+              .single();
+
+            return {
+              ...v,
+              profiles: profileData || {
+                username: "Unknown",
+                avatar_url: null,
+                channel_name: "Unknown",
+              },
+            };
+          })
         );
+
+        setVideos(videosWithProfiles);
+        console.log("✅ Videos loaded:", videosWithProfiles);
       } catch (error) {
         console.error("❌ Error fetching videos:", error);
       } finally {
@@ -72,26 +71,26 @@ export default function VideoList() {
   }, []);
 
   if (loading) {
-    return <p className="text-center mt-8">Loading videos...</p>;
+    return <div className="text-center mt-8">Loading videos...</div>;
   }
 
-  if (videos.length === 0) {
+  if (!videos.length) {
     return (
-      <p className="text-center mt-8 text-gray-500">
-        No videos uploaded yet.
-      </p>
+      <div className="text-center mt-8 text-gray-500">
+        No videos found.
+      </div>
     );
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-4">
+    <div className="max-w-6xl mx-auto p-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
       {videos.map((video) => (
         <Link
           key={video.id}
           href={`/watch/${video.id}`}
-          className="bg-white rounded-md shadow hover:shadow-lg transition p-2"
+          className="border rounded-lg overflow-hidden shadow hover:shadow-md transition bg-white"
         >
-          <div className="relative w-full aspect-video bg-gray-200 rounded overflow-hidden">
+          <div className="relative w-full h-48 bg-gray-200">
             <Image
               src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/thumbnails/${video.thumbnail_url}`}
               alt={video.title}
@@ -99,23 +98,22 @@ export default function VideoList() {
               className="object-cover"
             />
           </div>
-          <div className="flex items-center gap-2 mt-2">
+          <div className="p-2 flex gap-2">
             <Image
               src={
-                video.profiles?.avatar_url
+                video.profiles.avatar_url
                   ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${video.profiles.avatar_url}`
-                  : `https://ui-avatars.com/api/?name=${
-                      video.profiles?.username || "Unknown"
-                    }`
+                  : `https://ui-avatars.com/api/?name=${video.profiles.username}`
               }
-              alt={video.profiles?.username || "Unknown"}
-              width={32}
-              height={32}
+              alt={video.profiles.username}
+              width={36}
+              height={36}
               className="rounded-full"
             />
-            <div>
-              <p className="font-semibold text-sm line-clamp-2">{video.title}</p>
-              <p className="text-xs text-gray-500">
+            <div className="flex-1">
+              <p className="font-semibold line-clamp-2">{video.title}</p>
+              <p className="text-xs text-gray-500">{video.profiles.username}</p>
+              <p className="text-xs text-gray-400">
                 {video.views} views •{" "}
                 {new Date(video.created_at).toLocaleDateString()}
               </p>
