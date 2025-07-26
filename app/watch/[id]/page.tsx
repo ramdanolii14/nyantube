@@ -48,24 +48,32 @@ export default function WatchPage() {
           .from("videos")
           .select(
             `
-            id,
-            title,
-            description,
-            video_url,
-            views,
-            created_at,
-            profiles (
-              username,
-              avatar_url,
-              channel_name
-            )
-          `
+              id,
+              title,
+              description,
+              video_url,
+              views,
+              created_at,
+              profiles (
+                username,
+                avatar_url,
+                channel_name
+              )
+            `
           )
           .eq("id", videoId)
           .single();
-
+        
         if (videoError) throw videoError;
-        setVideo(videoData as Video);
+        if (videoData) {
+          const mappedVideo: Video = {
+            ...videoData,
+            profiles: Array.isArray(videoData.profiles)
+              ? videoData.profiles[0]
+              : videoData.profiles,
+          };
+          setVideo(mappedVideo);
+        }
 
         // ✅ Ambil komentar
         const { data: commentsData, error: commentsError } = await supabase
