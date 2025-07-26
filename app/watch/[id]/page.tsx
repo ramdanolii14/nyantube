@@ -233,69 +233,80 @@ export default function WatchPage() {
               Post
             </button>
           </div>
-          {comments.map((c) => {
-            const isOwner = c.user_id === video.profiles.id;
-            const isSelf = c.user_id === currentUserId;
-            return (
-              <div
-                key={c.id}
-                className="flex justify-between items-start gap-2 mb-3"
-              >
-                <div className="flex gap-2">
-                  <Image
-                    src={
-                      c.profiles.avatar_url
-                        ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${c.profiles.avatar_url}`
-                        : "/default-avatar.png"
-                    }
-                    alt="avatar"
-                    width={32}
-                    height={32}
-                    className="rounded-full w-8 h-8"
-                  />
-                  <div>
-                    <p className="font-semibold">{c.profiles.username}</p>
-                    <p>{c.content}</p>
+            {comments.map((c) => {
+              const safeProfile = c.profiles || {
+                id: "",
+                username: "Unknown",
+                avatar_url: null,
+              };
+              const isOwner = c.user_id === video.profiles?.id;
+              const isSelf = c.user_id === currentUserId;
+            
+              return (
+                <div key={c.id} className="flex justify-between items-start gap-2 mb-3">
+                  <div className="flex gap-2">
+                    <Image
+                      src={
+                        safeProfile.avatar_url
+                          ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${safeProfile.avatar_url}`
+                          : "/default-avatar.png"
+                      }
+                      alt="avatar"
+                      width={32}
+                      height={32}
+                      className="rounded-full w-8 h-8"
+                    />
+                    <div>
+                      <p className="font-semibold">{safeProfile.username}</p>
+                      <p>{c.content}</p>
+                    </div>
                   </div>
+                  {(isOwner || isSelf) && (
+                    <button
+                      onClick={() => handleDeleteComment(c.id)}
+                      className="text-red-500 text-sm"
+                    >
+                      Delete
+                    </button>
+                  )}
                 </div>
-                {(isOwner || isSelf) && (
-                  <button
-                    onClick={() => handleDeleteComment(c.id)}
-                    className="text-red-500 text-sm"
-                  >
-                    Delete
-                  </button>
-                )}
-              </div>
-            );
-          })}
+              );
+            })}
         </div>
       </div>
 
       {/* Related Videos */}
       <div className="w-full md:w-64">
         <h2 className="font-semibold mb-3">Related Videos</h2>
-        {relatedVideos.map((v) => (
-          <Link
-            key={v.id}
-            href={`/watch/${v.id}`}
-            className="flex gap-2 mb-3 hover:bg-gray-100 p-1 rounded"
-          >
-            <div className="relative w-40 h-24 bg-gray-200 rounded-md overflow-hidden">
-              <Image
-                src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/thumbnails/${v.thumbnail_url}`}
-                alt={v.title}
-                fill
-                className="object-cover"
-              />
-            </div>
-            <div>
-              <p className="text-sm font-semibold">{v.title}</p>
-              <p className="text-xs text-gray-500">{v.profiles.username}</p>
-              <p className="text-xs text-gray-500">{v.views} views</p>
-            </div>
-          </Link>
-        ))}
+          {relatedVideos.map((v) => {
+            const safeProfile = v.profiles || {
+              id: "",
+              username: "Unknown",
+              avatar_url: null,
+            };
+          
+            return (
+              <Link
+                key={v.id}
+                href={`/watch/${v.id}`}
+                className="flex gap-2 mb-3 hover:bg-gray-100 p-1 rounded"
+              >
+                <div className="relative w-40 h-24 bg-gray-200 rounded-md overflow-hidden">
+                  <Image
+                    src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/thumbnails/${v.thumbnail_url}`}
+                    alt={v.title}
+                    fill
+                    className="object-cover"
+                  />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold">{v.title}</p>
+                  <p className="text-xs text-gray-500">{safeProfile.username}</p>
+                  <p className="text-xs text-gray-500">{v.views} views</p>
+                </div>
+              </Link>
+            );
+          })}
       </div>
     </div>
   );
