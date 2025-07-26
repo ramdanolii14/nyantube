@@ -60,31 +60,26 @@ export default function WatchPage() {
         .eq("id", id)
         .single();
 
-      if (!videoData) return;
+      if (videoData) {
+        setVideo({
+          ...videoData,
+          profiles: videoData.profiles
+            ? {
+                id: videoData.profiles.id,
+                username: videoData.profiles.username,
+                avatar_url: videoData.profiles.avatar_url,
+                channel_name: videoData.profiles.channel_name,
+                is_verified: videoData.profiles.is_verified,
+              }
+            : { id: "", username: "Unknown", avatar_url: null, channel_name: "", is_verified: false },
+        });
 
-      setVideo({
-        ...videoData,
-        profiles: videoData.profiles
-          ? {
-              id: videoData.profiles.id,
-              username: videoData.profiles.username,
-              avatar_url: videoData.profiles.avatar_url,
-              channel_name: videoData.profiles.channel_name,
-              is_verified: videoData.profiles.is_verified,
-            }
-          : {
-              id: "",
-              username: "Unknown",
-              avatar_url: null,
-              channel_name: "",
-              is_verified: false,
-            },
-      });
-
-      await supabase
-        .from("videos")
-        .update({ views: (videoData.views || 0) + 1 })
-        .eq("id", id);
+        // ✅ Tambah views
+        await supabase
+          .from("videos")
+          .update({ views: (videoData.views || 0) + 1 })
+          .eq("id", id);
+      }
     };
 
     const fetchRelatedVideos = async () => {
@@ -105,13 +100,7 @@ export default function WatchPage() {
                 channel_name: v.profiles.channel_name,
                 is_verified: v.profiles.is_verified,
               }
-            : {
-                id: "",
-                username: "Unknown",
-                avatar_url: null,
-                channel_name: "",
-                is_verified: false,
-              },
+            : { id: "", username: "Unknown", avatar_url: null, channel_name: "", is_verified: false },
         })) || []
       );
     };
@@ -133,12 +122,7 @@ export default function WatchPage() {
                 avatar_url: c.profiles.avatar_url,
                 is_verified: c.profiles.is_verified,
               }
-            : {
-                id: "",
-                username: "Unknown",
-                avatar_url: null,
-                is_verified: false,
-              },
+            : { id: "", username: "Unknown", avatar_url: null, is_verified: false },
         })) || []
       );
     };
@@ -155,8 +139,7 @@ export default function WatchPage() {
         .eq("video_id", id);
 
       const likeCount = likesData?.filter((v) => v.type === "like").length || 0;
-      const dislikeCount =
-        likesData?.filter((v) => v.type === "dislike").length || 0;
+      const dislikeCount = likesData?.filter((v) => v.type === "dislike").length || 0;
 
       setLikes(likeCount);
       setDislikes(dislikeCount);
@@ -170,6 +153,80 @@ export default function WatchPage() {
     fetchComments();
     fetchUser().then(fetchLikes);
   }, [id, currentUserId]);
+
+  const refreshComments = async () => {
+    const { data } = await supabase
+      .from("comments")
+      .select("*, profiles(id, username, avatar_url, is_verified)")
+      .eq("video_id", id)
+      .order("created_at", { ascending: false });
+
+    setComments(
+      data?.map((c) => ({
+        ...c,
+        profiles: c.profiles
+          ? {
+              id: c.profiles.id,
+              username: c.profiles.username,
+              avatar_url: c.profiles.avatar_url,
+              is_verified: c.profiles.is_verified,
+            }
+          : { id: "", username: "Unknown", avatar_url: null, is_verified: false },
+      })) || []
+    );
+  };
+
+  // ✅ Add Comment
+  const handleAddComment = async () => {
+    if (!currentUserId) {
+      alert("You need to log in to comment");
+      return;
+    }
+    if (!newComment.trim()) return;
+
+    await supabase.from("comments").insert({
+      video_id: id,
+      content: newComment,
+      user_id: currentUserId,
+    });
+
+    setNewComment("");
+    refreshComments();
+  };
+
+  // ✅ Reply Comment
+  const handleReplyComment = async (parentId: string) => {
+    if (!currentUserId) {
+      alert("You need to log in to reply");
+      return;
+    }
+    if (!replyComment[parentId]?.trim()) return;
+
+    await supabase.from("comments").insert({
+      video_id: id,
+      content: replyComment[parentId],
+      parent_id: parentId,
+      user_id: currentUserId,
+    });
+
+    setReplyComment((prev) => ({ ...prev, [parentId]: "" }));
+    refreshComments();
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    await supabase.from("comments").delete().eq("id", commentId);
+    refreshComments();
+  };
+
+  const handleEditComment = async () => {
+    if (!editComment || !editComment.content.trim()) return;
+    await supabase
+      .from("comments")
+      .update({ content: editComment.content, edited: true })
+      .eq("id", editComment.id);
+    setEditComment(null);
+    refreshComments();
+  };
 
   const handleVote = async (type: "like" | "dislike") => {
     if (!currentUserId) {
@@ -205,64 +262,6 @@ export default function WatchPage() {
 
       setUserVote(type);
     }
-  };
-
-  const refreshComments = async () => {
-    const { data } = await supabase
-      .from("comments")
-      .select("*, profiles(id, username, avatar_url, is_verified)")
-      .eq("video_id", id)
-      .order("created_at", { ascending: false });
-
-    setComments(
-      data?.map((c) => ({
-        ...c,
-        profiles: c.profiles
-          ? {
-              id: c.profiles.id,
-              username: c.profiles.username,
-              avatar_url: c.profiles.avatar_url,
-              is_verified: c.profiles.is_verified,
-            }
-          : { id: "", username: "Unknown", avatar_url: null, is_verified: false },
-      })) || []
-    );
-  };
-
-  const handleAddComment = async () => {
-    if (!newComment.trim()) return;
-    await supabase.from("comments").insert({
-      video_id: id,
-      content: newComment,
-    });
-    setNewComment("");
-    refreshComments();
-  };
-
-  const handleReplyComment = async (parentId: string) => {
-    if (!replyComment[parentId]?.trim()) return;
-    await supabase.from("comments").insert({
-      video_id: id,
-      content: replyComment[parentId],
-      parent_id: parentId,
-    });
-    setReplyComment((prev) => ({ ...prev, [parentId]: "" }));
-    refreshComments();
-  };
-
-  const handleDeleteComment = async (commentId: string) => {
-    await supabase.from("comments").delete().eq("id", commentId);
-    refreshComments();
-  };
-
-  const handleEditComment = async () => {
-    if (!editComment || !editComment.content.trim()) return;
-    await supabase
-      .from("comments")
-      .update({ content: editComment.content, edited: true })
-      .eq("id", editComment.id);
-    setEditComment(null);
-    refreshComments();
   };
 
   if (!video) return <p className="text-center mt-10">Loading...</p>;
@@ -301,18 +300,14 @@ export default function WatchPage() {
               >
                 {video.profiles.channel_name || video.profiles.username}
                 {video.profiles.is_verified && (
-                  <div className="relative group inline-block">
-                    <Image
-                      src="/verified.svg"
-                      alt="verified"
-                      width={14}
-                      height={14}
-                      className="inline-block align-middle"
-                    />
-                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-1 hidden group-hover:block bg-black text-white text-[10px] px-2 py-1 rounded">
-                      VERIFIED USER
-                    </div>
-                  </div>
+                  <Image
+                    src="/verified.svg"
+                    alt="verified"
+                    width={14}
+                    height={14}
+                    className="inline-block"
+                    title="VERIFIED USER"
+                  />
                 )}
               </Link>
               <p className="text-sm text-gray-500">
@@ -383,31 +378,20 @@ export default function WatchPage() {
                     </Link>
                     <div>
                       <p className="font-semibold flex items-center gap-1">
-                        <Link
-                          href={`/profile/${c.profiles.id}`}
-                          className="hover:underline flex items-center gap-1"
-                        >
-                          {c.profiles.username}
-                          {c.profiles.is_verified && (
-                            <div className="relative group inline-block">
-                              <Image
-                                src="/verified.svg"
-                                alt="verified"
-                                width={12}
-                                height={12}
-                                className="inline-block align-middle"
-                              />
-                              <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-1 hidden group-hover:block bg-black text-white text-[10px] px-2 py-1 rounded">
-                                VERIFIED USER
-                              </div>
-                            </div>
-                          )}
-                        </Link>
+                        {c.profiles.username}
+                        {c.profiles.is_verified && (
+                          <Image
+                            src="/verified.svg"
+                            alt="verified"
+                            width={12}
+                            height={12}
+                            title="VERIFIED USER"
+                          />
+                        )}
                         {c.edited && (
                           <span className="text-xs text-gray-500">[edited]</span>
                         )}
                       </p>
-
                       {editComment?.id === c.id ? (
                         <div className="flex gap-2 mt-1">
                           <input
@@ -525,26 +509,23 @@ export default function WatchPage() {
               </div>
               <div className="flex-1">
                 <p className="text-sm font-semibold line-clamp-2">{v.title}</p>
-                <Link
-                  href={`/profile/${v.profiles.id}`}
-                  className="text-xs text-gray-500 hover:underline flex items-center gap-1"
-                >
-                  {v.profiles.channel_name || v.profiles.username}
-                  {v.profiles.is_verified && (
-                    <div className="relative group inline-block">
+                <div className="flex items-center gap-1 text-xs text-gray-500">
+                  <Link
+                    href={`/profile/${v.profiles.id}`}
+                    className="hover:underline flex items-center gap-1"
+                  >
+                    {v.profiles.channel_name || v.profiles.username}
+                    {v.profiles.is_verified && (
                       <Image
                         src="/verified.svg"
                         alt="verified"
                         width={10}
                         height={10}
-                        className="inline-block align-middle"
+                        title="VERIFIED USER"
                       />
-                      <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-1 hidden group-hover:block bg-black text-white text-[10px] px-2 py-1 rounded">
-                        VERIFIED USER
-                      </div>
-                    </div>
-                  )}
-                </Link>
+                    )}
+                  </Link>
+                </div>
                 <p className="text-xs text-gray-500">{v.views} views</p>
               </div>
             </Link>
