@@ -11,6 +11,7 @@ interface Profile {
   username: string;
   channel_name: string;
   avatar_url: string | null;
+  is_verified?: boolean;
 }
 
 interface Video {
@@ -32,7 +33,7 @@ export default function ProfilePage() {
     const fetchProfile = async () => {
       const { data } = await supabase
         .from("profiles")
-        .select("*")
+        .select("id, username, channel_name, avatar_url, is_verified")
         .eq("id", id)
         .single();
       if (data) setProfile(data as Profile);
@@ -91,7 +92,23 @@ export default function ProfilePage() {
           unoptimized
         />
         <div>
-          <h1 className="text-2xl font-bold">{profile.channel_name}</h1>
+          <h1 className="text-2xl font-bold flex items-center gap-1">
+            {profile.channel_name}
+            {profile.is_verified && (
+              <div className="relative group inline-block">
+                <Image
+                  src="/verified.svg"
+                  alt="verified"
+                  width={16}
+                  height={16}
+                  className="inline-block align-middle"
+                />
+                <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-1 hidden group-hover:block bg-black text-white text-[10px] px-2 py-1 rounded">
+                  VERIFIED USER
+                </div>
+              </div>
+            )}
+          </h1>
           <p className="text-gray-500">@{profile.username}</p>
         </div>
 
@@ -142,7 +159,7 @@ export default function ProfilePage() {
                 </div>
               </Link>
 
-              {/* ✅ Tombol Hapus (hanya pemilik video yang bisa lihat) */}
+              {/* ✅ Tombol Hapus */}
               {userId === id && (
                 <button
                   onClick={() => handleDeleteVideo(v.id)}
