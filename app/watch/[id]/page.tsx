@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import Image from "next/image";
 import { supabase } from "@/supabase/client";
 
-// ✅ Tipe Video
+// ✅ Tipe Video Utama
 interface Video {
   id: string;
   title: string;
@@ -17,6 +17,19 @@ interface Video {
   profiles?: {
     username: string;
     avatar_url: string | null;
+    channel_name?: string;
+  };
+}
+
+// ✅ Tipe Video Rekomendasi (lebih simpel)
+interface RelatedVideo {
+  id: string;
+  title: string;
+  thumbnail_url: string;
+  views: number;
+  created_at: string;
+  profiles?: {
+    username: string;
     channel_name?: string;
   };
 }
@@ -37,7 +50,7 @@ export default function WatchPage() {
   const { id } = useParams();
   const [video, setVideo] = useState<Video | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
-  const [relatedVideos, setRelatedVideos] = useState<Video[]>([]);
+  const [relatedVideos, setRelatedVideos] = useState<RelatedVideo[]>([]);
   const [newComment, setNewComment] = useState("");
 
   useEffect(() => {
@@ -46,7 +59,7 @@ export default function WatchPage() {
 
   const fetchData = async () => {
     try {
-      // ✅ Ambil video utama & unwrap profiles
+      // ✅ Ambil video utama
       const { data: videoData, error: videoError } = await supabase
         .from("videos")
         .select(
@@ -73,7 +86,7 @@ export default function WatchPage() {
         .update({ views: (videoData.views || 0) + 1 })
         .eq("id", id);
 
-      // ✅ Ambil komentar (unwrap profiles)
+      // ✅ Ambil komentar
       const { data: commentsData, error: commentsError } = await supabase
         .from("comments")
         .select(
@@ -86,6 +99,7 @@ export default function WatchPage() {
         .order("created_at", { ascending: false });
 
       if (commentsError) throw commentsError;
+
       setComments(
         commentsData.map((c) => ({
           ...c,
@@ -93,7 +107,7 @@ export default function WatchPage() {
         }))
       );
 
-      // ✅ Ambil video rekomendasi (unwrap profiles)
+      // ✅ Ambil video rekomendasi (pakai RelatedVideo)
       const { data: relatedData, error: relatedError } = await supabase
         .from("videos")
         .select(
@@ -107,6 +121,7 @@ export default function WatchPage() {
         .limit(10);
 
       if (relatedError) throw relatedError;
+
       setRelatedVideos(
         relatedData.map((v) => ({
           ...v,
