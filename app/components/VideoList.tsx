@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
-import Image from "next/image";
 import { supabase } from "@/supabase/client";
+import Image from "next/image";
+import Link from "next/link";
 
 interface Video {
   id: string;
@@ -43,9 +43,15 @@ export default function VideoList() {
           .order("created_at", { ascending: false });
 
         if (error) throw error;
-        console.log("✅ Videos fetched:", data);
+        console.log("✅ Videos fetched (raw):", data);
 
-        setVideos(data || []);
+        // ✅ Paksa profiles jadi object tunggal
+        const mappedData: Video[] = (data || []).map((v: any) => ({
+          ...v,
+          profiles: Array.isArray(v.profiles) ? v.profiles[0] : v.profiles,
+        }));
+
+        setVideos(mappedData);
       } catch (err) {
         console.error("❌ Error fetching videos:", err);
       } finally {
@@ -56,50 +62,42 @@ export default function VideoList() {
     fetchVideos();
   }, []);
 
-  if (loading) return <p className="text-center mt-8">Loading videos...</p>;
-
-  if (!videos.length)
-    return (
-      <p className="text-center mt-8 text-red-500">
-        ❌ No videos found (check Supabase).
-      </p>
-    );
+  if (loading) return <p className="text-center mt-4">Loading videos...</p>;
+  if (!videos.length) return <p className="text-center mt-4">No videos found.</p>;
 
   return (
-    <div className="max-w-6xl mx-auto p-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-      {videos.map((v) => (
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 p-4">
+      {videos.map((video) => (
         <Link
-          key={v.id}
-          href={`/watch/${v.id}`}
-          className="border rounded-md bg-white shadow hover:shadow-lg transition p-2"
+          key={video.id}
+          href={`/watch/${video.id}`}
+          className="block bg-white rounded-lg shadow hover:shadow-md transition"
         >
-          <div className="relative w-full h-48 bg-gray-200 rounded overflow-hidden">
-            <Image
-              src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/thumbnails/${v.thumbnail_url}`}
-              alt={v.title}
-              fill
-              className="object-cover"
-            />
-          </div>
-          <p className="font-semibold mt-2 text-sm line-clamp-2">{v.title}</p>
-          <p className="text-xs text-gray-500">{v.views} views</p>
-          <div className="flex items-center gap-2 mt-1">
+          <Image
+            src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/thumbnails/${video.thumbnail_url}`}
+            alt={video.title}
+            width={400}
+            height={225}
+            className="rounded-t-lg w-full h-auto"
+          />
+          <div className="p-2 flex gap-2">
             <Image
               src={
-                v.profiles?.avatar_url
-                  ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${v.profiles.avatar_url}`
-                  : `https://ui-avatars.com/api/?name=${
-                      v.profiles?.channel_name || "Unknown"
-                    }`
+                video.profiles.avatar_url
+                  ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${video.profiles.avatar_url}`
+                  : `https://ui-avatars.com/api/?name=${video.profiles.channel_name}`
               }
-              alt={v.profiles?.channel_name || "Unknown"}
-              width={24}
-              height={24}
+              alt={video.profiles.channel_name}
+              width={40}
+              height={40}
               className="rounded-full"
             />
-            <p className="text-xs text-gray-600">
-              {v.profiles?.channel_name || "Unknown"}
-            </p>
+            <div>
+              <p className="font-semibold text-sm">{video.title}</p>
+              <p className="text-xs text-gray-500">
+                {video.profiles.channel_name} • {video.views} views
+              </p>
+            </div>
           </div>
         </Link>
       ))}
