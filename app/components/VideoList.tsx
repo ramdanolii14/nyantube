@@ -13,7 +13,7 @@ interface Video {
   views: number;
   likes: number;
   dislikes: number;
-  profiles?: {
+  profiles: {
     channel_name: string;
     avatar_url: string | null;
   };
@@ -29,33 +29,63 @@ export default function VideoList() {
 
   useEffect(() => {
     const fetchVideos = async () => {
-      // ✅ Hitung total video
-      const { count } = await supabase
-        .from("videos")
-        .select("*", { count: "exact", head: true });
+      try {
+        console.log("🔄 Fetching videos...");
 
-      if (count) setTotalVideos(count);
+        // ✅ Hitung total video
+        const { count } = await supabase
+          .from("videos")
+          .select("*", { count: "exact", head: true });
 
-      // ✅ Ambil video + data profile
-      const from = (page - 1) * videosPerPage;
-      const to = from + videosPerPage - 1;
+        if (count) setTotalVideos(count);
 
-      const { data, error } = await supabase
-        .from("videos")
-        .select(
-          `id, title, video_url, thumbnail_url, views, likes, dislikes, 
-           profiles(channel_name, avatar_url)`
-        )
-        .order("created_at", { ascending: false })
-        .order("likes", { ascending: false })
-        .order("views", { ascending: false })
-        .range(from, to);
+        // ✅ Ambil video + data profile (pakai relasi FK)
+        const from = (page - 1) * videosPerPage;
+        const to = from + videosPerPage - 1;
 
-      if (!error) setVideos(data || []);
+        const { data, error } = await supabase
+          .from("videos")
+          .select(
+            `
+            id,
+            title,
+            video_url,
+            thumbnail_url,
+            views,
+            likes,
+            dislikes,
+            profiles!videos_user_id_fkey (
+              channel_name,
+              avatar_url
+            )
+          `
+          )
+          .order("created_at", { ascending: false })
+          .order("likes", { ascending: false })
+          .order("views", { ascending: false })
+          .range(from, to);
+
+        if (error) throw error;
+
+        console.log("✅ Videos fetched (raw):", data);
+
+        // ✅ Paksa profiles jadi object tunggal (bukan array)
+        const mapped = (data || []).map((v: any) => ({
+          ...v,
+          profiles: Array.isArray(v.profiles) ? v.profiles[0] : v.profiles,
+        }));
+
+        setVideos(mapped);
+      } catch (err) {
+        console.error("❌ Error fetching videos:", err);
+      }
     };
 
     fetchVideos();
   }, [page]);
+
+  if (!videos.length)
+    return <p className="text-center mt-4">No videos found.</p>;
 
   return (
     <div className="mt-16 px-4">
