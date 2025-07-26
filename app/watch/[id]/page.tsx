@@ -2,10 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import Image from "next/image";
 import { supabase } from "@/supabase/client";
+import Image from "next/image";
 
-// ✅ Tipe Video Utama
+interface Profile {
+  username: string;
+  avatar_url: string | null;
+  channel_name?: string;
+}
+
 interface Video {
   id: string;
   title: string;
@@ -14,218 +19,184 @@ interface Video {
   thumbnail_url: string;
   views: number;
   created_at: string;
-  profiles?: {
-    username: string;
-    avatar_url: string | null;
-    channel_name?: string;
-  };
+  user_id: string;
+  profiles: Profile;
 }
 
-// ✅ Tipe Video Rekomendasi (lebih simpel)
-interface RelatedVideo {
-  id: string;
-  title: string;
-  thumbnail_url: string;
-  views: number;
-  created_at: string;
-  profiles?: {
-    username: string;
-    channel_name?: string;
-  };
-}
-
-// ✅ Tipe Komentar
 interface Comment {
   id: string;
   user_id: string;
   content: string;
   created_at: string;
-  profiles: {
-    username: string;
-    avatar_url: string | null;
-  };
+  profiles: Profile;
 }
 
 export default function WatchPage() {
   const { id } = useParams();
   const [video, setVideo] = useState<Video | null>(null);
+  const [relatedVideos, setRelatedVideos] = useState<Video[]>([]);
   const [comments, setComments] = useState<Comment[]>([]);
-  const [relatedVideos, setRelatedVideos] = useState<RelatedVideo[]>([]);
   const [newComment, setNewComment] = useState("");
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (id) fetchData();
-  }, [id]);
+    const fetchData = async () => {
+      // ✅ Ambil user sekarang
+      const { data: userData } = await supabase.auth.getUser();
+      setCurrentUserId(userData.user?.id ?? null);
 
-  const fetchData = async () => {
-    try {
       // ✅ Ambil video utama
       const { data: videoData, error: videoError } = await supabase
         .from("videos")
-        .select(
-          `
-          id, title, description, video_url, thumbnail_url, views, created_at,
-          profiles (username, avatar_url, channel_name)
-        `
-        )
+        .select("*, profiles(username, avatar_url, channel_name)")
         .eq("id", id)
         .single();
 
       if (videoError) throw videoError;
+      setVideo(videoData as Video);
 
-      setVideo({
-        ...videoData,
-        profiles: Array.isArray(videoData.profiles)
-          ? videoData.profiles[0]
-          : videoData.profiles,
-      });
-
-      // ✅ Tambah views
+      // ✅ Update views
       await supabase
         .from("videos")
         .update({ views: (videoData.views || 0) + 1 })
         .eq("id", id);
 
-      // ✅ Ambil komentar
-      const { data: commentsData, error: commentsError } = await supabase
-        .from("comments")
-        .select(
-          `
-          id, user_id, content, created_at,
-          profiles (username, avatar_url)
-        `
-        )
-        .eq("video_id", id)
-        .order("created_at", { ascending: false });
-
-      if (commentsError) throw commentsError;
-
-      setComments(
-        commentsData.map((c) => ({
-          ...c,
-          profiles: Array.isArray(c.profiles) ? c.profiles[0] : c.profiles,
-        }))
-      );
-
-      // ✅ Ambil video rekomendasi (pakai RelatedVideo)
+      // ✅ Ambil related videos
       const { data: relatedData, error: relatedError } = await supabase
         .from("videos")
-        .select(
-          `
-          id, title, thumbnail_url, views, created_at,
-          profiles (username, channel_name)
-        `
-        )
+        .select("*, profiles(username, avatar_url, channel_name)")
         .neq("id", id)
-        .order("created_at", { ascending: false })
-        .limit(10);
+        .limit(6);
 
       if (relatedError) throw relatedError;
-
       setRelatedVideos(
-        relatedData.map((v) => ({
+        relatedData.map((v: any) => ({
           ...v,
           profiles: Array.isArray(v.profiles) ? v.profiles[0] : v.profiles,
         }))
       );
-    } catch (error) {
-      console.error("Error fetching data:", error);
-    }
-  };
 
-  const handleComment = async () => {
-    if (!newComment.trim()) return;
-    const { error } = await supabase.from("comments").insert([
-      { video_id: id, content: newComment },
-    ]);
-    if (!error) {
+      // ✅ Ambil komentar
+      const { data: commentData, error: commentError } = await supabase
+        .from("comments")
+        .select("*, profiles(username, avatar_url, channel_name)")
+        .eq("video_id", id)
+        .order("created_at", { ascending: false });
+
+      if (commentError) throw commentError;
+      setComments(commentData as Comment[]);
+    };
+
+    fetchData();
+  }, [id]);
+
+  const handleAddComment = async () => {
+    if (!newComment.trim() || !currentUserId) return;
+
+    const { data, error } = await supabase
+      .from("comments")
+      .insert([{ video_id: id, user_id: currentUserId, content: newComment }])
+      .select("*, profiles(username, avatar_url, channel_name)")
+      .single();
+
+    if (!error && data) {
+      setComments([data, ...comments]);
       setNewComment("");
-      fetchData();
     }
   };
 
-  if (!video) return <p className="text-center mt-10">Loading video...</p>;
+  const handleDeleteComment = async (commentId: string) => {
+    const { error } = await supabase.from("comments").delete().eq("id", commentId);
+    if (!error) {
+      setComments(comments.filter((c) => c.id !== commentId));
+    }
+  };
+
+  if (!video) return <p className="text-center mt-10">Loading...</p>;
 
   return (
-  <div className="max-w-6xl mx-auto p-4 grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
-    {/* ✅ VIDEO UTAMA */}
-    <div className="md:col-span-2">
-      <video src={video.video_url} controls className="w-full rounded-md" />
+    <div className="flex gap-5 px-8 py-6">
+      {/* ✅ Video Utama */}
+      <div className="flex-1">
+        <video
+          controls
+          className="rounded-lg w-full mb-4"
+          src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/videos/${video.video_url}`}
+        ></video>
 
-      <h1 className="text-lg font-semibold mt-3">{video.title}</h1>
-      <p className="text-sm text-gray-500">
-        {video.views}x ditonton • {new Date(video.created_at).toLocaleDateString()}
-      </p>
+        <h1 className="text-xl font-bold mb-1">{video.title}</h1>
+        <p className="text-gray-600 text-sm mb-3">
+          {video.views}x ditonton • {new Date(video.created_at).toLocaleDateString()}
+        </p>
 
-      <div className="flex items-center gap-2 mt-3">
-        <Image
-          src={
-            video.profiles?.avatar_url
-              ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${video.profiles.avatar_url}`
-              : `https://ui-avatars.com/api/?name=${video.profiles?.username || "Unknown"}`
-          }
-          alt={video.profiles?.username || "Unknown"}
-          width={40}
-          height={40}
-          className="rounded-full"
-          unoptimized
-        />
-        <div>
-          <p className="text-sm font-semibold">{video.profiles?.channel_name || "Unknown"}</p>
-          <p className="text-xs text-gray-500">{video.profiles?.username}</p>
+        <div className="flex items-center gap-3 mb-4">
+          <Image
+            src={
+              video.profiles.avatar_url
+                ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${video.profiles.avatar_url}`
+                : "/default-avatar.png"
+            }
+            alt={video.profiles.username}
+            width={40}
+            height={40}
+            className="rounded-full"
+          />
+          <div>
+            <p className="font-semibold">{video.profiles.username}</p>
+            <p className="text-gray-500 text-sm">{video.profiles.channel_name ?? ""}</p>
+          </div>
         </div>
-      </div>
 
-      <p className="mt-4 text-sm text-gray-700 whitespace-pre-line">{video.description}</p>
+        <p className="mb-5 text-gray-700">{video.description}</p>
 
-      {/* ✅ KOMENTAR */}
-      <div className="mt-6">
-        <h2 className="text-md font-semibold mb-2">Komentar</h2>
-        <div className="flex gap-2 mb-4">
+        {/* ✅ Komentar */}
+        <h2 className="text-lg font-semibold mb-3">Komentar</h2>
+        <div className="flex items-center gap-2 mb-4">
           <input
             type="text"
             placeholder="Tulis komentar..."
+            className="flex-1 border rounded p-2"
             value={newComment}
             onChange={(e) => setNewComment(e.target.value)}
-            className="flex-1 border rounded-md px-3 py-2 text-sm"
           />
           <button
-            onClick={handleComment}
-            className="bg-red-500 text-white px-4 py-2 rounded-md text-sm"
+            onClick={handleAddComment}
+            className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
           >
             Kirim
           </button>
         </div>
 
+        <div>
           {comments.map((c) => {
-            const isOwner = c.user_id === video.profiles?.id; // kreator video
-            const isSelf = c.user_id === currentUserId; // pengomentar
-          
+            const isOwner = c.user_id === video.user_id;
+            const isSelf = c.user_id === currentUserId;
             return (
-              <div key={c.id} className="flex justify-between items-start gap-2 mb-3">
-                <div className="flex gap-2">
+              <div
+                key={c.id}
+                className="flex justify-between items-start gap-2 mb-3"
+              >
+                <div className="flex items-center gap-3">
                   <Image
                     src={
                       c.profiles.avatar_url
                         ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${c.profiles.avatar_url}`
-                        : `https://ui-avatars.com/api/?name=${c.profiles.username}`
+                        : "/default-avatar.png"
                     }
                     alt={c.profiles.username}
-                    width={32}
-                    height={32}
+                    width={35}
+                    height={35}
                     className="rounded-full"
-                    unoptimized
                   />
                   <div>
-                    <p className="text-sm font-semibold">{c.profiles.username}</p>
-                    <p className="text-sm">{c.content}</p>
+                    <p className="font-semibold">{c.profiles.username}</p>
+                    <p className="text-gray-700">{c.content}</p>
                   </div>
                 </div>
-          
                 {(isOwner || isSelf) && (
                   <button
                     onClick={() => handleDeleteComment(c.id)}
-                    className="text-xs text-red-500 hover:underline"
+                    className="text-red-500 text-sm hover:underline"
                   >
                     Hapus
                   </button>
@@ -235,24 +206,23 @@ export default function WatchPage() {
           })}
         </div>
       </div>
-  
-      {/* ✅ VIDEO REKOMENDASI */}
-      <div className="space-y-3">
+
+      {/* ✅ Related Videos */}
+      <div className="w-72">
         {relatedVideos.map((v) => (
-          <div key={v.id} className="flex gap-2">
+          <div key={v.id} className="flex gap-2 mb-3">
             <div className="relative w-40 h-24 bg-gray-200 rounded-md overflow-hidden">
               <Image
                 src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/thumbnails/${v.thumbnail_url}`}
                 alt={v.title}
                 fill
                 className="object-cover"
-                unoptimized
               />
             </div>
-            <div className="flex-1">
-              <p className="text-sm font-semibold line-clamp-2">{v.title}</p>
-              <p className="text-xs text-gray-500">{v.profiles?.channel_name || "Unknown"}</p>
-              <p className="text-xs text-gray-400">{v.views}x ditonton</p>
+            <div className="text-sm">
+              <p className="font-semibold">{v.title}</p>
+              <p className="text-gray-600">{v.profiles.username}</p>
+              <p className="text-gray-600">{v.views}x ditonton</p>
             </div>
           </div>
         ))}
