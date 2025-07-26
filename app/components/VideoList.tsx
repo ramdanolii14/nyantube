@@ -16,6 +16,7 @@ interface Video {
   profiles?: {
     channel_name: string;
     avatar_url: string | null;
+    is_verified?: boolean;
   };
 }
 
@@ -26,7 +27,7 @@ export default function VideoList() {
     const fetchVideos = async () => {
       const { data } = await supabase
         .from("videos")
-        .select("*, profiles(channel_name, avatar_url)")
+        .select("*, profiles(channel_name, avatar_url, is_verified)")
         .order("views", { ascending: false }) // ✅ Prioritas views
         .order("likes", { ascending: false }) // ✅ Kalau views sama, likes lebih tinggi di atas
         .order("created_at", { ascending: false }); // ✅ Terbaru di atas
@@ -38,6 +39,7 @@ export default function VideoList() {
             profiles: v.profiles || {
               channel_name: "Unknown",
               avatar_url: null,
+              is_verified: false,
             },
           })) as Video[]
         );
@@ -55,7 +57,11 @@ export default function VideoList() {
           href={`/watch/${video.id}`}
           className="bg-white rounded-lg shadow hover:shadow-lg transition p-2"
         >
-          <div className="relative w-full rounded-md overflow-hidden" style={{ paddingTop: "56.25%" }}>
+          {/* Thumbnail */}
+          <div
+            className="relative w-full rounded-md overflow-hidden"
+            style={{ paddingTop: "56.25%" }}
+          >
             <Image
               src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/thumbnails/${video.thumbnail_url}`}
               alt={video.title}
@@ -65,6 +71,7 @@ export default function VideoList() {
             />
           </div>
 
+          {/* Info */}
           <div className="flex items-center gap-2 mt-2">
             <Image
               src={
@@ -78,9 +85,25 @@ export default function VideoList() {
               className="rounded-full object-cover aspect-square"
               unoptimized
             />
-            <div>
+            <div className="flex flex-col">
               <h3 className="font-semibold text-sm line-clamp-2">{video.title}</h3>
-              <p className="text-xs text-gray-600">{video.profiles?.channel_name}</p>
+              <p className="text-xs text-gray-600 flex items-center gap-1">
+                {video.profiles?.channel_name}
+                {video.profiles?.is_verified && (
+                  <div className="relative group inline-block">
+                    <Image
+                      src="/verified.svg"
+                      alt="verified"
+                      width={12}
+                      height={12}
+                      className="inline-block"
+                    />
+                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-1 hidden group-hover:block bg-black text-white text-[10px] px-2 py-1 rounded">
+                      VERIFIED USER
+                    </div>
+                  </div>
+                )}
+              </p>
               <p className="text-xs text-gray-500">{video.views} views</p>
             </div>
           </div>
