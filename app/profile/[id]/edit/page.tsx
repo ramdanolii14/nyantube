@@ -93,14 +93,21 @@ export default function EditProfilePage() {
       <h1 className="text-xl font-bold mb-4">Edit Profile</h1>
 
       <div className="mb-4 flex flex-col items-center">
-        <Image
-          src={previewAvatar || "https://ui-avatars.com/api/?name=${profile.username}"}
-          alt="Preview Avatar"
-          width={100}
-          height={100}
-          className="rounded-full mb-2"
-          unoptimized
-        />
+        {/* ✅ FIX Foto 1:1 bulat rapi */}
+        <div className="w-24 h-24 rounded-full overflow-hidden border mb-2">
+          <Image
+            src={
+              previewAvatar ||
+              `https://ui-avatars.com/api/?name=${encodeURIComponent(username || "User")}`
+            }
+            alt="Preview Avatar"
+            width={100}
+            height={100}
+            className="object-cover w-full h-full"
+            unoptimized
+          />
+        </div>
+
         <input
           type="file"
           accept="image/png,image/jpeg,image/webp,image/gif"
