@@ -197,11 +197,11 @@ export default function WatchPage() {
           </button>
         </div>
 
-        {comments.map((c) => {
-          const isOwner = c.user_id === video.profiles?.id; // kreator video
-          const isSelf = c.user_id === (await supabase.auth.getUser()).data.user?.id; // pengomentar
-
-          return (
+          {comments.map((c) => {
+            const isOwner = c.user_id === video.profiles?.id; // kreator video
+            const isSelf = c.user_id === currentUserId; // pengomentar
+          
+            return (
               <div key={c.id} className="flex justify-between items-start gap-2 mb-3">
                 <div className="flex gap-2">
                   <Image
@@ -221,7 +221,7 @@ export default function WatchPage() {
                     <p className="text-sm">{c.content}</p>
                   </div>
                 </div>
-  
+          
                 {(isOwner || isSelf) && (
                   <button
                     onClick={() => handleDeleteComment(c.id)}
