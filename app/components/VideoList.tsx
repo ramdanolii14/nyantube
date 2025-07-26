@@ -28,9 +28,9 @@ export default function VideoList() {
       const { data } = await supabase
         .from("videos")
         .select("*, profiles(channel_name, avatar_url, is_verified)")
-        .order("views", { ascending: false }) // ✅ Prioritas views
-        .order("likes", { ascending: false }) // ✅ Kalau views sama, likes lebih tinggi di atas
-        .order("created_at", { ascending: false }); // ✅ Terbaru di atas
+        .order("views", { ascending: false })
+        .order("likes", { ascending: false })
+        .order("created_at", { ascending: false });
 
       if (data) {
         setVideos(
@@ -86,17 +86,21 @@ export default function VideoList() {
               unoptimized
             />
             <div className="flex flex-col">
-              <h3 className="font-semibold text-sm line-clamp-2">{video.title}</h3>
+              <h3 className="font-semibold text-sm line-clamp-2">
+                {video.title}
+              </h3>
+
+              {/* Channel Name + Verified */}
               <p className="text-xs text-gray-600 flex items-center gap-1">
                 {video.profiles?.channel_name}
                 {video.profiles?.is_verified && (
-                  <div className="relative group inline-block">
+                  <div className="relative group flex items-center">
                     <Image
                       src="/verified.svg"
                       alt="verified"
                       width={12}
                       height={12}
-                      className="inline-block"
+                      className="inline-block align-middle translate-y-[0.5px]"
                     />
                     <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-1 hidden group-hover:block bg-black text-white text-[10px] px-2 py-1 rounded">
                       VERIFIED USER
@@ -104,6 +108,7 @@ export default function VideoList() {
                   </div>
                 )}
               </p>
+
               <p className="text-xs text-gray-500">{video.views} views</p>
             </div>
           </div>
