@@ -49,7 +49,7 @@ export default function VideoList({ videos }: { videos: Video[] }) {
             <div className="flex-1">
               <p className="text-sm font-semibold line-clamp-2">{video.title}</p>
               <p className="text-xs text-gray-500">
-                {video.profiles?.username || "Unknown"}
+                {video.profiles?.channel_name || "Unknown"}
               </p>
               <p className="text-xs text-gray-400">
                 {video.views}x ditonton •{" "}
