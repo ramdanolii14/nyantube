@@ -47,6 +47,16 @@ export default function WatchPage() {
 
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
+  const [replyBox, setReplyBox] = useState<{ [key: string]: boolean }>({});
+  const [replyContent, setReplyContent] = useState<{ [key: string]: string }>(
+    {}
+  );
+  const [viewReplies, setViewReplies] = useState<{ [key: string]: boolean }>(
+    {}
+  );
+  const [editCommentId, setEditCommentId] = useState<string | null>(null);
+  const [editContent, setEditContent] = useState("");
+
   useEffect(() => {
     if (!id) return;
 
@@ -69,7 +79,6 @@ export default function WatchPage() {
           : { id: "", username: "Unknown", avatar_url: null, channel_name: "" },
       });
 
-      // Tambah views
       await supabase
         .from("videos")
         .update({ views: (videoData.views || 0) + 1 })
@@ -101,7 +110,7 @@ export default function WatchPage() {
     const fetchComments = async () => {
       const { data: commentData } = await supabase
         .from("comments")
-        .select("*, profiles(id, username, avatar_url)")
+        .select("*, profiles(id, username, avatar_url, channel_name)")
         .eq("video_id", id)
         .order("created_at", { ascending: false });
 
@@ -113,8 +122,9 @@ export default function WatchPage() {
                 id: c.profiles.id,
                 username: c.profiles.username,
                 avatar_url: c.profiles.avatar_url,
+                channel_name: c.profiles.channel_name,
               }
-            : { id: "", username: "Unknown", avatar_url: null },
+            : { id: "", username: "Unknown", avatar_url: null, channel_name: "" },
         })) || []
       );
     };
@@ -154,7 +164,6 @@ export default function WatchPage() {
     }
 
     if (userVote === type) {
-      // Unvote
       await supabase
         .from("video_likes")
         .delete()
@@ -166,7 +175,6 @@ export default function WatchPage() {
 
       setUserVote(null);
     } else {
-      // Upsert (insert or update)
       await supabase.from("video_likes").upsert({
         video_id: id,
         user_id: currentUserId,
@@ -185,18 +193,13 @@ export default function WatchPage() {
     }
   };
 
-  const handleAddComment = async () => {
-    if (!newComment.trim()) return;
-    await supabase.from("comments").insert({
-      video_id: id,
-      content: newComment,
-    });
-    setNewComment("");
+  const refreshComments = async () => {
     const { data } = await supabase
       .from("comments")
-      .select("*, profiles(id, username, avatar_url)")
+      .select("*, profiles(id, username, avatar_url, channel_name)")
       .eq("video_id", id)
       .order("created_at", { ascending: false });
+
     setComments(
       data?.map((c) => ({
         ...c,
@@ -205,11 +208,53 @@ export default function WatchPage() {
               id: c.profiles.id,
               username: c.profiles.username,
               avatar_url: c.profiles.avatar_url,
+              channel_name: c.profiles.channel_name,
             }
-          : { id: "", username: "Unknown", avatar_url: null },
+          : { id: "", username: "Unknown", avatar_url: null, channel_name: "" },
       })) || []
     );
   };
+
+  const handleAddComment = async () => {
+    if (!newComment.trim()) return;
+    await supabase.from("comments").insert({
+      video_id: id,
+      content: newComment,
+      parent_id: null,
+    });
+    setNewComment("");
+    refreshComments();
+  };
+
+  const handleReply = async (parentId: string) => {
+    if (!replyContent[parentId]?.trim()) return;
+    await supabase.from("comments").insert({
+      video_id: id,
+      content: replyContent[parentId],
+      parent_id: parentId,
+    });
+    setReplyContent((prev) => ({ ...prev, [parentId]: "" }));
+    setReplyBox((prev) => ({ ...prev, [parentId]: false }));
+    refreshComments();
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    await supabase.from("comments").delete().eq("id", commentId);
+    refreshComments();
+  };
+
+  const handleEditComment = async (commentId: string) => {
+    if (!editContent.trim()) return;
+    await supabase
+      .from("comments")
+      .update({ content: editContent, edited: true })
+      .eq("id", commentId);
+    setEditCommentId(null);
+    refreshComments();
+  };
+
+  const getReplies = (parentId: string) =>
+    comments.filter((c) => c.parent_id === parentId);
 
   if (!video) return <p className="text-center mt-10">Loading...</p>;
 
@@ -239,13 +284,16 @@ export default function WatchPage() {
               className="rounded-full w-10 h-10 object-cover"
             />
             <div className="flex-1">
-              <p className="font-semibold">{video.profiles.username}</p>
+              <Link
+                href={`/profile/${video.profiles.id}`}
+                className="font-semibold text-blue-600 hover:underline"
+              >
+                {video.profiles.channel_name || "Unknown Channel"}
+              </Link>
               <p className="text-sm text-gray-500">
                 {video.views} views • {new Date(video.created_at).toLocaleString()}
               </p>
             </div>
-
-            {/* Like Dislike */}
             <div className="flex items-center gap-3">
               <button
                 onClick={() => handleVote("like")}
@@ -290,25 +338,179 @@ export default function WatchPage() {
               </button>
             </div>
 
-            {comments.map((c) => (
-              <div key={c.id} className="flex gap-2 mb-3">
-                <Image
-                  src={
-                    c.profiles.avatar_url
-                      ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${c.profiles.avatar_url}`
-                      : "/default-avatar.png"
-                  }
-                  alt="avatar"
-                  width={32}
-                  height={32}
-                  className="rounded-full w-8 h-8 object-cover"
-                />
-                <div>
-                  <p className="font-semibold">{c.profiles.username}</p>
-                  <p>{c.content}</p>
-                </div>
-              </div>
-            ))}
+            {comments
+              .filter((c) => !c.parent_id)
+              .map((c) => {
+                const replies = getReplies(c.id);
+                const isOwner = c.user_id === currentUserId;
+                return (
+                  <div key={c.id} className="mb-4">
+                    <div className="flex gap-2">
+                      <Image
+                        src={
+                          c.profiles.avatar_url
+                            ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${c.profiles.avatar_url}`
+                            : "/default-avatar.png"
+                        }
+                        alt="avatar"
+                        width={32}
+                        height={32}
+                        className="rounded-full w-8 h-8 object-cover"
+                      />
+                      <div className="flex-1">
+                        <Link
+                          href={`/profile/${c.profiles.id}`}
+                          className="font-semibold text-blue-600 hover:underline"
+                        >
+                          {c.profiles.channel_name || "Unknown Channel"}
+                        </Link>{" "}
+                        {c.edited && (
+                          <span className="text-xs text-gray-500">[edited]</span>
+                        )}
+                        {editCommentId === c.id ? (
+                          <div className="mt-1">
+                            <input
+                              type="text"
+                              value={editContent}
+                              onChange={(e) => setEditContent(e.target.value)}
+                              className="border rounded px-2 py-1 w-full"
+                            />
+                            <div className="flex gap-2 mt-1">
+                              <button
+                                onClick={() => handleEditComment(c.id)}
+                                className="text-blue-500 text-sm"
+                              >
+                                Save
+                              </button>
+                              <button
+                                onClick={() => setEditCommentId(null)}
+                                className="text-gray-500 text-sm"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <p>{c.content}</p>
+                        )}
+                        <div className="flex gap-3 text-xs text-gray-500 mt-1">
+                          <button
+                            onClick={() =>
+                              setReplyBox((prev) => ({
+                                ...prev,
+                                [c.id]: !prev[c.id],
+                              }))
+                            }
+                          >
+                            Reply
+                          </button>
+                          {isOwner && (
+                            <>
+                              <button
+                                onClick={() => {
+                                  setEditCommentId(c.id);
+                                  setEditContent(c.content);
+                                }}
+                              >
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => handleDeleteComment(c.id)}
+                                className="text-red-500"
+                              >
+                                Delete
+                              </button>
+                            </>
+                          )}
+                          {replies.length > 0 && (
+                            <button
+                              onClick={() =>
+                                setViewReplies((prev) => ({
+                                  ...prev,
+                                  [c.id]: !prev[c.id],
+                                }))
+                              }
+                            >
+                              {viewReplies[c.id]
+                                ? "Hide replies"
+                                : `View ${replies.length} replies`}
+                            </button>
+                          )}
+                        </div>
+                        {replyBox[c.id] && (
+                          <div className="flex gap-2 mt-2">
+                            <input
+                              type="text"
+                              value={replyContent[c.id] || ""}
+                              onChange={(e) =>
+                                setReplyContent((prev) => ({
+                                  ...prev,
+                                  [c.id]: e.target.value,
+                                }))
+                              }
+                              placeholder="Write a reply..."
+                              className="flex-1 border rounded px-2 py-1"
+                            />
+                            <button
+                              onClick={() => handleReply(c.id)}
+                              className="bg-blue-500 text-white px-3 py-1 rounded"
+                            >
+                              Reply
+                            </button>
+                          </div>
+                        )}
+                        {viewReplies[c.id] && (
+                          <div className="ml-8 mt-2">
+                            {replies.map((r) => {
+                              const isReplyOwner = r.user_id === currentUserId;
+                              return (
+                                <div key={r.id} className="flex gap-2 mb-2">
+                                  <Image
+                                    src={
+                                      r.profiles.avatar_url
+                                        ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${r.profiles.avatar_url}`
+                                        : "/default-avatar.png"
+                                    }
+                                    alt="avatar"
+                                    width={28}
+                                    height={28}
+                                    className="rounded-full w-7 h-7 object-cover"
+                                  />
+                                  <div className="flex-1">
+                                    <Link
+                                      href={`/profile/${r.profiles.id}`}
+                                      className="font-semibold text-blue-600 hover:underline"
+                                    >
+                                      {r.profiles.channel_name ||
+                                        "Unknown Channel"}
+                                    </Link>{" "}
+                                    {r.edited && (
+                                      <span className="text-xs text-gray-500">
+                                        [edited]
+                                      </span>
+                                    )}
+                                    <p>{r.content}</p>
+                                    {isReplyOwner && (
+                                      <button
+                                        onClick={() =>
+                                          handleDeleteComment(r.id)
+                                        }
+                                        className="text-red-500 text-xs"
+                                      >
+                                        Delete
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
           </div>
         </div>
 
@@ -331,7 +533,13 @@ export default function WatchPage() {
               </div>
               <div className="flex-1">
                 <p className="text-sm font-semibold line-clamp-2">{v.title}</p>
-                <p className="text-xs text-gray-500">{v.profiles.username}</p>
+                <Link
+                  href={`/profile/${v.profiles.id}`}
+                  className="text-xs text-blue-600 hover:underline"
+                >
+                  {v.profiles.channel_name || "Unknown Channel"}
+                </
+                </Link>
                 <p className="text-xs text-gray-500">{v.views} views</p>
               </div>
             </Link>
