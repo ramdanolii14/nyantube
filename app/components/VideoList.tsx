@@ -29,7 +29,8 @@ export default function VideoList() {
       try {
         const { data, error } = await supabase
           .from("videos")
-          .select(`
+          .select(
+            `
             id,
             title,
             thumbnail_url,
@@ -40,29 +41,29 @@ export default function VideoList() {
               avatar_url,
               channel_name
             )
-          `)
+          `
+          )
           .order("created_at", { ascending: false });
 
         if (error) throw error;
 
-        console.log("✅ Videos data:", data); // 🔥 Debug
-
-        const mapped = (data || []).map((v: any) => ({
+        // ✅ Pastikan profiles bukan array
+        const mappedData = (data || []).map((v: any) => ({
           ...v,
           profiles: v.profiles
             ? {
                 username: v.profiles.username || "Unknown",
                 avatar_url: v.profiles.avatar_url || null,
-                channel_name: v.profiles.channel_name || "",
+                channel_name: v.profiles.channel_name || "Unknown",
               }
             : {
                 username: "Unknown",
                 avatar_url: null,
-                channel_name: "",
+                channel_name: "Unknown",
               },
         }));
 
-        setVideos(mapped);
+        setVideos(mappedData);
       } catch (err) {
         console.error("❌ Error fetching videos:", err);
       } finally {
@@ -73,46 +74,49 @@ export default function VideoList() {
     fetchVideos();
   }, []);
 
-  if (loading) return <p className="text-center mt-6">Loading videos...</p>;
+  if (loading) {
+    return <p className="text-center mt-6">Loading videos...</p>;
+  }
 
-  if (videos.length === 0)
+  if (videos.length === 0) {
     return <p className="text-center mt-6 text-gray-500">No videos found.</p>;
+  }
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-4">
-      {videos.map((video) => (
+      {videos.map((v) => (
         <Link
-          key={video.id}
-          href={`/watch/${video.id}`}
-          className="bg-white rounded shadow hover:shadow-md transition p-2"
+          key={v.id}
+          href={`/watch/${v.id}`}
+          className="bg-white rounded-lg shadow hover:shadow-md transition p-2"
         >
-          <div className="relative w-full h-40 bg-gray-200 rounded overflow-hidden">
+          <div className="relative w-full aspect-video bg-gray-200 rounded-md overflow-hidden">
             <Image
-              src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/thumbnails/${video.thumbnail_url}`}
-              alt={video.title}
+              src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/thumbnails/${v.thumbnail_url}`}
+              alt={v.title}
               fill
               className="object-cover"
             />
           </div>
-          <h3 className="mt-2 font-semibold text-sm line-clamp-2">
-            {video.title}
-          </h3>
-          <p className="text-xs text-gray-500">{video.views} views</p>
-          <div className="flex items-center gap-2 mt-1">
+          <div className="flex gap-2 mt-2">
             <Image
               src={
-                video.profiles.avatar_url
-                  ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${video.profiles.avatar_url}`
-                  : `https://ui-avatars.com/api/?name=${video.profiles.username}`
+                v.profiles.avatar_url
+                  ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${v.profiles.avatar_url}`
+                  : `https://ui-avatars.com/api/?name=${v.profiles.username}`
               }
-              alt={video.profiles.username}
-              width={24}
-              height={24}
+              alt={v.profiles.username}
+              width={36}
+              height={36}
               className="rounded-full"
             />
-            <p className="text-xs text-gray-700">
-              {video.profiles.channel_name || video.profiles.username}
-            </p>
+            <div>
+              <p className="text-sm font-semibold line-clamp-2">{v.title}</p>
+              <p className="text-xs text-gray-500">{v.profiles.username}</p>
+              <p className="text-xs text-gray-500">
+                {v.views} views • {new Date(v.created_at).toLocaleDateString()}
+              </p>
+            </div>
           </div>
         </Link>
       ))}
