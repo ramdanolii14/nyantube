@@ -182,8 +182,8 @@ export default function WatchPage() {
   if (!video) return <p className="text-center mt-10">Loading...</p>;
 
   return (
-    <div className="w-full bg-gray-50">
-      <div className="max-w-6xl mx-auto px-4 md:px-6 pt-15 flex flex-col md:flex-row gap-6">
+    <div className="w-full bg-gray-50 mt-24">
+      <div className="max-w-6xl mx-auto px-4 md:px-6 flex flex-col md:flex-row gap-6">
         
         {/* Video Section */}
         <div className="flex-1 max-w-3xl">
