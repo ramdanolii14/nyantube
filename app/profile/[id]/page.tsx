@@ -79,18 +79,22 @@ export default function ProfilePage() {
     <div className="max-w-5xl mx-auto mt-20 px-4">
       {/* ✅ Profile Header */}
       <div className="flex items-center gap-4">
-        <Image
-          src={
-            profile.avatar_url
-              ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${profile.avatar_url}`
-              : `https://ui-avatars.com/api/?name=${profile.username}`
-          }
-          alt={profile.username}
-          width={80}
-          height={80}
-          className="rounded-full"
-          unoptimized
-        />
+        {/* ✅ FIX Foto Profile 1:1 */}
+        <div className="w-20 h-20 rounded-full overflow-hidden border">
+          <Image
+            src={
+              profile.avatar_url
+                ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${profile.avatar_url}`
+                : `https://ui-avatars.com/api/?name=${profile.username}`
+            }
+            alt={profile.username}
+            width={80}
+            height={80}
+            className="object-cover w-full h-full"
+            unoptimized
+          />
+        </div>
+
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-1">
             {profile.channel_name}
