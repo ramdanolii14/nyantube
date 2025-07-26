@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import Image from "next/image";
 import { supabase } from "@/supabase/client";
 
-// ✅ Tipe Video (sudah ada thumbnail_url & channel_name)
+// ✅ Tipe Video
 interface Video {
   id: string;
   title: string;
@@ -46,7 +46,7 @@ export default function WatchPage() {
 
   const fetchData = async () => {
     try {
-      // ✅ Ambil video utama
+      // ✅ Ambil video utama & unwrap profiles
       const { data: videoData, error: videoError } = await supabase
         .from("videos")
         .select(
@@ -59,12 +59,21 @@ export default function WatchPage() {
         .single();
 
       if (videoError) throw videoError;
-      setVideo(videoData as Video);
+
+      setVideo({
+        ...videoData,
+        profiles: Array.isArray(videoData.profiles)
+          ? videoData.profiles[0]
+          : videoData.profiles,
+      });
 
       // ✅ Tambah views
-      await supabase.from("videos").update({ views: (videoData.views || 0) + 1 }).eq("id", id);
+      await supabase
+        .from("videos")
+        .update({ views: (videoData.views || 0) + 1 })
+        .eq("id", id);
 
-      // ✅ Ambil komentar
+      // ✅ Ambil komentar (unwrap profiles)
       const { data: commentsData, error: commentsError } = await supabase
         .from("comments")
         .select(
@@ -84,7 +93,7 @@ export default function WatchPage() {
         }))
       );
 
-      // ✅ Ambil video rekomendasi
+      // ✅ Ambil video rekomendasi (unwrap profiles)
       const { data: relatedData, error: relatedError } = await supabase
         .from("videos")
         .select(
@@ -98,7 +107,12 @@ export default function WatchPage() {
         .limit(10);
 
       if (relatedError) throw relatedError;
-      setRelatedVideos(relatedData as Video[]);
+      setRelatedVideos(
+        relatedData.map((v) => ({
+          ...v,
+          profiles: Array.isArray(v.profiles) ? v.profiles[0] : v.profiles,
+        }))
+      );
     } catch (error) {
       console.error("Error fetching data:", error);
     }
@@ -106,7 +120,9 @@ export default function WatchPage() {
 
   const handleComment = async () => {
     if (!newComment.trim()) return;
-    const { data, error } = await supabase.from("comments").insert([{ video_id: id, content: newComment }]);
+    const { error } = await supabase.from("comments").insert([
+      { video_id: id, content: newComment },
+    ]);
     if (!error) {
       setNewComment("");
       fetchData();
