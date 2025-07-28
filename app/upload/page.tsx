@@ -61,7 +61,7 @@ export default function UploadPage() {
       if (videoError) throw videoError;
 
       // ✅ Upload Thumbnail ke bucket "thumbnails"
-      const thumbnailFileName = ${Date.now()}-${thumbnailFile.name};
+      const thumbnailFileName = `${Date.now()}-${thumbnailFile.name}`;
       const { error: thumbnailError } = await supabase.storage
         .from("thumbnails")
         .upload(thumbnailFileName, thumbnailFile);
