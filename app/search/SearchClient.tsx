@@ -61,78 +61,82 @@ export default function SearchClient() {
     }
   }, [query]);
 
-  if (loading) {
-    return <p className="text-center mt-10">Loading...</p>;
-  }
-
-  if (videos.length === 0) {
-    return <p className="text-center mt-10">No results found for "{query}"</p>;
-  }
-
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 px-4">
-      {videos.map((video) => (
-        <Link
-          key={video.id}
-          href={`/watch/${video.id}`}
-          className="bg-white rounded-lg shadow hover:shadow-lg transition p-2"
-        >
-          {/* Thumbnail */}
-          <div
-            className="relative w-full rounded-md overflow-hidden"
-            style={{ paddingTop: "56.25%" }}
-          >
-            <Image
-              src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/thumbnails/${video.thumbnail_url}`}
-              alt={video.title}
-              fill
-              className="absolute top-0 left-0 w-full h-full object-cover"
-              unoptimized
-            />
-          </div>
+    <div className="mt-20 px-4 max-w-7xl mx-auto">
+      <h1 className="text-xl font-semibold mb-4">
+        Hasil pencarian untuk "{query}"
+      </h1>
 
-          {/* Info */}
-          <div className="flex items-center gap-2 mt-2">
-            <Image
-              src={
-                video.profiles?.avatar_url
-                  ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${video.profiles.avatar_url}`
-                  : `https://ui-avatars.com/api/?name=${video.profiles?.channel_name}`
-              }
-              alt={video.profiles?.channel_name || "Unknown"}
-              width={40}
-              height={40}
-              className="rounded-full object-cover aspect-square"
-              unoptimized
-            />
-            <div className="flex flex-col">
-              <h3 className="font-semibold text-sm line-clamp-2">
-                {video.title}
-              </h3>
+      {loading ? (
+        <p>Loading...</p>
+      ) : videos.length === 0 ? (
+        <p>Tidak ada hasil ditemukan.</p>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          {videos.map((video) => (
+            <Link
+              key={video.id}
+              href={`/watch/${video.id}`}
+              className="bg-white rounded-lg shadow hover:shadow-lg transition p-2"
+            >
+              {/* Thumbnail */}
+              <div
+                className="relative w-full rounded-md overflow-hidden"
+                style={{ paddingTop: "56.25%" }}
+              >
+                <Image
+                  src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/thumbnails/${video.thumbnail_url}`}
+                  alt={video.title}
+                  fill
+                  className="absolute top-0 left-0 w-full h-full object-cover"
+                  unoptimized
+                />
+              </div>
 
-              <p className="text-xs text-gray-600 flex items-center gap-1">
-                {video.profiles?.channel_name}
-                {video.profiles?.is_verified && (
-                  <div className="relative group flex items-center">
-                    <Image
-                      src="/verified.svg"
-                      alt="verified"
-                      width={12}
-                      height={12}
-                      className="inline-block align-middle translate-y-[0.5px]"
-                    />
-                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-1 hidden group-hover:block bg-black text-white text-[10px] px-2 py-1 rounded">
-                      VERIFIED USER
-                    </div>
-                  </div>
-                )}
-              </p>
+              {/* Info */}
+              <div className="flex items-center gap-2 mt-2">
+                <Image
+                  src={
+                    video.profiles?.avatar_url
+                      ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${video.profiles.avatar_url}`
+                      : `https://ui-avatars.com/api/?name=${video.profiles?.channel_name}`
+                  }
+                  alt={video.profiles?.channel_name || "Unknown"}
+                  width={40}
+                  height={40}
+                  className="rounded-full object-cover aspect-square"
+                  unoptimized
+                />
+                <div className="flex flex-col">
+                  <h3 className="font-semibold text-sm line-clamp-2">
+                    {video.title}
+                  </h3>
 
-              <p className="text-xs text-gray-500">{video.views} views</p>
-            </div>
-          </div>
-        </Link>
-      ))}
+                  <p className="text-xs text-gray-600 flex items-center gap-1">
+                    {video.profiles?.channel_name}
+                    {video.profiles?.is_verified && (
+                      <div className="relative group flex items-center">
+                        <Image
+                          src="/verified.svg"
+                          alt="verified"
+                          width={12}
+                          height={12}
+                          className="inline-block align-middle translate-y-[0.5px]"
+                        />
+                        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-1 hidden group-hover:block bg-black text-white text-[10px] px-2 py-1 rounded">
+                          VERIFIED USER
+                        </div>
+                      </div>
+                    )}
+                  </p>
+
+                  <p className="text-xs text-gray-500">{video.views} views</p>
+                </div>
+              </div>
+            </Link>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
