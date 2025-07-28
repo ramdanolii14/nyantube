@@ -1,207 +1,195 @@
 "use client";
 
-import { useState, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { supabase } from "@/supabase/client";
 
 export default function UploadPage() {
-  const router = useRouter();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
-  const [videoPreview, setVideoPreview] = useState<string | null>(null);
-  const [thumbPreview, setThumbPreview] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const videoInputRef = useRef<HTMLInputElement>(null);
-  const thumbInputRef = useRef<HTMLInputElement>(null);
+  const [previewVideo, setPreviewVideo] = useState<string | null>(null);
+  const [previewThumbnail, setPreviewThumbnail] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>, isVideo: boolean) => {
-    e.preventDefault();
-    const file = e.dataTransfer.files[0];
-    handleFile(file, isVideo);
-  };
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data } = await supabase.auth.getUser();
+      if (data.user) setUserId(data.user.id);
+    };
+    checkUser();
+  }, []);
 
-  const handleFile = (file: File, isVideo: boolean) => {
+  const handleVideoChange = (file: File | null) => {
     if (!file) return;
-    if (isVideo) {
-      setVideoFile(file);
-      setVideoPreview(URL.createObjectURL(file));
-    } else {
-      setThumbnailFile(file);
-      setThumbPreview(URL.createObjectURL(file));
+    setVideoFile(file);
+    setPreviewVideo(URL.createObjectURL(file));
+  };
+
+  const handleThumbnailChange = (file: File | null) => {
+    if (!file) return;
+    setThumbnailFile(file);
+    setPreviewThumbnail(URL.createObjectURL(file));
+  };
+
+  const handleUpload = async () => {
+    setErrorMessage(null);
+    if (!userId) {
+      setErrorMessage("Kamu harus login dulu sebelum upload!");
+      return;
+    }
+
+    if (!title || !description || !videoFile || !thumbnailFile) {
+      setErrorMessage("Semua field wajib diisi!");
+      return;
+    }
+
+    setUploading(true);
+
+    try {
+      const timestamp = Date.now();
+
+      const videoFileName = `${timestamp}-${videoFile.name}`;
+      const { error: videoError } = await supabase.storage
+        .from("videos")
+        .upload(videoFileName, videoFile);
+
+      if (videoError) throw videoError;
+
+      const thumbnailFileName = `${timestamp}-${thumbnailFile.name}`;
+      const { error: thumbnailError } = await supabase.storage
+        .from("thumbnails")
+        .upload(thumbnailFileName, thumbnailFile);
+
+      if (thumbnailError) throw thumbnailError;
+
+      const { error: dbError } = await supabase.from("videos").insert([
+        {
+          title,
+          description,
+          video_url: videoFileName,
+          thumbnail_url: thumbnailFileName,
+          user_id: userId,
+        },
+      ]);
+
+      if (dbError) throw dbError;
+
+      alert("Upload berhasil!");
+
+      setTitle("");
+      setDescription("");
+      setVideoFile(null);
+      setThumbnailFile(null);
+      setPreviewVideo(null);
+      setPreviewThumbnail(null);
+    } catch (err: any) {
+      setErrorMessage(`Gagal upload: ${err.message}`);
+    } finally {
+      setUploading(false);
     }
   };
 
-  const handleUpload = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-
-    const token = (window as any).grecaptcha?.getResponse();
-    if (!token) {
-      alert("Harap centang reCAPTCHA terlebih dahulu.");
-      setLoading(false);
-      return;
-    }
-
-    const verifyRes = await fetch("/api/verify-recaptcha", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ token }),
-    });
-
-    const verifyData = await verifyRes.json();
-    if (!verifyData.success) {
-      alert("Gagal validasi reCAPTCHA");
-      setLoading(false);
-      return;
-    }
-
-    const user = (await supabase.auth.getUser()).data.user;
-    if (!user) {
-      alert("Kamu harus login.");
-      setLoading(false);
-      return;
-    }
-
-    const videoId = crypto.randomUUID();
-    const videoExt = videoFile?.name.split(".").pop();
-    const thumbExt = thumbnailFile?.name.split(".").pop();
-    const videoPath = `videos/${videoId}.${videoExt}`;
-    const thumbPath = `thumbnails/${videoId}.${thumbExt}`;
-
-    const { error: videoErr } = await supabase.storage
-      .from("videos")
-      .upload(videoPath, videoFile!);
-    if (videoErr) {
-      alert("Gagal upload video.");
-      setLoading(false);
-      return;
-    }
-
-    const { error: thumbErr } = await supabase.storage
-      .from("thumbnails")
-      .upload(thumbPath, thumbnailFile!);
-    if (thumbErr) {
-      alert("Gagal upload thumbnail.");
-      setLoading(false);
-      return;
-    }
-
-    const { data: videoURL } = supabase.storage.from("videos").getPublicUrl(videoPath);
-    const { data: thumbURL } = supabase.storage.from("thumbnails").getPublicUrl(thumbPath);
-
-    const { error: insertError } = await supabase.from("videos").insert({
-      id: videoId,
-      user_id: user.id,
-      title,
-      description,
-      video_url: videoURL.publicUrl,
-      thumbnail_url: thumbURL.publicUrl,
-    });
-
-    if (insertError) {
-      alert("Gagal menyimpan metadata ke database.");
-      setLoading(false);
-      return;
-    }
-
-    router.push("/");
-  };
+  if (!userId) {
+    return (
+      <div className="max-w-2xl mx-auto p-6 mt-10 text-center bg-white shadow rounded">
+        <h1 className="text-xl font-bold mb-2">Harus Login</h1>
+        <p className="text-gray-600">Silakan login dulu untuk bisa upload video.</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-10">
-      <div className="bg-white shadow-xl rounded-xl p-8">
-        <h1 className="text-3xl font-bold mb-6 text-center text-gray-800">Upload Video</h1>
-        <form onSubmit={handleUpload} className="space-y-6">
-          <div>
-            <label className="block font-medium mb-1">Judul Video</label>
-            <input
-              required
-              type="text"
-              placeholder="Masukkan judul"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="w-full border rounded-md p-2 focus:outline-none focus:ring focus:ring-blue-500"
-            />
-          </div>
+    <div className="max-w-2xl mx-auto p-6 mt-10 bg-white shadow-lg rounded-lg space-y-4">
+      <h1 className="text-2xl font-bold text-gray-800">Upload Video</h1>
 
-          <div>
-            <label className="block font-medium mb-1">Deskripsi</label>
-            <textarea
-              required
-              placeholder="Tulis deskripsi video..."
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="w-full border rounded-md p-2 h-24 resize-none focus:outline-none focus:ring focus:ring-blue-500"
-            />
-          </div>
+      {errorMessage && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded">
+          {errorMessage}
+        </div>
+      )}
 
-          {/* Video Upload */}
-          <div>
-            <label className="block font-medium mb-2">Video</label>
-            <div
-              onClick={() => videoInputRef.current?.click()}
-              onDrop={(e) => handleDrop(e, true)}
-              onDragOver={(e) => e.preventDefault()}
-              className="w-full border-2 border-dashed rounded-md p-6 text-center cursor-pointer hover:border-blue-400 transition"
-            >
-              {videoPreview ? (
-                <video src={videoPreview} controls className="mx-auto w-full max-h-64 rounded-md" />
-              ) : (
-                <p className="text-gray-500">Klik atau drag & drop file video di sini</p>
-              )}
-              <input
-                type="file"
-                accept="video/*"
-                ref={videoInputRef}
-                hidden
-                onChange={(e) => handleFile(e.target.files?.[0]!, true)}
-              />
-            </div>
-          </div>
-
-          {/* Thumbnail Upload */}
-          <div>
-            <label className="block font-medium mb-2">Thumbnail</label>
-            <div
-              onClick={() => thumbInputRef.current?.click()}
-              onDrop={(e) => handleDrop(e, false)}
-              onDragOver={(e) => e.preventDefault()}
-              className="w-full border-2 border-dashed rounded-md p-6 text-center cursor-pointer hover:border-blue-400 transition"
-            >
-              {thumbPreview ? (
-                <img src={thumbPreview} alt="Thumbnail" className="mx-auto w-full max-h-64 object-cover rounded-md" />
-              ) : (
-                <p className="text-gray-500">Klik atau drag & drop thumbnail di sini</p>
-              )}
-              <input
-                type="file"
-                accept="image/*"
-                ref={thumbInputRef}
-                hidden
-                onChange={(e) => handleFile(e.target.files?.[0]!, false)}
-              />
-            </div>
-          </div>
-
-          {/* reCAPTCHA */}
-          <div className="flex justify-center">
-            <div className="g-recaptcha" data-sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY}></div>
-          </div>
-
-          {/* Submit */}
-          <div className="text-center">
-            <button
-              type="submit"
-              disabled={loading}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-md transition"
-            >
-              {loading ? "Mengupload..." : "Upload Sekarang"}
-            </button>
-          </div>
-        </form>
+      <div>
+        <label className="block font-medium text-gray-700 mb-1">Title</label>
+        <input
+          type="text"
+          className="w-full border rounded p-2"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+        />
       </div>
+
+      <div>
+        <label className="block font-medium text-gray-700 mb-1">Description</label>
+        <textarea
+          className="w-full border rounded p-2"
+          rows={3}
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+        />
+      </div>
+
+      <div
+        className="border-2 border-dashed rounded p-4 text-center cursor-pointer hover:bg-gray-50"
+        onDragOver={(e) => e.preventDefault()}
+        onDrop={(e) => {
+          e.preventDefault();
+          handleVideoChange(e.dataTransfer.files[0]);
+        }}
+        onClick={() => document.getElementById("videoInput")?.click()}
+      >
+        {previewVideo ? (
+          <video src={previewVideo} controls className="mx-auto rounded max-h-48" />
+        ) : (
+          <p className="text-gray-500">Drag & drop atau klik untuk pilih video</p>
+        )}
+        <input
+          type="file"
+          id="videoInput"
+          accept="video/*"
+          className="hidden"
+          onChange={(e) => handleVideoChange(e.target.files?.[0] || null)}
+        />
+      </div>
+
+      <div
+        className="border-2 border-dashed rounded p-4 text-center cursor-pointer hover:bg-gray-50"
+        onDragOver={(e) => e.preventDefault()}
+        onDrop={(e) => {
+          e.preventDefault();
+          handleThumbnailChange(e.dataTransfer.files[0]);
+        }}
+        onClick={() => document.getElementById("thumbnailInput")?.click()}
+      >
+        {previewThumbnail ? (
+          <img
+            src={previewThumbnail}
+            alt="Thumbnail Preview"
+            className="mx-auto rounded max-h-48"
+          />
+        ) : (
+          <p className="text-gray-500">
+            Drag & drop atau klik untuk pilih thumbnail (wajib)
+          </p>
+        )}
+        <input
+          type="file"
+          id="thumbnailInput"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => handleThumbnailChange(e.target.files?.[0] || null)}
+        />
+      </div>
+
+      <button
+        onClick={handleUpload}
+        disabled={uploading}
+        className="bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700 disabled:bg-gray-400 w-full"
+      >
+        {uploading ? "Mengupload..." : "Upload"}
+      </button>
     </div>
   );
 }
