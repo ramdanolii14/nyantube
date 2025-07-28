@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/supabase/client";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { CloudUpload } from "lucide-react";
 
 export default function UploadPage() {
   const [title, setTitle] = useState("");
@@ -23,7 +24,6 @@ export default function UploadPage() {
 
     const {
       data: { user },
-      error: userError,
     } = await supabaseClient.auth.getUser();
 
     if (!user) {
@@ -34,13 +34,6 @@ export default function UploadPage() {
 
     if (!videoFile || !thumbnailFile || !title || !description) {
       setError("Harap lengkapi semua field dan file.");
-      setLoading(false);
-      return;
-    }
-
-    const token = (window as any).grecaptcha?.getResponse();
-    if (!token) {
-      setError("Harap centang reCAPTCHA terlebih dahulu.");
       setLoading(false);
       return;
     }
@@ -96,52 +89,82 @@ export default function UploadPage() {
     setLoading(false);
   };
 
+  const handleDragDrop = (
+    e: React.DragEvent<HTMLDivElement>,
+    setFile: React.Dispatch<React.SetStateAction<File | null>>
+  ) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files?.[0];
+    if (file) setFile(file);
+  };
+
   return (
-    <div className="max-w-xl mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-4">Upload Video</h1>
-      <form onSubmit={handleSubmit}>
+    <div className="max-w-xl mx-auto p-6 bg-white rounded-lg shadow">
+      <h1 className="text-3xl font-bold mb-6 text-center text-red-600">Upload Video</h1>
+      <form onSubmit={handleSubmit} className="space-y-4">
         <input
-          className="w-full p-2 mb-2 border rounded"
+          className="w-full p-3 border border-gray-300 rounded"
           type="text"
-          placeholder="Judul"
+          placeholder="Judul Video"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
         />
         <textarea
-          className="w-full p-2 mb-2 border rounded"
-          placeholder="Deskripsi"
+          className="w-full p-3 border border-gray-300 rounded"
+          placeholder="Deskripsi Video"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
         />
-        <input
-          className="w-full p-2 mb-2 border rounded"
-          type="file"
-          accept="video/*"
-          onChange={(e) => setVideoFile(e.target.files?.[0] || null)}
-        />
-        <input
-          className="w-full p-2 mb-4 border rounded"
-          type="file"
-          accept="image/*"
-          onChange={(e) => setThumbnailFile(e.target.files?.[0] || null)}
-        />
 
-        {/* ✅ reCAPTCHA checkbox */}
-        <div className="mb-4">
-          <div
-            className="g-recaptcha"
-            data-sitekey="6LcQO5IrAAAAAGQM1ZaygBBXhbDMFyj0Wntl_H1y"
-          ></div>
+        {/* Drag and drop for video */}
+        <div
+          onDrop={(e) => handleDragDrop(e, setVideoFile)}
+          onDragOver={(e) => e.preventDefault()}
+          className="w-full p-6 text-center border-2 border-dashed border-red-400 rounded cursor-pointer hover:bg-red-50 transition"
+          onClick={() => document.getElementById("videoInput")?.click()}
+        >
+          <CloudUpload className="mx-auto mb-2 text-red-500" size={32} />
+          <p className="text-sm text-gray-600">
+            {videoFile ? videoFile.name : "Klik atau seret file video ke sini"}
+          </p>
+          <input
+            id="videoInput"
+            type="file"
+            accept="video/*"
+            hidden
+            onChange={(e) => setVideoFile(e.target.files?.[0] || null)}
+          />
+        </div>
+
+        {/* Drag and drop for thumbnail */}
+        <div
+          onDrop={(e) => handleDragDrop(e, setThumbnailFile)}
+          onDragOver={(e) => e.preventDefault()}
+          className="w-full p-6 text-center border-2 border-dashed border-gray-400 rounded cursor-pointer hover:bg-gray-50 transition"
+          onClick={() => document.getElementById("thumbInput")?.click()}
+        >
+          <CloudUpload className="mx-auto mb-2 text-gray-500" size={32} />
+          <p className="text-sm text-gray-600">
+            {thumbnailFile ? thumbnailFile.name : "Klik atau seret file thumbnail ke sini"}
+          </p>
+          <input
+            id="thumbInput"
+            type="file"
+            accept="image/*"
+            hidden
+            onChange={(e) => setThumbnailFile(e.target.files?.[0] || null)}
+          />
         </div>
 
         <button
-          className="w-full bg-red-600 text-white py-2 px-4 rounded hover:bg-red-700 transition"
+          className="w-full bg-red-600 text-white py-3 rounded hover:bg-red-700 transition"
           type="submit"
           disabled={loading}
         >
           {loading ? "Mengupload..." : "Upload"}
         </button>
-        {error && <p className="text-red-600 mt-2">{error}</p>}
+
+        {error && <p className="text-center text-sm text-red-600 mt-2">{error}</p>}
       </form>
     </div>
   );
