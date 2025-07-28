@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/supabase/client";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
@@ -13,24 +13,8 @@ export default function UploadPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
-  const recaptchaRef = useRef<HTMLDivElement>(null);
 
   const supabaseClient = createClientComponentClient();
-
-  useEffect(() => {
-    // Load reCAPTCHA
-    const interval = setInterval(() => {
-      if (window.grecaptcha && window.grecaptcha.render && recaptchaRef.current) {
-        window.grecaptcha.render(recaptchaRef.current, {
-          sitekey: "6LcQO5IrAAAAAGQM1ZaygBBXhbDMFyj0Wntl_H1y",
-          size: "invisible",
-          callback: handleUpload,
-        });
-        clearInterval(interval);
-      }
-    }, 500);
-    return () => clearInterval(interval);
-  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,20 +37,18 @@ export default function UploadPage() {
       return;
     }
 
-    if (window.grecaptcha) {
-      window.grecaptcha.execute();
-    } else {
-      setError("reCAPTCHA gagal dimuat.");
+    // ✅ Ambil token reCAPTCHA
+    const token = (window as any).grecaptcha?.getResponse();
+    if (!token) {
+      setError("Harap centang reCAPTCHA terlebih dahulu.");
       setLoading(false);
+      return;
     }
+
+    await handleUpload(session.user.id);
   };
 
-  const handleUpload = async () => {
-    const {
-      data: { session },
-    } = await supabaseClient.auth.getSession();
-
-    const user_id = session?.user?.id;
+  const handleUpload = async (user_id: string) => {
     if (!user_id || !videoFile || !thumbnailFile) return;
 
     const timestamp = Date.now();
@@ -93,19 +75,17 @@ export default function UploadPage() {
       return;
     }
 
-    const { error: insertErr } = await supabase
-      .from("videos")
-      .insert({
-        user_id,
-        title,
-        description,
-        video_url: videoData.path,
-        thumbnail_url: thumbData.path,
-        views: 0,
-        is_public: true,
-        likes: 0,
-        dislikes: 0,
-      });
+    const { error: insertErr } = await supabase.from("videos").insert({
+      user_id,
+      title,
+      description,
+      video_url: videoData.path,
+      thumbnail_url: thumbData.path,
+      views: 0,
+      is_public: true,
+      likes: 0,
+      dislikes: 0,
+    });
 
     if (insertErr) {
       setError("Gagal menyimpan ke database.");
@@ -145,7 +125,15 @@ export default function UploadPage() {
           accept="image/*"
           onChange={(e) => setThumbnailFile(e.target.files?.[0] || null)}
         />
-        <div ref={recaptchaRef}></div>
+
+        {/* ✅ reCAPTCHA checkbox */}
+        <div className="mb-4">
+          <div
+            className="g-recaptcha"
+            data-sitekey="6LcQO5IrAAAAAGQM1ZaygBBXhbDMFyj0Wntl_H1y"
+          ></div>
+        </div>
+
         <button
           className="w-full bg-red-600 text-white py-2 px-4 rounded hover:bg-red-700 transition"
           type="submit"
