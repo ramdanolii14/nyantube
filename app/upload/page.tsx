@@ -3,8 +3,11 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/supabase/client";
 import { UploadCloud, ImagePlus, Video } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 export default function UploadPage() {
+  const router = useRouter();
+
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [videoFile, setVideoFile] = useState<File | null>(null);
@@ -13,6 +16,8 @@ export default function UploadPage() {
   const [previewThumbnail, setPreviewThumbnail] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  const [username, setUsername] = useState<string | null>(null); // untuk redirect
+  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   useEffect(() => {
     const checkUser = async () => {
@@ -21,6 +26,12 @@ export default function UploadPage() {
       } = await supabase.auth.getUser();
       if (user) {
         setUserId(user.id);
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("username")
+          .eq("id", user.id)
+          .single();
+        if (profile) setUsername(profile.username);
       }
     };
     checkUser();
@@ -40,16 +51,17 @@ export default function UploadPage() {
 
   const handleUpload = async () => {
     if (!userId) {
-      alert("Kamu harus login dulu sebelum upload!");
+      setMessage({ type: "error", text: "Kamu harus login dulu sebelum upload!" });
       return;
     }
 
     if (!title || !description || !videoFile || !thumbnailFile) {
-      alert("Semua field wajib diisi!");
+      setMessage({ type: "error", text: "Semua field wajib diisi!" });
       return;
     }
 
     setUploading(true);
+    setMessage(null); // reset pesan
 
     try {
       const videoFileName = `${Date.now()}-${videoFile.name}`;
@@ -75,15 +87,21 @@ export default function UploadPage() {
       ]);
       if (dbError) throw dbError;
 
-      alert("Upload berhasil!");
       setTitle("");
       setDescription("");
       setVideoFile(null);
       setThumbnailFile(null);
       setPreviewVideo(null);
       setPreviewThumbnail(null);
+
+      setMessage({ type: "success", text: "Upload berhasil!" });
+
+      // Tunggu sebentar lalu redirect
+      setTimeout(() => {
+        if (username) router.push(`/app/${username}`);
+      }, 1500);
     } catch (err: any) {
-      alert(`Gagal upload: ${err.message}`);
+      setMessage({ type: "error", text: `Gagal upload: ${err.message}` });
     } finally {
       setUploading(false);
     }
@@ -124,7 +142,6 @@ export default function UploadPage() {
         />
       </div>
 
-      {/* Upload Video */}
       <div
         className="border-2 border-dashed rounded p-4 text-center mb-3 cursor-pointer hover:bg-gray-100"
         onDragOver={(e) => e.preventDefault()}
@@ -135,11 +152,7 @@ export default function UploadPage() {
         onClick={() => document.getElementById("videoInput")?.click()}
       >
         {previewVideo ? (
-          <video
-            src={previewVideo}
-            controls
-            className="mx-auto rounded max-h-48"
-          />
+          <video src={previewVideo} controls className="mx-auto rounded max-h-48" />
         ) : (
           <div className="flex flex-col items-center text-gray-500">
             <Video className="w-8 h-8 mb-1" />
@@ -155,7 +168,6 @@ export default function UploadPage() {
         />
       </div>
 
-      {/* Upload Thumbnail */}
       <div
         className="border-2 border-dashed rounded p-4 text-center mb-3 cursor-pointer hover:bg-gray-100"
         onDragOver={(e) => e.preventDefault()}
@@ -166,11 +178,7 @@ export default function UploadPage() {
         onClick={() => document.getElementById("thumbnailInput")?.click()}
       >
         {previewThumbnail ? (
-          <img
-            src={previewThumbnail}
-            alt="Thumbnail Preview"
-            className="mx-auto rounded max-h-48"
-          />
+          <img src={previewThumbnail} alt="Thumbnail Preview" className="mx-auto rounded max-h-48" />
         ) : (
           <div className="flex flex-col items-center text-gray-500">
             <ImagePlus className="w-8 h-8 mb-1" />
@@ -189,7 +197,7 @@ export default function UploadPage() {
       <button
         onClick={handleUpload}
         disabled={uploading}
-        className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 disabled:bg-gray-400 flex items-center justify-center gap-2"
+        className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 disabled:bg-gray-400 flex items-center justify-center gap-2 w-full"
       >
         {uploading ? (
           "Mengupload... sabar yaa emang lama banget uploadnya xD"
@@ -200,6 +208,17 @@ export default function UploadPage() {
           </>
         )}
       </button>
+
+      {/* ✅ Pesan muncul di bawah tombol */}
+      {message && (
+        <div
+          className={`mt-4 text-center p-2 rounded ${
+            message.type === "success" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+          }`}
+        >
+          {message.text}
+        </div>
+      )}
     </div>
   );
 }
