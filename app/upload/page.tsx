@@ -94,12 +94,12 @@ export default function UploadPage() {
       setPreviewVideo(null);
       setPreviewThumbnail(null);
 
-      setMessage({ type: "success", text: "Upload berhasil!" });
+      setMessage({ type: "success", text: "Upload berhasil! Redirect ke profile..." });
 
       // Tunggu sebentar lalu redirect
       setTimeout(() => {
-        if (username) router.push(`/app/${username}`);
-      }, 1500);
+        if (username) router.push(`/${username}`);
+      }, 700);
     } catch (err: any) {
       setMessage({ type: "error", text: `Gagal upload: ${err.message}` });
     } finally {
