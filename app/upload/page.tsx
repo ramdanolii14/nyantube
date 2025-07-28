@@ -21,15 +21,14 @@ export default function UploadPage() {
     setError("");
     setLoading(true);
 
-    const {
-      data: { session },
-    } = await supabaseClient.auth.getSession();
-
-    if (!session?.user) {
-      setError("Kamu harus login terlebih dahulu.");
-      setLoading(false);
-      return;
-    }
+      const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+      
+      if (!user) {
+        setError("Kamu harus login terlebih dahulu.");
+        setLoading(false);
+        return;
+      }
+      await handleUpload(user.id);
 
     if (!videoFile || !thumbnailFile || !title || !description) {
       setError("Harap lengkapi semua field dan file.");
