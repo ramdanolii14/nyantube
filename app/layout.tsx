@@ -1,21 +1,18 @@
 import "./globals.css";
 import Navbar from "@/app/components/Navbar";
+import LayoutClient from "@/app/layout-client";
 
-export const metadata = {
-  title: "Nyantube",
-  description: "Streaming Online Tanpa Batas Bersama Nyantube. Powerfull video platform, only for Sigma.",
-};
+export const metadata = { title: "Nyantube", description: "Streaming Online..." };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <head>
-        {/* ✅ Script reCAPTCHA */}
-        <script src="https://www.google.com/recaptcha/api.js" async defer></script>
-      </head>
+      <head><script src="https://www.google.com/recaptcha/api.js" async defer /></head>
       <body className="bg-gray-100">
-        <Navbar />
-        {children}
+        <LayoutClient>
+          <Navbar />
+          {children}
+        </LayoutClient>
       </body>
     </html>
   );
