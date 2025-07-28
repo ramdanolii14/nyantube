@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/supabase/client";
+import { UploadCloud, ImagePlus, Video } from "lucide-react";
 
 export default function UploadPage() {
   const [title, setTitle] = useState("");
@@ -13,7 +14,6 @@ export default function UploadPage() {
   const [uploading, setUploading] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
 
-  // ✅ Cek apakah user sudah login
   useEffect(() => {
     const checkUser = async () => {
       const {
@@ -52,33 +52,27 @@ export default function UploadPage() {
     setUploading(true);
 
     try {
-      // ✅ Upload Video ke bucket "videos"
       const videoFileName = `${Date.now()}-${videoFile.name}`;
       const { error: videoError } = await supabase.storage
         .from("videos")
         .upload(videoFileName, videoFile);
-
       if (videoError) throw videoError;
 
-      // ✅ Upload Thumbnail ke bucket "thumbnails"
       const thumbnailFileName = `${Date.now()}-${thumbnailFile.name}`;
       const { error: thumbnailError } = await supabase.storage
         .from("thumbnails")
         .upload(thumbnailFileName, thumbnailFile);
-
       if (thumbnailError) throw thumbnailError;
 
-      // ✅ Simpan ke Database (dengan user_id)
       const { error: dbError } = await supabase.from("videos").insert([
         {
           title,
           description,
           video_url: videoFileName,
           thumbnail_url: thumbnailFileName,
-          user_id: userId, // wajib biar kita tahu siapa yg upload
+          user_id: userId,
         },
       ]);
-
       if (dbError) throw dbError;
 
       alert("Upload berhasil!");
@@ -95,7 +89,6 @@ export default function UploadPage() {
     }
   };
 
-  // ✅ Kalau belum login, tampilkan pesan
   if (!userId) {
     return (
       <div className="max-w-2xl mx-auto p-6 mt-10 text-center bg-white shadow rounded">
@@ -109,7 +102,6 @@ export default function UploadPage() {
     <div className="max-w-2xl mx-auto p-6 mt-10 bg-white shadow rounded">
       <h1 className="text-2xl font-bold mb-4">Upload Video</h1>
 
-      {/* Title */}
       <div className="mb-3">
         <label className="block font-medium mb-1">Title</label>
         <input
@@ -121,7 +113,6 @@ export default function UploadPage() {
         />
       </div>
 
-      {/* Description */}
       <div className="mb-3">
         <label className="block font-medium mb-1">Description</label>
         <textarea
@@ -133,7 +124,7 @@ export default function UploadPage() {
         />
       </div>
 
-      {/* Drag & Drop Video */}
+      {/* Upload Video */}
       <div
         className="border-2 border-dashed rounded p-4 text-center mb-3 cursor-pointer hover:bg-gray-100"
         onDragOver={(e) => e.preventDefault()}
@@ -150,7 +141,10 @@ export default function UploadPage() {
             className="mx-auto rounded max-h-48"
           />
         ) : (
-          <p className="text-gray-500">Drag & drop atau klik untuk pilih video</p>
+          <div className="flex flex-col items-center text-gray-500">
+            <Video className="w-8 h-8 mb-1" />
+            <p>Drag & drop atau klik untuk pilih video</p>
+          </div>
         )}
         <input
           type="file"
@@ -161,7 +155,7 @@ export default function UploadPage() {
         />
       </div>
 
-      {/* Drag & Drop Thumbnail */}
+      {/* Upload Thumbnail */}
       <div
         className="border-2 border-dashed rounded p-4 text-center mb-3 cursor-pointer hover:bg-gray-100"
         onDragOver={(e) => e.preventDefault()}
@@ -178,9 +172,10 @@ export default function UploadPage() {
             className="mx-auto rounded max-h-48"
           />
         ) : (
-          <p className="text-gray-500">
-            Drag & drop atau klik untuk pilih thumbnail (wajib)
-          </p>
+          <div className="flex flex-col items-center text-gray-500">
+            <ImagePlus className="w-8 h-8 mb-1" />
+            <p>Drag & drop atau klik untuk pilih thumbnail (wajib)</p>
+          </div>
         )}
         <input
           type="file"
@@ -194,9 +189,16 @@ export default function UploadPage() {
       <button
         onClick={handleUpload}
         disabled={uploading}
-        className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 disabled:bg-gray-400"
+        className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 disabled:bg-gray-400 flex items-center justify-center gap-2"
       >
-        {uploading ? "Mengupload... sabar yaa emang lama banget uploadnya xD" : "Upload"}
+        {uploading ? (
+          "Mengupload... sabar yaa emang lama banget uploadnya xD"
+        ) : (
+          <>
+            <UploadCloud className="w-4 h-4" />
+            Upload
+          </>
+        )}
       </button>
     </div>
   );
