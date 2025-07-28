@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from '@/supabase/client';
 
-const supabase = createClient();
 
 export default function UploadPage() {
   const router = useRouter();
