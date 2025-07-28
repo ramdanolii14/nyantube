@@ -1,84 +1,69 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 import { supabase } from "@/supabase/client";
-import Link from "next/link";
 
-interface Video {
+type Video = {
   id: string;
   title: string;
-  thumbnail_url: string | null;
+  thumbnail_url: string;
   views: number;
   profiles: {
     channel_name: string;
   };
-}
+};
 
 export default function SearchClient() {
   const searchParams = useSearchParams();
   const query = searchParams.get("q") || "";
   const [videos, setVideos] = useState<Video[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (!query) return;
-
-    async function fetchVideos() {
+    const fetchResults = async () => {
       setLoading(true);
       const { data, error } = await supabase
         .from("videos")
-        .select(
-          "id, title, thumbnail_url, views, profiles(channel_name)"
-        )
+        .select("id, title, thumbnail_url, views, profiles(channel_name)")
         .ilike("title", `%${query}%`);
 
       if (error) console.error(error);
-      setVideos(data || []);
-      setLoading(false);
-    }
 
-    fetchVideos();
+      const cleanedData: Video[] = (data || []).map((video: any) => ({
+        ...video,
+        profiles: video.profiles[0], // ⬅️ ambil hanya satu profile pertama
+      }));
+
+      setVideos(cleanedData);
+      setLoading(false);
+    };
+
+    if (query) fetchResults();
   }, [query]);
 
-  if (loading)
-    return <p className="p-4 text-center mt-20">Loading...</p>;
-
-  if (videos.length === 0)
-    return <p className="p-4 text-center mt-20">No videos found.</p>;
-
   return (
-    <div className="pt-24 px-6">
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {videos.map((v) => (
-          <Link
-            key={v.id}
-            href={`/watch/${v.id}`}
-            className="border rounded-md overflow-hidden bg-white shadow hover:shadow-lg hover:scale-[1.02] transition-transform"
-          >
-            <img
-              className="w-full h-40 object-cover"
-              src={
-                v.thumbnail_url
-                  ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/thumbnails/${v.thumbnail_url}`
-                  : "/default-thumbnail.jpg"
-              }
-              alt={v.title}
-            />
-            <div className="p-2">
-              <div className="text-sm font-medium line-clamp-2">
-                {v.title}
-              </div>
-              <div className="text-xs text-gray-500">
-                {v.profiles?.channel_name || "Unknown channel"}
-              </div>
-              <div className="text-xs text-gray-500">
-                {v.views} views
-              </div>
-            </div>
-          </Link>
-        ))}
-      </div>
+    <div className="p-4">
+      <h1 className="text-xl font-semibold mb-4">
+        Hasil pencarian untuk "{query}"
+      </h1>
+      {loading ? (
+        <p>Loading...</p>
+      ) : videos.length === 0 ? (
+        <p>Tidak ada hasil ditemukan.</p>
+      ) : (
+        <ul className="grid gap-4 md:grid-cols-3">
+          {videos.map((video) => (
+            <li key={video.id}>
+              <img src={video.thumbnail_url} alt={video.title} />
+              <h2 className="text-lg font-medium mt-2">{video.title}</h2>
+              <p className="text-sm text-gray-600">
+                {video.profiles?.channel_name} · {video.views} views
+              </p>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
