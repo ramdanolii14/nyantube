@@ -67,7 +67,7 @@ export default function Navbar() {
       <div className="max-w-6xl mx-auto px-4 flex items-center justify-between h-14">
         {/* Logo */}
         <Link href="/" className="text-red-600 text-xl font-bold">
-          Nyantube
+          NyanTube
         </Link>
 
         {/* Search Bar */}
