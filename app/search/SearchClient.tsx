@@ -9,6 +9,10 @@ interface Video {
   id: string;
   title: string;
   thumbnail_url: string | null;
+  views: number;
+  profiles: {
+    channel_name: string;
+  };
 }
 
 export default function SearchClient() {
@@ -24,7 +28,9 @@ export default function SearchClient() {
       setLoading(true);
       const { data, error } = await supabase
         .from("videos")
-        .select("id, title, thumbnail_url")
+        .select(
+          "id, title, thumbnail_url, views, profiles(channel_name)"
+        )
         .ilike("title", `%${query}%`);
 
       if (error) console.error(error);
@@ -42,7 +48,7 @@ export default function SearchClient() {
     return <p className="p-4 text-center mt-20">No videos found.</p>;
 
   return (
-    <div className="pt-24 px-4">
+    <div className="pt-24 px-6">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {videos.map((v) => (
           <Link
@@ -55,12 +61,20 @@ export default function SearchClient() {
               src={
                 v.thumbnail_url
                   ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/thumbnails/${v.thumbnail_url}`
-                  : "/default-thumbnail.jpg" // fallback default
+                  : "/default-thumbnail.jpg"
               }
               alt={v.title}
             />
-            <div className="p-2 text-sm font-medium line-clamp-2">
-              {v.title}
+            <div className="p-2">
+              <div className="text-sm font-medium line-clamp-2">
+                {v.title}
+              </div>
+              <div className="text-xs text-gray-500">
+                {v.profiles?.channel_name || "Unknown channel"}
+              </div>
+              <div className="text-xs text-gray-500">
+                {v.views} views
+              </div>
             </div>
           </Link>
         ))}
