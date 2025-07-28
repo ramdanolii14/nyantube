@@ -13,11 +13,17 @@ export default function UploadPage() {
   const [videoPreview, setVideoPreview] = useState<string | null>(null);
   const [thumbPreview, setThumbPreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const recaptchaRef = useRef<HTMLDivElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
+  const thumbInputRef = useRef<HTMLInputElement>(null);
 
   const handleDrop = (e: React.DragEvent<HTMLDivElement>, isVideo: boolean) => {
     e.preventDefault();
     const file = e.dataTransfer.files[0];
+    handleFile(file, isVideo);
+  };
+
+  const handleFile = (file: File, isVideo: boolean) => {
+    if (!file) return;
     if (isVideo) {
       setVideoFile(file);
       setVideoPreview(URL.createObjectURL(file));
@@ -31,7 +37,6 @@ export default function UploadPage() {
     e.preventDefault();
     setLoading(true);
 
-    // Ambil token reCAPTCHA v2 manual
     const token = (window as any).grecaptcha?.getResponse();
     if (!token) {
       alert("Harap centang reCAPTCHA terlebih dahulu.");
@@ -39,12 +44,12 @@ export default function UploadPage() {
       return;
     }
 
-    // Verifikasi reCAPTCHA ke route backend
     const verifyRes = await fetch("/api/verify-recaptcha", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ token }),
     });
+
     const verifyData = await verifyRes.json();
     if (!verifyData.success) {
       alert("Gagal validasi reCAPTCHA");
@@ -125,7 +130,9 @@ export default function UploadPage() {
           className="w-full p-2 border rounded"
         />
 
+        {/* Drag + Click Video */}
         <div
+          onClick={() => videoInputRef.current?.click()}
           onDrop={(e) => handleDrop(e, true)}
           onDragOver={(e) => e.preventDefault()}
           className="border-dashed border-2 rounded p-4 text-center cursor-pointer"
@@ -133,11 +140,20 @@ export default function UploadPage() {
           {videoPreview ? (
             <video src={videoPreview} controls className="w-full" />
           ) : (
-            "Drag & drop video di sini"
+            "Klik atau drag & drop untuk memilih video"
           )}
+          <input
+            type="file"
+            accept="video/*"
+            ref={videoInputRef}
+            hidden
+            onChange={(e) => handleFile(e.target.files?.[0]!, true)}
+          />
         </div>
 
+        {/* Drag + Click Thumbnail */}
         <div
+          onClick={() => thumbInputRef.current?.click()}
           onDrop={(e) => handleDrop(e, false)}
           onDragOver={(e) => e.preventDefault()}
           className="border-dashed border-2 rounded p-4 text-center cursor-pointer"
@@ -145,12 +161,18 @@ export default function UploadPage() {
           {thumbPreview ? (
             <img src={thumbPreview} alt="Thumbnail preview" className="w-full" />
           ) : (
-            "Drag & drop thumbnail di sini"
+            "Klik atau drag & drop untuk memilih thumbnail"
           )}
+          <input
+            type="file"
+            accept="image/*"
+            ref={thumbInputRef}
+            hidden
+            onChange={(e) => handleFile(e.target.files?.[0]!, false)}
+          />
         </div>
 
-        <div ref={recaptchaRef} className="my-2">
-          {/* 🛡️ reCAPTCHA v2 checkbox */}
+        <div className="my-2">
           <div className="g-recaptcha" data-sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY}></div>
         </div>
 
