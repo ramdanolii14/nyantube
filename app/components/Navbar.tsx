@@ -126,7 +126,7 @@ export default function Navbar() {
                   <ul className="py-2 text-sm text-gray-700">
                     <li>
                       <Link
-                        href={`/profile/${user.id}`}
+                        href={`/${user.username}`}
                         className="block px-4 py-2 hover:bg-gray-100"
                         onClick={() => setDropdownOpen(false)}
                       >
