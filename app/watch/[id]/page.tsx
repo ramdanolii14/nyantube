@@ -280,7 +280,7 @@ export default function WatchPage() {
           </div>
           <h1 className="text-xl font-bold mt-4 mb-2">{video.title}</h1>
           <div className="flex items-center gap-3 mb-4">
-            <Link href={`/profile/${video.profiles.id}`}>
+            <Link href={`/${video.profiles.username}`}>
               <Image
                 src={
                   video.profiles.avatar_url
@@ -295,7 +295,7 @@ export default function WatchPage() {
             </Link>
             <div className="flex-1">
               <Link
-                href={`/profile/${video.profiles.id}`}
+                href={`/${video.profiles.username}`}
                 className="font-semibold hover:underline flex items-center gap-1"
               >
                 {video.profiles.channel_name || video.profiles.username}
