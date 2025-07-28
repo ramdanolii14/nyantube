@@ -21,14 +21,16 @@ export default function UploadPage() {
     setError("");
     setLoading(true);
 
-      const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
-      
-      if (!user) {
-        setError("Kamu harus login terlebih dahulu.");
-        setLoading(false);
-        return;
-      }
-      await handleUpload(user.id);
+    const {
+      data: { user },
+      error: userError,
+    } = await supabaseClient.auth.getUser();
+
+    if (!user) {
+      setError("Kamu harus login terlebih dahulu.");
+      setLoading(false);
+      return;
+    }
 
     if (!videoFile || !thumbnailFile || !title || !description) {
       setError("Harap lengkapi semua field dan file.");
@@ -36,7 +38,6 @@ export default function UploadPage() {
       return;
     }
 
-    // ✅ Ambil token reCAPTCHA
     const token = (window as any).grecaptcha?.getResponse();
     if (!token) {
       setError("Harap centang reCAPTCHA terlebih dahulu.");
@@ -44,7 +45,7 @@ export default function UploadPage() {
       return;
     }
 
-    await handleUpload(session.user.id);
+    await handleUpload(user.id);
   };
 
   const handleUpload = async (user_id: string) => {
