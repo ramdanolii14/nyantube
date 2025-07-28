@@ -67,7 +67,6 @@ export default function UploadPage() {
     const videoId = crypto.randomUUID();
     const videoExt = videoFile?.name.split(".").pop();
     const thumbExt = thumbnailFile?.name.split(".").pop();
-
     const videoPath = `videos/${videoId}.${videoExt}`;
     const thumbPath = `thumbnails/${videoId}.${thumbExt}`;
 
@@ -111,79 +110,98 @@ export default function UploadPage() {
   };
 
   return (
-    <div className="max-w-xl mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-4">Upload Video</h1>
-      <form onSubmit={handleUpload} className="space-y-4">
-        <input
-          required
-          type="text"
-          placeholder="Judul video"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          className="w-full p-2 border rounded"
-        />
-        <textarea
-          required
-          placeholder="Deskripsi video"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          className="w-full p-2 border rounded"
-        />
+    <div className="max-w-3xl mx-auto px-4 py-10">
+      <div className="bg-white shadow-xl rounded-xl p-8">
+        <h1 className="text-3xl font-bold mb-6 text-center text-gray-800">Upload Video</h1>
+        <form onSubmit={handleUpload} className="space-y-6">
+          <div>
+            <label className="block font-medium mb-1">Judul Video</label>
+            <input
+              required
+              type="text"
+              placeholder="Masukkan judul"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="w-full border rounded-md p-2 focus:outline-none focus:ring focus:ring-blue-500"
+            />
+          </div>
 
-        {/* Drag + Click Video */}
-        <div
-          onClick={() => videoInputRef.current?.click()}
-          onDrop={(e) => handleDrop(e, true)}
-          onDragOver={(e) => e.preventDefault()}
-          className="border-dashed border-2 rounded p-4 text-center cursor-pointer"
-        >
-          {videoPreview ? (
-            <video src={videoPreview} controls className="w-full" />
-          ) : (
-            "Klik atau drag & drop untuk memilih video"
-          )}
-          <input
-            type="file"
-            accept="video/*"
-            ref={videoInputRef}
-            hidden
-            onChange={(e) => handleFile(e.target.files?.[0]!, true)}
-          />
-        </div>
+          <div>
+            <label className="block font-medium mb-1">Deskripsi</label>
+            <textarea
+              required
+              placeholder="Tulis deskripsi video..."
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="w-full border rounded-md p-2 h-24 resize-none focus:outline-none focus:ring focus:ring-blue-500"
+            />
+          </div>
 
-        {/* Drag + Click Thumbnail */}
-        <div
-          onClick={() => thumbInputRef.current?.click()}
-          onDrop={(e) => handleDrop(e, false)}
-          onDragOver={(e) => e.preventDefault()}
-          className="border-dashed border-2 rounded p-4 text-center cursor-pointer"
-        >
-          {thumbPreview ? (
-            <img src={thumbPreview} alt="Thumbnail preview" className="w-full" />
-          ) : (
-            "Klik atau drag & drop untuk memilih thumbnail"
-          )}
-          <input
-            type="file"
-            accept="image/*"
-            ref={thumbInputRef}
-            hidden
-            onChange={(e) => handleFile(e.target.files?.[0]!, false)}
-          />
-        </div>
+          {/* Video Upload */}
+          <div>
+            <label className="block font-medium mb-2">Video</label>
+            <div
+              onClick={() => videoInputRef.current?.click()}
+              onDrop={(e) => handleDrop(e, true)}
+              onDragOver={(e) => e.preventDefault()}
+              className="w-full border-2 border-dashed rounded-md p-6 text-center cursor-pointer hover:border-blue-400 transition"
+            >
+              {videoPreview ? (
+                <video src={videoPreview} controls className="mx-auto w-full max-h-64 rounded-md" />
+              ) : (
+                <p className="text-gray-500">Klik atau drag & drop file video di sini</p>
+              )}
+              <input
+                type="file"
+                accept="video/*"
+                ref={videoInputRef}
+                hidden
+                onChange={(e) => handleFile(e.target.files?.[0]!, true)}
+              />
+            </div>
+          </div>
 
-        <div className="my-2">
-          <div className="g-recaptcha" data-sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY}></div>
-        </div>
+          {/* Thumbnail Upload */}
+          <div>
+            <label className="block font-medium mb-2">Thumbnail</label>
+            <div
+              onClick={() => thumbInputRef.current?.click()}
+              onDrop={(e) => handleDrop(e, false)}
+              onDragOver={(e) => e.preventDefault()}
+              className="w-full border-2 border-dashed rounded-md p-6 text-center cursor-pointer hover:border-blue-400 transition"
+            >
+              {thumbPreview ? (
+                <img src={thumbPreview} alt="Thumbnail" className="mx-auto w-full max-h-64 object-cover rounded-md" />
+              ) : (
+                <p className="text-gray-500">Klik atau drag & drop thumbnail di sini</p>
+              )}
+              <input
+                type="file"
+                accept="image/*"
+                ref={thumbInputRef}
+                hidden
+                onChange={(e) => handleFile(e.target.files?.[0]!, false)}
+              />
+            </div>
+          </div>
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="bg-blue-600 text-white px-4 py-2 rounded"
-        >
-          {loading ? "Mengupload..." : "Upload"}
-        </button>
-      </form>
+          {/* reCAPTCHA */}
+          <div className="flex justify-center">
+            <div className="g-recaptcha" data-sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY}></div>
+          </div>
+
+          {/* Submit */}
+          <div className="text-center">
+            <button
+              type="submit"
+              disabled={loading}
+              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-md transition"
+            >
+              {loading ? "Mengupload..." : "Upload Sekarang"}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }
