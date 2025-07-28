@@ -1,175 +1,153 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
-import { supabase } from "@/supabase/client";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { createClient } from "@/supabase/client";
+import { v4 as uuidv4 } from "uuid";
+
+declare global {
+  interface Window {
+    grecaptcha: {
+      ready: (cb: () => void) => void;
+      execute: (siteKey: string, options: { action: string }) => Promise<string>;
+    };
+  }
+}
+
+const RECAPTCHA_SITE_KEY = "6Lc1vXMlAAAAADuHeQ4QvqqdrEPZlHzSDIQSLl8C"; // ganti kalau perlu
 
 export default function UploadPage() {
+  const supabase = createClient();
+  const router = useRouter();
+
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
-  const [error, setError] = useState("");
+  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const router = useRouter();
-  const videoInputRef = useRef<HTMLInputElement>(null);
-  const thumbnailInputRef = useRef<HTMLInputElement>(null);
+  const handleSubmit = async () => {
+    setError(null);
 
-  useEffect(() => {
-    const script = document.createElement("script");
-    script.src = `https://www.google.com/recaptcha/api.js`;
-    script.async = true;
-    document.body.appendChild(script);
-  }, []);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
+    if (!videoFile || !thumbnailFile) {
+      setError("Harap unggah video dan thumbnail.");
+      return;
+    }
 
     setLoading(true);
 
-    const { data: session } = await supabase.auth.getSession();
-    const user = session.session?.user;
+    try {
+      const token = await window.grecaptcha.execute(RECAPTCHA_SITE_KEY, {
+        action: "submit",
+      });
 
-    if (!user) {
-      setError("Harus login untuk upload.");
+      if (!token) {
+        setError("Silakan verifikasi reCAPTCHA.");
+        setLoading(false);
+        return;
+      }
+
+      const user = (await supabase.auth.getUser()).data.user;
+      if (!user) {
+        setError("Kamu belum login.");
+        setLoading(false);
+        return;
+      }
+
+      const videoId = uuidv4();
+      const fileExt = videoFile.name.split(".").pop();
+      const thumbnailExt = thumbnailFile.name.split(".").pop();
+
+      const videoPath = `${user.id}/${videoId}.${fileExt}`;
+      const thumbPath = `${user.id}/${videoId}.${thumbnailExt}`;
+
+      const { error: videoError } = await supabase.storage
+        .from("videos")
+        .upload(videoPath, videoFile);
+      if (videoError) throw videoError;
+
+      const { error: thumbError } = await supabase.storage
+        .from("thumbnails")
+        .upload(thumbPath, thumbnailFile);
+      if (thumbError) throw thumbError;
+
+      const { data: videoURL } = supabase.storage
+        .from("videos")
+        .getPublicUrl(videoPath);
+
+      const { data: thumbnailURL } = supabase.storage
+        .from("thumbnails")
+        .getPublicUrl(thumbPath);
+
+      const { error: insertError } = await supabase.from("videos").insert({
+        id: videoId,
+        user_id: user.id,
+        title,
+        description,
+        video_url: videoURL.publicUrl,
+        thumbnail_url: thumbnailURL.publicUrl,
+        views: 0,
+        likes: 0,
+        dislikes: 0,
+        is_public: true,
+      });
+
+      if (insertError) throw insertError;
+
+      router.push("/");
+
+    } catch (err: any) {
+      console.error(err);
+      setError("Terjadi kesalahan saat upload.");
+    } finally {
       setLoading(false);
-      return;
     }
-
-    if (!videoFile || !thumbnailFile || !title.trim()) {
-      setError("Semua field harus diisi.");
-      setLoading(false);
-      return;
-    }
-
-    const recaptchaResponse = (window as any).grecaptcha.getResponse();
-    if (!recaptchaResponse) {
-      setError("Silakan verifikasi reCAPTCHA.");
-      setLoading(false);
-      return;
-    }
-
-    // Upload video
-    const videoExt = videoFile.name.split(".").pop();
-    const videoFileName = `${Date.now()}.${videoExt}`;
-    const { data: videoUpload, error: videoError } = await supabase.storage
-      .from("videos")
-      .upload(videoFileName, videoFile);
-
-    if (videoError) {
-      setError("Gagal upload video.");
-      setLoading(false);
-      return;
-    }
-
-    const { data: videoUrl } = supabase.storage.from("videos").getPublicUrl(videoFileName);
-
-    // Upload thumbnail
-    const thumbExt = thumbnailFile.name.split(".").pop();
-    const thumbFileName = `${Date.now()}-thumb.${thumbExt}`;
-    const { data: thumbUpload, error: thumbError } = await supabase.storage
-      .from("thumbnails")
-      .upload(thumbFileName, thumbnailFile);
-
-    if (thumbError) {
-      setError("Gagal upload thumbnail.");
-      setLoading(false);
-      return;
-    }
-
-    const { data: thumbUrl } = supabase.storage.from("thumbnails").getPublicUrl(thumbFileName);
-
-    // Insert into table
-    const { error: insertError } = await supabase.from("videos").insert({
-      user_id: user.id,
-      title,
-      description,
-      video_url: videoUrl.publicUrl,
-      thumbnail_url: thumbUrl.publicUrl,
-      views: 0,
-      likes: 0,
-      dislikes: 0,
-      is_public: true,
-    });
-
-    if (insertError) {
-      setError("Gagal simpan metadata video.");
-      setLoading(false);
-      return;
-    }
-
-    router.push("/");
   };
 
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.grecaptcha) {
+      window.grecaptcha.ready(() => {
+        console.log("reCAPTCHA ready");
+      });
+    }
+  }, []);
+
   return (
-    <div className="max-w-2xl mx-auto p-6 bg-white rounded shadow">
-      <h1 className="text-2xl font-bold mb-4">Upload Video</h1>
-      <form onSubmit={handleSubmit} id="upload-form">
-        <input
-          type="text"
-          className="w-full mb-3 border p-2 rounded"
-          placeholder="Judul Video"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          required
-        />
-        <textarea
-          className="w-full mb-3 border p-2 rounded"
-          placeholder="Deskripsi Video"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          required
-        />
-        <div
-          onClick={() => videoInputRef.current?.click()}
-          className="w-full p-4 mb-3 border-2 border-dashed text-center cursor-pointer rounded hover:bg-gray-50"
-        >
-          {videoFile ? (
-            <p>{videoFile.name}</p>
-          ) : (
-            <p>📹 Klik atau drag video ke sini</p>
-          )}
-          <input
-            type="file"
-            accept="video/*"
-            hidden
-            ref={videoInputRef}
-            onChange={(e) => setVideoFile(e.target.files?.[0] || null)}
-          />
-        </div>
-
-        <div
-          onClick={() => thumbnailInputRef.current?.click()}
-          className="w-full p-4 mb-3 border-2 border-dashed text-center cursor-pointer rounded hover:bg-gray-50"
-        >
-          {thumbnailFile ? (
-            <p>{thumbnailFile.name}</p>
-          ) : (
-            <p>🖼️ Klik atau drag thumbnail ke sini</p>
-          )}
-          <input
-            type="file"
-            accept="image/*"
-            hidden
-            ref={thumbnailInputRef}
-            onChange={(e) => setThumbnailFile(e.target.files?.[0] || null)}
-          />
-        </div>
-
-        <div className="g-recaptcha mb-3" data-sitekey="6LcQO5IrAAAAAGQM1ZaygBBXhbDMFyj0Wntl_H1y" data-size="invisible"></div>
-
-        <button
-          type="submit"
-          className="w-full bg-red-600 text-white py-2 rounded hover:bg-red-700 disabled:opacity-50"
-          disabled={loading}
-        >
-          {loading ? "Mengupload..." : "Upload"}
-        </button>
-
-        {error && <p className="text-red-600 mt-3 text-sm">{error}</p>}
-      </form>
+    <div className="max-w-md mx-auto p-4">
+      <input
+        type="text"
+        className="w-full border mb-2 px-3 py-2"
+        placeholder="Judul video"
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+      />
+      <textarea
+        className="w-full border mb-2 px-3 py-2"
+        placeholder="Deskripsi"
+        value={description}
+        onChange={(e) => setDescription(e.target.value)}
+      ></textarea>
+      <input
+        type="file"
+        accept="video/*"
+        onChange={(e) => setVideoFile(e.target.files?.[0] || null)}
+        className="w-full border mb-2 px-3 py-2"
+      />
+      <input
+        type="file"
+        accept="image/*"
+        onChange={(e) => setThumbnailFile(e.target.files?.[0] || null)}
+        className="w-full border mb-2 px-3 py-2"
+      />
+      <button
+        onClick={handleSubmit}
+        disabled={loading}
+        className="bg-red-600 text-white w-full py-2 rounded hover:bg-red-700 transition"
+      >
+        {loading ? "Mengupload..." : "Upload"}
+      </button>
+      {error && <p className="text-red-600 mt-2 text-sm">{error}</p>}
     </div>
   );
 }
