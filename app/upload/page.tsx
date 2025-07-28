@@ -89,7 +89,7 @@ export default function UploadPage() {
       setPreviewVideo(null);
       setPreviewThumbnail(null);
     } catch (err: any) {
-      alert(Gagal upload: ${err.message});
+      alert(`Gagal upload: ${err.message}`);
     } finally {
       setUploading(false);
     }
