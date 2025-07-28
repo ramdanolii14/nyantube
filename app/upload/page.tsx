@@ -53,7 +53,7 @@ export default function UploadPage() {
 
     try {
       // ✅ Upload Video ke bucket "videos"
-      const videoFileName = ${Date.now()}-${videoFile.name};
+      const videoFileName = `${Date.now()}-${videoFile.name}`;
       const { error: videoError } = await supabase.storage
         .from("videos")
         .upload(videoFileName, videoFile);
