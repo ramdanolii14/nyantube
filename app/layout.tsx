@@ -1,31 +1,22 @@
 import "./globals.css";
 import Navbar from "@/app/components/Navbar";
-import LayoutClient from "@/app/layout-client";
-
-import { createBrowserSupabaseClient } from "@supabase/auth-helpers-nextjs";
-import { SessionContextProvider } from "@supabase/auth-helpers-react";
-
-const supabase = createBrowserSupabaseClient();
 
 export const metadata = {
   title: "NyanTube",
-  description: "Streaming Video Online Bersama NyanTube",
+  description: "Streaming Online Tanpa Batas Bersama NyanTube. Powerfull video platform, only for Sigma.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <SessionContextProvider supabaseClient={supabase}>
-      <html lang="en">
-        <head>
-          <script src="https://www.google.com/recaptcha/api.js" async defer />
-        </head>
-        <body className="bg-gray-100">
-          <LayoutClient>
-            <Navbar />
-            {children}
-          </LayoutClient>
-        </body>
-      </html>
-    </SessionContextProvider>
+    <html lang="en">
+      <head>
+        {/* ✅ Script reCAPTCHA */}
+        <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+      </head>
+      <body className="bg-gray-100">
+        <Navbar />
+        {children}
+      </body>
+    </html>
   );
 }
