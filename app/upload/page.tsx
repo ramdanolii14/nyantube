@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useUser } from "@supabase/auth-helpers-react";
 import { supabase } from "@/supabase/client";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import { CloudUpload } from "lucide-react";
 
 export default function UploadPage() {
+  const user = useUser();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [videoFile, setVideoFile] = useState<File | null>(null);
@@ -15,16 +16,10 @@ export default function UploadPage() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  const supabaseClient = createClientComponentClient();
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setLoading(true);
-
-    const {
-      data: { user },
-    } = await supabaseClient.auth.getUser();
 
     if (!user) {
       setError("Kamu harus login terlebih dahulu.");
@@ -42,15 +37,13 @@ export default function UploadPage() {
   };
 
   const handleUpload = async (user_id: string) => {
-    if (!user_id || !videoFile || !thumbnailFile) return;
-
     const timestamp = Date.now();
-    const videoPath = `videos/${timestamp}_${videoFile.name}`;
-    const thumbnailPath = `thumbnails/${timestamp}_${thumbnailFile.name}`;
+    const videoPath = `videos/${timestamp}_${videoFile!.name}`;
+    const thumbnailPath = `thumbnails/${timestamp}_${thumbnailFile!.name}`;
 
     const { data: videoData, error: videoErr } = await supabase.storage
       .from("videos")
-      .upload(videoPath, videoFile);
+      .upload(videoPath, videoFile!);
 
     if (videoErr) {
       setError("Gagal upload video.");
@@ -60,7 +53,7 @@ export default function UploadPage() {
 
     const { data: thumbData, error: thumbErr } = await supabase.storage
       .from("thumbnails")
-      .upload(thumbnailPath, thumbnailFile);
+      .upload(thumbnailPath, thumbnailFile!);
 
     if (thumbErr) {
       setError("Gagal upload thumbnail.");
@@ -99,7 +92,7 @@ export default function UploadPage() {
   };
 
   return (
-    <div className="max-w-xl mx-auto p-6 bg-white rounded-lg shadow">
+    <div className="max-w-xl mx-auto p-6 bg-white rounded-lg shadow mt-16">
       <h1 className="text-3xl font-bold mb-6 text-center text-red-600">Upload Video</h1>
       <form onSubmit={handleSubmit} className="space-y-4">
         <input
@@ -116,7 +109,6 @@ export default function UploadPage() {
           onChange={(e) => setDescription(e.target.value)}
         />
 
-        {/* Drag and drop for video */}
         <div
           onDrop={(e) => handleDragDrop(e, setVideoFile)}
           onDragOver={(e) => e.preventDefault()}
@@ -136,7 +128,6 @@ export default function UploadPage() {
           />
         </div>
 
-        {/* Drag and drop for thumbnail */}
         <div
           onDrop={(e) => handleDragDrop(e, setThumbnailFile)}
           onDragOver={(e) => e.preventDefault()}
