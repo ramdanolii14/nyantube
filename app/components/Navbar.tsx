@@ -66,13 +66,13 @@ export default function Navbar() {
     <nav className="bg-white shadow-md fixed top-0 left-0 right-0 z-50">
       <div className="max-w-6xl mx-auto px-4 flex items-center justify-between h-14">
         {/* Logo */}
-        <Link href="/" 
-            <Image
-              src="/logo.png"
-              alt="NyanTube"
-              height={40}
-              className="h-10 w-auto"
-            />
+        <Link href="/">
+          <Image
+            src="/logo.png"
+            alt="NyanTube"
+            height={40}
+            className="h-10 w-auto"
+          />
         </Link>
 
         {/* Search Bar */}
