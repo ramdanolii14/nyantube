@@ -1,104 +1,138 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import Link from "next/link";
-import Image from "next/image";
+import { useSearchParams } from "next/navigation";
 import { supabase } from "@/supabase/client";
-
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+import Image from "next/image";
+import Link from "next/link";
 
 interface Video {
   id: string;
   title: string;
   thumbnail_url: string;
   views: number;
-  profiles: {
+  likes: number;
+  dislikes: number;
+  created_at: string;
+  profiles?: {
     channel_name: string;
-    avatar_url: string;
+    avatar_url: string | null;
+    is_verified?: boolean;
   };
 }
 
 export default function SearchClient() {
   const searchParams = useSearchParams();
-  const query = searchParams.get("q") || "";
+  const query = searchParams.get("q")?.toLowerCase() ?? "";
   const [videos, setVideos] = useState<Video[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchResults = async () => {
+    const fetchVideos = async () => {
       setLoading(true);
-      const { data, error } = await supabase
-        .from("videos")
-        .select(`
-          id,
-          title,
-          thumbnail_url,
-          views,
-          profiles (
-            channel_name,
-            avatar_url
-          )
-        `)
-        .ilike("title", `%${query}%`);
 
-      if (error) {
-        console.error("Supabase fetch error:", error);
-        setLoading(false);
-        return;
+      const { data } = await supabase
+        .from("videos")
+        .select("*, profiles(channel_name, avatar_url, is_verified)")
+        .ilike("title", `%${query}%`)
+        .order("created_at", { ascending: false });
+
+      if (data) {
+        setVideos(
+          data.map((v: any) => ({
+            ...v,
+            profiles: v.profiles || {
+              channel_name: "Unknown",
+              avatar_url: null,
+              is_verified: false,
+            },
+          })) as Video[]
+        );
       }
 
-      setVideos(data as Video[]);
       setLoading(false);
     };
 
-    if (query) fetchResults();
+    if (query.trim()) {
+      fetchVideos();
+    } else {
+      setVideos([]);
+      setLoading(false);
+    }
   }, [query]);
 
-  return (
-    <div className="pt-24 px-4 md:px-12 lg:px-20">
-      <h1 className="text-xl font-semibold mb-6">
-        Hasil pencarian untuk &quot;{query}&quot;
-      </h1>
+  if (loading) {
+    return <p className="text-center mt-10">Loading...</p>;
+  }
 
-      {loading ? (
-        <p>Loading...</p>
-      ) : videos.length === 0 ? (
-        <p>Tidak ada hasil ditemukan.</p>
-      ) : (
-        <ul className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {videos.map((video) => (
-            <li key={video.id} className="rounded-lg overflow-hidden bg-white shadow hover:shadow-md transition-all">
-              <Link href={`/watch/${video.id}`} className="block">
-                <img
-                  src={`${SUPABASE_URL}/storage/v1/object/public/thumbnails/${video.thumbnail_url}`}
-                  alt={video.title}
-                  className="w-full h-40 object-cover"
-                />
-                <div className="flex gap-2 p-3">
-                  <Image
-                    src={
-                      video.profiles?.avatar_url
-                        ? `${SUPABASE_URL}/storage/v1/object/public/avatars/${video.profiles.avatar_url}`
-                        : "/default-avatar.png"
-                    }
-                    alt={video.profiles?.channel_name}
-                    width={36}
-                    height={36}
-                    className="rounded-full object-cover"
-                  />
-                  <div className="flex-1">
-                    <h2 className="text-sm font-semibold line-clamp-2">{video.title}</h2>
-                    <p className="text-xs text-gray-500 mt-1">
-                      {video.profiles?.channel_name} · {video.views} views
-                    </p>
+  if (videos.length === 0) {
+    return <p className="text-center mt-10">No results found for "{query}"</p>;
+  }
+
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 px-4">
+      {videos.map((video) => (
+        <Link
+          key={video.id}
+          href={`/watch/${video.id}`}
+          className="bg-white rounded-lg shadow hover:shadow-lg transition p-2"
+        >
+          {/* Thumbnail */}
+          <div
+            className="relative w-full rounded-md overflow-hidden"
+            style={{ paddingTop: "56.25%" }}
+          >
+            <Image
+              src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/thumbnails/${video.thumbnail_url}`}
+              alt={video.title}
+              fill
+              className="absolute top-0 left-0 w-full h-full object-cover"
+              unoptimized
+            />
+          </div>
+
+          {/* Info */}
+          <div className="flex items-center gap-2 mt-2">
+            <Image
+              src={
+                video.profiles?.avatar_url
+                  ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${video.profiles.avatar_url}`
+                  : `https://ui-avatars.com/api/?name=${video.profiles?.channel_name}`
+              }
+              alt={video.profiles?.channel_name || "Unknown"}
+              width={40}
+              height={40}
+              className="rounded-full object-cover aspect-square"
+              unoptimized
+            />
+            <div className="flex flex-col">
+              <h3 className="font-semibold text-sm line-clamp-2">
+                {video.title}
+              </h3>
+
+              <p className="text-xs text-gray-600 flex items-center gap-1">
+                {video.profiles?.channel_name}
+                {video.profiles?.is_verified && (
+                  <div className="relative group flex items-center">
+                    <Image
+                      src="/verified.svg"
+                      alt="verified"
+                      width={12}
+                      height={12}
+                      className="inline-block align-middle translate-y-[0.5px]"
+                    />
+                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-1 hidden group-hover:block bg-black text-white text-[10px] px-2 py-1 rounded">
+                      VERIFIED USER
+                    </div>
                   </div>
-                </div>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      )}
+                )}
+              </p>
+
+              <p className="text-xs text-gray-500">{video.views} views</p>
+            </div>
+          </div>
+        </Link>
+      ))}
     </div>
   );
 }
