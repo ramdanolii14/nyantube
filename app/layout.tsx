@@ -9,9 +9,13 @@ export const metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
+      <head>
+        {/* ✅ Script reCAPTCHA */}
+        <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+      </head>
       <body className="bg-gray-100">
-        <Navbar/>   {/* ✅ selalu ada */}
-        {children}   {/* ✅ halaman yang dirender */}
+        <Navbar />
+        {children}
       </body>
     </html>
   );
