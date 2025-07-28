@@ -24,7 +24,7 @@ interface Video {
 }
 
 export default function PublicProfilePage() {
-  const { id } = useParams(); // id = username di sini
+  const { username } = useParams();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [videos, setVideos] = useState<Video[]>([]);
   const [userId, setUserId] = useState<string | null>(null);
@@ -34,18 +34,9 @@ export default function PublicProfilePage() {
       const { data } = await supabase
         .from("profiles")
         .select("id, username, channel_name, avatar_url, is_verified")
-        .eq("username", id) // GANTI: berdasarkan username
+        .eq("username", username)
         .single();
       if (data) setProfile(data as Profile);
-    };
-
-    const fetchVideos = async (user_id: string) => {
-      const { data } = await supabase
-        .from("videos")
-        .select("id, title, thumbnail_url, views, created_at")
-        .eq("user_id", user_id)
-        .order("created_at", { ascending: false });
-      if (data) setVideos(data as Video[]);
     };
 
     const fetchUser = async () => {
@@ -61,7 +52,17 @@ export default function PublicProfilePage() {
     };
 
     init();
-  }, [id]);
+  }, [username]);
+
+  const fetchVideos = async (user_id: string) => {
+    const { data } = await supabase
+      .from("videos")
+      .select("id, title, thumbnail_url, views, created_at")
+      .eq("user_id", user_id)
+      .order("created_at", { ascending: false });
+
+    if (data) setVideos(data as Video[]);
+  };
 
   useEffect(() => {
     if (profile?.id) {
