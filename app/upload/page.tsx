@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/supabase/client";
 
 export default function UploadPage() {
@@ -12,8 +12,8 @@ export default function UploadPage() {
   const [previewThumbnail, setPreviewThumbnail] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  const recaptchaRef = useRef<HTMLDivElement | null>(null);
 
-  // ✅ Cek apakah user sudah login
   useEffect(() => {
     const checkUser = async () => {
       const {
@@ -52,7 +52,13 @@ export default function UploadPage() {
     setUploading(true);
 
     try {
-      // ✅ Upload Video ke bucket "videos"
+      // ✅ Jalankan invisible recaptcha
+      const token = await executeRecaptcha();
+
+      if (!token) {
+        throw new Error("Gagal validasi reCAPTCHA.");
+      }
+
       const videoFileName = `${Date.now()}-${videoFile.name}`;
       const { error: videoError } = await supabase.storage
         .from("videos")
@@ -60,7 +66,6 @@ export default function UploadPage() {
 
       if (videoError) throw videoError;
 
-      // ✅ Upload Thumbnail ke bucket "thumbnails"
       const thumbnailFileName = `${Date.now()}-${thumbnailFile.name}`;
       const { error: thumbnailError } = await supabase.storage
         .from("thumbnails")
@@ -68,14 +73,13 @@ export default function UploadPage() {
 
       if (thumbnailError) throw thumbnailError;
 
-      // ✅ Simpan ke Database (dengan user_id)
       const { error: dbError } = await supabase.from("videos").insert([
         {
           title,
           description,
           video_url: videoFileName,
           thumbnail_url: thumbnailFileName,
-          user_id: userId, // wajib biar kita tahu siapa yg upload
+          user_id: userId,
         },
       ]);
 
@@ -95,7 +99,21 @@ export default function UploadPage() {
     }
   };
 
-  // ✅ Kalau belum login, tampilkan pesan
+  const executeRecaptcha = async (): Promise<string | null> => {
+    return new Promise((resolve) => {
+      if (typeof window.grecaptcha !== "undefined") {
+        window.grecaptcha.ready(() => {
+          window.grecaptcha
+            .execute(process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY!, { action: "submit" })
+            .then((token: string) => resolve(token))
+            .catch(() => resolve(null));
+        });
+      } else {
+        resolve(null);
+      }
+    });
+  };
+
   if (!userId) {
     return (
       <div className="max-w-2xl mx-auto p-6 mt-10 text-center bg-white shadow rounded">
@@ -109,7 +127,6 @@ export default function UploadPage() {
     <div className="max-w-2xl mx-auto p-6 mt-10 bg-white shadow rounded">
       <h1 className="text-2xl font-bold mb-4">Upload Video</h1>
 
-      {/* Title */}
       <div className="mb-3">
         <label className="block font-medium mb-1">Title</label>
         <input
@@ -121,7 +138,6 @@ export default function UploadPage() {
         />
       </div>
 
-      {/* Description */}
       <div className="mb-3">
         <label className="block font-medium mb-1">Description</label>
         <textarea
@@ -133,7 +149,6 @@ export default function UploadPage() {
         />
       </div>
 
-      {/* Drag & Drop Video */}
       <div
         className="border-2 border-dashed rounded p-4 text-center mb-3 cursor-pointer hover:bg-gray-100"
         onDragOver={(e) => e.preventDefault()}
@@ -144,11 +159,7 @@ export default function UploadPage() {
         onClick={() => document.getElementById("videoInput")?.click()}
       >
         {previewVideo ? (
-          <video
-            src={previewVideo}
-            controls
-            className="mx-auto rounded max-h-48"
-          />
+          <video src={previewVideo} controls className="mx-auto rounded max-h-48" />
         ) : (
           <p className="text-gray-500">Drag & drop atau klik untuk pilih video</p>
         )}
@@ -161,7 +172,6 @@ export default function UploadPage() {
         />
       </div>
 
-      {/* Drag & Drop Thumbnail */}
       <div
         className="border-2 border-dashed rounded p-4 text-center mb-3 cursor-pointer hover:bg-gray-100"
         onDragOver={(e) => e.preventDefault()}
@@ -178,9 +188,7 @@ export default function UploadPage() {
             className="mx-auto rounded max-h-48"
           />
         ) : (
-          <p className="text-gray-500">
-            Drag & drop atau klik untuk pilih thumbnail (wajib)
-          </p>
+          <p className="text-gray-500">Drag & drop atau klik untuk pilih thumbnail (wajib)</p>
         )}
         <input
           type="file"
@@ -196,8 +204,12 @@ export default function UploadPage() {
         disabled={uploading}
         className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 disabled:bg-gray-400"
       >
-        {uploading ? "Mengupload... sabar yaa emang lama banget uploadnya xD" : "Upload"}
+        {uploading
+          ? "Mengupload... sabar yaa emang lama banget uploadnya xD"
+          : "Upload"}
       </button>
+
+      <div ref={recaptchaRef} />
     </div>
   );
 }
