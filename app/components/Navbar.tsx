@@ -109,8 +109,8 @@ export default function Navbar() {
                 <Image
                   src={
                     profile?.avatar_url
-                      ? ${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${profile.avatar_url}
-                      : https://ui-avatars.com/api/?name=${profile?.username || "User"}
+                      ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${profile.avatar_url}`
+                      : `https://ui-avatars.com/api/?name=${profile?.username || "User"}`
                   }
                   alt={profile?.username || "User"}
                   width={36}
@@ -126,7 +126,7 @@ export default function Navbar() {
                   <ul className="py-2 text-sm text-gray-700">
                     <li>
                       <Link
-                        href={/profile/${user.id}}
+                        href={`/profile/${user.id}`}
                         className="block px-4 py-2 hover:bg-gray-100"
                         onClick={() => setDropdownOpen(false)}
                       >
