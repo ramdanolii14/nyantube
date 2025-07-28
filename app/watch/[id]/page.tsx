@@ -363,7 +363,7 @@ export default function WatchPage() {
               return (
                 <div key={c.id} className="mb-3">
                   <div className="flex gap-2">
-                    <Link href={`/profile/${c.profiles.id}`}>
+                    <Link href={`/${c.profiles.username}`}>
                       <Image
                         src={
                           c.profiles.avatar_url
