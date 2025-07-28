@@ -1,15 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useUser } from "@supabase/auth-helpers-react";
 import { supabase } from "@/supabase/client";
-import Image from "next/image";
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
-
-interface User {
-  id: string;
-  email: string;
-}
 
 interface Profile {
   username: string;
@@ -17,38 +13,32 @@ interface Profile {
 }
 
 export default function Navbar() {
-  const [user, setUser] = useState<User | null>(null);
+  const user = useUser();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const router = useRouter();
 
   useEffect(() => {
-    const getUser = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+    const fetchProfile = async () => {
+      if (!user) return;
 
-      if (user) {
-        setUser({ id: user.id, email: user.email! });
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("username, avatar_url")
+        .eq("id", user.id)
+        .single();
 
-        const { data } = await supabase
-          .from("profiles")
-          .select("username, avatar_url")
-          .eq("id", user.id)
-          .single();
-
-        if (data) {
-          setProfile({
-            username: data.username,
-            avatar_url: data.avatar_url,
-          });
-        }
+      if (data) {
+        setProfile({
+          username: data.username,
+          avatar_url: data.avatar_url,
+        });
       }
     };
 
-    getUser();
-  }, []);
+    fetchProfile();
+  }, [user]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -101,10 +91,9 @@ export default function Navbar() {
 
           {user ? (
             <div className="relative">
-              {/* Avatar - fix landscape */}
               <div
                 className="w-9 h-9 rounded-full overflow-hidden border cursor-pointer"
-                onClick={() => setDropdownOpen((prev) => !prev)}
+                onClick={() => setDropdownOpen(!dropdownOpen)}
               >
                 <Image
                   src={
@@ -120,7 +109,6 @@ export default function Navbar() {
                 />
               </div>
 
-              {/* Dropdown */}
               {dropdownOpen && (
                 <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border">
                   <ul className="py-2 text-sm text-gray-700">
@@ -134,40 +122,16 @@ export default function Navbar() {
                       </Link>
                     </li>
                     <li>
-                      <Link
-                        href="/terms"
-                        className="block px-4 py-2 hover:bg-gray-100"
-                        onClick={() => setDropdownOpen(false)}
-                      >
-                        Terms of Service
-                      </Link>
+                      <Link href="/terms" className="block px-4 py-2 hover:bg-gray-100">Terms of Service</Link>
                     </li>
                     <li>
-                      <Link
-                        href="/privacy"
-                        className="block px-4 py-2 hover:bg-gray-100"
-                        onClick={() => setDropdownOpen(false)}
-                      >
-                        Privacy Policy
-                      </Link>
+                      <Link href="/privacy" className="block px-4 py-2 hover:bg-gray-100">Privacy Policy</Link>
                     </li>
                     <li>
-                      <Link
-                        href="/contact"
-                        className="block px-4 py-2 hover:bg-gray-100"
-                        onClick={() => setDropdownOpen(false)}
-                      >
-                        Contact Developer
-                      </Link>
+                      <Link href="/contact" className="block px-4 py-2 hover:bg-gray-100">Contact Developer</Link>
                     </li>
                     <li>
-                      <Link
-                        href="/about"
-                        className="block px-4 py-2 hover:bg-gray-100"
-                        onClick={() => setDropdownOpen(false)}
-                      >
-                        About Us
-                      </Link>
+                      <Link href="/about" className="block px-4 py-2 hover:bg-gray-100">About Us</Link>
                     </li>
                   </ul>
                   <div className="border-t">
