@@ -138,6 +138,15 @@ export default function Navbar() {
                         Profile
                       </Link>
                     </li>
+                     <li>
+                      <Link
+                        href="/verified-request"
+                        className="block px-4 py-2 hover:bg-gray-100"
+                        onClick={() => setDropdownOpen(false)}
+                      >
+                        Verified Request
+                      </Link>
+                    </li>
                     <li>
                       <Link
                         href="/terms"
