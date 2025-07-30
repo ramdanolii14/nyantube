@@ -67,12 +67,7 @@ export default function Navbar() {
       <div className="max-w-6xl mx-auto px-4 flex items-center justify-between h-14">
         {/* Logo */}
         <Link href="/">
-          <Image
-            src="/logo.png"
-            alt="NyanTube"
-            height={40}
-            className="h-10 w-auto"
-          />
+          <span className="text-xl font-bold text-red-600">NyanTube</span>
         </Link>
 
         {/* Search Bar */}
