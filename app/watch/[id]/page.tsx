@@ -111,6 +111,7 @@ export default function WatchPage() {
         .select("*, profiles(id, username, avatar_url, is_verified)")
         .eq("video_id", id)
         .order("created_at", { ascending: false });
+        .limit(50);
 
       setComments(
         commentData?.map((c) => ({
@@ -341,7 +342,7 @@ export default function WatchPage() {
 
           {/* Comments */}
           <div className="mt-6">
-            <h2 className="font-semibold mb-3">Comments</h2>
+            <h2 className="font-semibold mb-3">Comments ({comments.length})</h2>
             <div className="flex gap-2 mb-4">
               <input
                 type="text"
@@ -420,35 +421,8 @@ export default function WatchPage() {
                       )}
 
                       <div className="flex gap-3 text-xs text-gray-500 mt-1">
-                        <button
-                          onClick={() =>
-                            setShowReplies((prev) => ({
-                              ...prev,
-                              [c.id]: !prev[c.id],
-                            }))
-                          }
-                        >
-                          {showReplies[c.id] ? "Hide Replies" : "View Replies"}
-                        </button>
-                        <button
-                          onClick={() =>
-                            setReplyComment((prev) => ({
-                              ...prev,
-                              [c.id]: prev[c.id] || "",
-                            }))
-                          }
-                        >
-                          Reply
-                        </button>
                         {isOwner && (
                           <>
-                            <button
-                              onClick={() =>
-                                setEditComment({ id: c.id, content: c.content })
-                              }
-                            >
-                              Edit
-                            </button>
                             <button
                               onClick={() => handleDeleteComment(c.id)}
                               className="text-red-500"
@@ -458,30 +432,6 @@ export default function WatchPage() {
                           </>
                         )}
                       </div>
-
-                      {/* Reply Box */}
-                      {replyComment[c.id] !== undefined && (
-                        <div className="flex gap-2 mt-2">
-                          <input
-                            type="text"
-                            value={replyComment[c.id]}
-                            onChange={(e) =>
-                              setReplyComment((prev) => ({
-                                ...prev,
-                                [c.id]: e.target.value,
-                              }))
-                            }
-                            placeholder="Write a reply..."
-                            className="border px-2 py-1 rounded text-sm flex-1"
-                          />
-                          <button
-                            onClick={() => handleReplyComment(c.id)}
-                            className="text-blue-500 text-sm"
-                          >
-                            Reply
-                          </button>
-                        </div>
-                      )}
                     </div>
                   </div>
                 </div>
@@ -511,7 +461,7 @@ export default function WatchPage() {
                 <p className="text-sm font-semibold line-clamp-2">{v.title}</p>
                 <div className="flex items-center gap-1 text-xs text-gray-500">
                   <Link
-                    href={`/profile/${v.profiles.id}`}
+                    href={`/${v.profiles.username}`}
                     className="hover:underline flex items-center gap-1"
                   >
                     {v.profiles.channel_name || v.profiles.username}
