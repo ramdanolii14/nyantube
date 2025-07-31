@@ -76,7 +76,6 @@ export default function VideoList() {
     <div>
       {/* Header and Sort Control */}
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-bold">Dashboard</h2>
         <div className="text-sm">
           <label htmlFor="sort" className="mr-2 text-gray-700">
             Sort by:
