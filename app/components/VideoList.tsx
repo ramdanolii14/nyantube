@@ -1,15 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Fragment } from "react";
 import { supabase } from "@/supabase/client";
 import Image from "next/image";
 import Link from "next/link";
-import {
-  Eye,
-  Heart,
-  Clock,
-  History,
-} from "lucide-react"; // Icon lucide-react
+import { Listbox, Transition } from "@headlessui/react";
+import { Eye, Clock, Heart, History, ChevronUpDown } from "lucide-react";
 
 interface Video {
   id: string;
@@ -28,11 +24,15 @@ interface Video {
 
 type SortOption = "views" | "latest" | "likes" | "oldest";
 
-const sortOptions: { value: SortOption; label: string; icon: JSX.Element }[] = [
-  { value: "views", label: "Most Viewed", icon: <Eye size={16} className="mr-2" /> },
-  { value: "latest", label: "Latest", icon: <Clock size={16} className="mr-2" /> },
-  { value: "likes", label: "Most Liked", icon: <Heart size={16} className="mr-2" /> },
-  { value: "oldest", label: "Oldest", icon: <History size={16} className="mr-2" /> },
+const sortOptions: {
+  value: SortOption;
+  label: string;
+  icon: JSX.Element;
+}[] = [
+  { value: "views", label: "Most Viewed", icon: <Eye size={16} /> },
+  { value: "latest", label: "Latest", icon: <Clock size={16} /> },
+  { value: "likes", label: "Most Liked", icon: <Heart size={16} className="text-red-500" /> },
+  { value: "oldest", label: "Oldest", icon: <History size={16} /> },
 ];
 
 export default function VideoList() {
@@ -85,26 +85,50 @@ export default function VideoList() {
     }
   };
 
+  const selectedOption = sortOptions.find((opt) => opt.value === sortBy)!;
+
   return (
     <div>
-      {/* Header and Sort Control */}
+      {/* Header and Custom Sort Dropdown */}
       <div className="flex justify-between items-center mb-4">
-        <div className="text-sm">
-          <label htmlFor="sort" className="mr-2 text-gray-700">
-            Sort by:
-          </label>
-          <select
-            id="sort"
-            value={sortBy}
-            onChange={(e) => handleSortChange(e.target.value as SortOption)}
-            className="border rounded px-2 py-1 text-sm pl-2 pr-6 bg-white"
-          >
-            {sortOptions.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
+        <div className="w-48">
+          <Listbox value={sortBy} onChange={handleSortChange}>
+            <div className="relative">
+              <Listbox.Button className="relative w-full cursor-pointer rounded border py-1.5 pl-3 pr-8 text-left shadow-sm text-sm bg-white">
+                <span className="flex items-center gap-2">
+                  {selectedOption.icon}
+                  {selectedOption.label}
+                </span>
+                <span className="pointer-events-none absolute inset-y-0 right-2 flex items-center">
+                  <ChevronUpDown size={16} />
+                </span>
+              </Listbox.Button>
+
+              <Transition
+                as={Fragment}
+                leave="transition ease-in duration-100"
+                leaveFrom="opacity-100"
+                leaveTo="opacity-0"
+              >
+                <Listbox.Options className="absolute z-50 mt-1 w-full rounded-md bg-white shadow-lg border text-sm">
+                  {sortOptions.map((option) => (
+                    <Listbox.Option
+                      key={option.value}
+                      className={({ active }) =>
+                        `cursor-pointer select-none px-3 py-2 flex items-center gap-2 ${
+                          active ? "bg-gray-100" : ""
+                        }`
+                      }
+                      value={option.value}
+                    >
+                      {option.icon}
+                      {option.label}
+                    </Listbox.Option>
+                  ))}
+                </Listbox.Options>
+              </Transition>
+            </div>
+          </Listbox>
         </div>
       </div>
 
