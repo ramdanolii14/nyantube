@@ -109,7 +109,7 @@ export default function VideoList() {
                 )}
               </p>
 
-              <p className="text-xs text-gray-500">{video.views} views</p>
+              <p className="text-xs text-gray-500">{video.views} x ditonton</p>
             </div>
           </div>
         </Link>
