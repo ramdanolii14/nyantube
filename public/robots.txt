@@ -1,0 +1,12 @@
+User-agent: *
+Disallow: /upload
+Disallow: /dashboard
+Disallow: /profile
+Disallow: /edit-profile
+Disallow: /login
+Disallow: /register
+Disallow: /api/
+
+Allow: /
+
+Sitemap: https://nyantube.com/sitemap.xml
