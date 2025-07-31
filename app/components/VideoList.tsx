@@ -4,6 +4,12 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/supabase/client";
 import Image from "next/image";
 import Link from "next/link";
+import {
+  Eye,
+  Heart,
+  Clock,
+  History,
+} from "lucide-react"; // Icon lucide-react
 
 interface Video {
   id: string;
@@ -21,6 +27,13 @@ interface Video {
 }
 
 type SortOption = "views" | "latest" | "likes" | "oldest";
+
+const sortOptions: { value: SortOption; label: string; icon: JSX.Element }[] = [
+  { value: "views", label: "Most Viewed", icon: <Eye size={16} className="mr-2" /> },
+  { value: "latest", label: "Latest", icon: <Clock size={16} className="mr-2" /> },
+  { value: "likes", label: "Most Liked", icon: <Heart size={16} className="mr-2" /> },
+  { value: "oldest", label: "Oldest", icon: <History size={16} className="mr-2" /> },
+];
 
 export default function VideoList() {
   const [videos, setVideos] = useState<Video[]>([]);
@@ -84,12 +97,13 @@ export default function VideoList() {
             id="sort"
             value={sortBy}
             onChange={(e) => handleSortChange(e.target.value as SortOption)}
-            className="border rounded px-2 py-1 text-sm"
+            className="border rounded px-2 py-1 text-sm pl-2 pr-6 bg-white"
           >
-            <option value="views">Most Viewed</option>
-            <option value="latest">Latest</option>
-            <option value="likes">Most Liked</option>
-            <option value="oldest">Oldest</option>
+            {sortOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
           </select>
         </div>
       </div>
