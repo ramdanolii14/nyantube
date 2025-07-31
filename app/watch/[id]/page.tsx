@@ -110,7 +110,7 @@ export default function WatchPage() {
         .from("comments")
         .select("*, profiles(id, username, avatar_url, is_verified)")
         .eq("video_id", id)
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
         .limit(50);
 
       setComments(
