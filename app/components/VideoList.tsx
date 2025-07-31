@@ -5,7 +5,7 @@ import { supabase } from "@/supabase/client";
 import Image from "next/image";
 import Link from "next/link";
 import { Listbox, Transition } from "@headlessui/react";
-import { Eye, Clock, Heart, History, ChevronUpDown } from "lucide-react";
+import { Eye, Clock, Heart, History, ChevronsUpDown } from "lucide-react";
 
 interface Video {
   id: string;
