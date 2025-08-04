@@ -93,17 +93,19 @@ export default function PublicProfilePage({ username }: { username: string }) {
       <div className="flex items-center gap-4">
         <div className="w-20 h-20 rounded-full overflow-hidden border">
           <Image
-            src={avatarUrl}
+            src={avatarSrc}
             alt={profile.username}
             width={80}
             height={80}
             className="object-cover w-full h-full"
             unoptimized
             onError={() =>
-              setAvatarSrc(`https://ui-avatars.com/api/?name=${encodeURIComponent(profile.username)}`)
+              setAvatarSrc(
+                `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.username)}`
+              )
+            }
           />
         </div>
-
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-1">
             {profile.channel_name}
