@@ -137,10 +137,10 @@ export default function PublicProfilePage({ username }: { username: string }) {
           <h1 className="text-2xl font-bold flex items-center gap-1">
             {profile.channel_name}
             {profile.is_verified && (
-              <Image src="/verified.svg" alt="verified" width={16} height={16} />
+              <Image src="/verified.svg" alt="verified" width={16} height={16} title="Verified User" />
             )}
             {profile.is_mod && (
-              <Image src="/mod.svg" alt="moderator" width={16} height={16} />
+              <Image src="/mod.svg" alt="moderator" width={16} height={16} title="Verified Admin" />
             )}
           </h1>
           <p className="text-gray-500">@{profile.username}</p>
