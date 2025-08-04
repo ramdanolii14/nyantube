@@ -11,6 +11,7 @@ interface Profile {
   avatar_url: string | null;
   channel_name?: string;
   is_verified?: boolean;
+  is_mod?:boolean;
 }
 
 interface Video {
@@ -52,7 +53,7 @@ export default function WatchPageClient({ id }: { id: string }) {
     const fetchData = async () => {
       const { data: videoData } = await supabase
         .from("videos")
-        .select("*, profiles(id, username, avatar_url, channel_name, is_verified)")
+        .select("*, profiles(id, username, avatar_url, channel_name, is_verified, is_mod)")
         .eq("id", id)
         .single();
 
@@ -68,7 +69,7 @@ export default function WatchPageClient({ id }: { id: string }) {
 
       const { data: relatedData } = await supabase
         .from("videos")
-        .select("*, profiles(id, username, avatar_url, channel_name, is_verified)")
+        .select("*, profiles(id, username, avatar_url, channel_name, is_verified, is_mod)")
         .neq("id", id)
         .limit(10);
 
@@ -76,7 +77,7 @@ export default function WatchPageClient({ id }: { id: string }) {
 
       const { data: commentData } = await supabase
         .from("comments")
-        .select("*, profiles(id, username, avatar_url, is_verified)")
+        .select("*, profiles(id, username, avatar_url, is_verified, is_mod)")
         .eq("video_id", id)
         .order("created_at", { ascending: false })
         .limit(50);
@@ -105,7 +106,7 @@ export default function WatchPageClient({ id }: { id: string }) {
   const refreshComments = async () => {
     const { data } = await supabase
       .from("comments")
-      .select("*, profiles(id, username, avatar_url, is_verified)")
+      .select("*, profiles(id, username, avatar_url, is_verified, is_mod)")
       .eq("video_id", id)
       .order("created_at", { ascending: false });
 
