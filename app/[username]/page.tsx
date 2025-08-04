@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { supabase } from "@/supabase/client";
@@ -284,4 +282,5 @@ export default function PublicProfilePage() {
     </>
   );
 }
+
 
