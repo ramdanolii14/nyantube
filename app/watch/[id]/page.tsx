@@ -266,37 +266,36 @@ export default function WatchPage() {
     }
   };
 
-  if (!video) return <p className="text-center mt-10">Loading...</p>;
+if (!video) return <p className="text-center mt-10">Loading...</p>;
 
-  return (
-    <><Head>
-  <title>{video.title} | Nyantube</title>
-  <meta
-    name="description"
-    content={video.description?.slice(0, 160) || "Watch videos on Nyantube"}
-  />
-  <meta property="og:title" content={video.title} />
-  <meta
-    property="og:description"
-    content={video.description?.slice(0, 160) || ""}
-  />
-  <meta
-    property="og:image"
-    content={
-      video.thumbnail_url
-        ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/thumbnails/${video.thumbnail_url}`
-        : "/default-thumbnail.jpg"
-    }
-  />
-  <meta property="og:type" content="video.other" />
-  <meta name="twitter:card" content="summary_large_image" />
-
-  {/* ✅ Canonical URL */}
-  <link
-    rel="canonical"
-    href={`${process.env.NEXT_PUBLIC_SITE_URL}/watch/${id}`}
-  />
-</Head>
+return (
+  <>
+    <Head>
+      <title>{video.title} | Nyantube</title>
+      <meta
+        name="description"
+        content={video.description?.slice(0, 160) || "Watch videos on Nyantube"}
+      />
+      <meta property="og:title" content={video.title} />
+      <meta
+        property="og:description"
+        content={video.description?.slice(0, 160) || ""}
+      />
+      <meta
+        property="og:image"
+        content={
+          video.thumbnail_url
+            ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/thumbnails/${video.thumbnail_url}`
+            : "/default-thumbnail.jpg"
+        }
+      />
+      <meta property="og:type" content="video.other" />
+      <meta name="twitter:card" content="summary_large_image" />
+      <link
+        rel="canonical"
+        href={`${process.env.NEXT_PUBLIC_SITE_URL}/watch/${id}`}
+      />
+    </Head>
     <div className="w-full bg-white-50 mt-24 pb-10">
       <div className="max-w-6xl mx-auto px-4 md:px-6 flex flex-col md:flex-row gap-6">
         {/* Video Section */}
@@ -464,6 +463,7 @@ export default function WatchPage() {
                     </div>
                   </div>
                 </div>
+                </>
               );
             })}
           </div>
@@ -514,4 +514,5 @@ export default function WatchPage() {
     </div>
   );
 }
+
 
