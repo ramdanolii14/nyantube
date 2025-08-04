@@ -1,10 +1,10 @@
-// app/watch/[id]/WatchPageClient.tsx
 "use client";
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/supabase/client";
 import Image from "next/image";
 import Link from "next/link";
+import Head from "next/head";
 
 interface Profile {
   id: string;
@@ -12,6 +12,7 @@ interface Profile {
   avatar_url: string | null;
   channel_name?: string;
   is_verified?: boolean;
+  is_mod?: boolean;
 }
 
 interface Video {
@@ -46,120 +47,97 @@ export default function WatchPageClient({ id }: { id: string }) {
   const [userVote, setUserVote] = useState<"like" | "dislike" | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
-  // 🟢 Load data video
   useEffect(() => {
     if (!id) return;
 
-    const fetchData = async () => {
-      const { data: videoData } = await supabase
+    const fetchVideo = async () => {
+      const { data } = await supabase
         .from("videos")
-        .select("*, profiles(id, username, avatar_url, channel_name, is_verified)")
+        .select("*, profiles(id, username, avatar_url, channel_name, is_verified, is_mod)")
         .eq("id", id)
         .single();
 
-      if (videoData) {
-        setVideo(videoData);
-
-        // Tambah views
-        await supabase
-          .from("videos")
-          .update({ views: (videoData.views || 0) + 1 })
-          .eq("id", id);
+      if (data) {
+        setVideo(data);
+        await supabase.from("videos").update({ views: (data.views || 0) + 1 }).eq("id", id);
       }
+    };
 
-      const { data: relatedData } = await supabase
+    const fetchRelatedVideos = async () => {
+      const { data } = await supabase
         .from("videos")
-        .select("*, profiles(id, username, avatar_url, channel_name, is_verified)")
+        .select("*, profiles(id, username, avatar_url, channel_name, is_verified, is_mod)")
         .neq("id", id)
         .limit(10);
+      setRelatedVideos(data || []);
+    };
 
-      setRelatedVideos(relatedData || []);
-
-      const { data: commentData } = await supabase
+    const fetchComments = async () => {
+      const { data } = await supabase
         .from("comments")
-        .select("*, profiles(id, username, avatar_url, is_verified)")
+        .select("*, profiles(id, username, avatar_url, is_verified, is_mod)")
         .eq("video_id", id)
-        .order("created_at", { ascending: false })
-        .limit(50);
+        .order("created_at", { ascending: false });
+      setComments(data || []);
+    };
 
-      setComments(commentData || []);
+    const fetchUser = async () => {
+      const { data } = await supabase.auth.getUser();
+      setCurrentUserId(data.user?.id || null);
+    };
 
-      const { data: authData } = await supabase.auth.getUser();
-      setCurrentUserId(authData.user?.id || null);
-
-      const { data: likesData } = await supabase
-        .from("video_likes")
-        .select("type, user_id")
-        .eq("video_id", id);
-
-      setLikes(likesData?.filter((v) => v.type === "like").length || 0);
-      setDislikes(likesData?.filter((v) => v.type === "dislike").length || 0);
-
-      const current = likesData?.find((v) => v.user_id === currentUserId);
+    const fetchLikes = async () => {
+      const { data } = await supabase.from("video_likes").select("type, user_id").eq("video_id", id);
+      setLikes(data?.filter((v) => v.type === "like").length || 0);
+      setDislikes(data?.filter((v) => v.type === "dislike").length || 0);
+      const current = data?.find((v) => v.user_id === currentUserId);
       setUserVote(current ? (current.type as "like" | "dislike") : null);
     };
 
-    fetchData();
+    fetchVideo();
+    fetchRelatedVideos();
+    fetchComments();
+    fetchUser().then(fetchLikes);
   }, [id, currentUserId]);
 
-  // 🟢 Refresh Comments
   const refreshComments = async () => {
     const { data } = await supabase
       .from("comments")
-      .select("*, profiles(id, username, avatar_url, is_verified)")
+      .select("*, profiles(id, username, avatar_url, is_verified, is_mod)")
       .eq("video_id", id)
       .order("created_at", { ascending: false });
-
     setComments(data || []);
   };
 
-  // 🟢 Add Comment
   const handleAddComment = async () => {
-    if (!currentUserId || !newComment.trim()) return;
-    await supabase.from("comments").insert({
-      video_id: id,
-      content: newComment,
-      user_id: currentUserId,
-    });
+    if (!currentUserId) return alert("You need to log in to comment");
+    if (!newComment.trim()) return;
+    await supabase.from("comments").insert({ video_id: id, content: newComment, user_id: currentUserId });
     setNewComment("");
     refreshComments();
   };
 
-  // 🟢 Delete Comment
   const handleDeleteComment = async (commentId: string) => {
     await supabase.from("comments").delete().eq("id", commentId);
     refreshComments();
   };
 
-  // 🟢 Edit Comment
   const handleEditComment = async () => {
     if (!editComment || !editComment.content.trim()) return;
-    await supabase
-      .from("comments")
-      .update({ content: editComment.content, edited: true })
-      .eq("id", editComment.id);
+    await supabase.from("comments").update({ content: editComment.content, edited: true }).eq("id", editComment.id);
     setEditComment(null);
     refreshComments();
   };
 
-  // 🟢 Like / Dislike
   const handleVote = async (type: "like" | "dislike") => {
-    if (!currentUserId) return;
+    if (!currentUserId) return alert("You need to log in to like or dislike");
     if (userVote === type) {
-      await supabase
-        .from("video_likes")
-        .delete()
-        .eq("video_id", id)
-        .eq("user_id", currentUserId);
+      await supabase.from("video_likes").delete().eq("video_id", id).eq("user_id", currentUserId);
       if (type === "like") setLikes((p) => p - 1);
       else setDislikes((p) => p - 1);
       setUserVote(null);
     } else {
-      await supabase.from("video_likes").upsert({
-        video_id: id,
-        user_id: currentUserId,
-        type,
-      });
+      await supabase.from("video_likes").upsert({ video_id: id, user_id: currentUserId, type });
       if (type === "like") {
         if (userVote === "dislike") setDislikes((p) => p - 1);
         setLikes((p) => p + 1);
@@ -173,165 +151,218 @@ export default function WatchPageClient({ id }: { id: string }) {
 
   if (!video) return <p className="text-center mt-10">Loading...</p>;
 
+  const ogDescription = `${video.views} views • ${new Date(video.created_at).toLocaleString()} — ${video.description?.slice(0, 150) || ""}`;
+
   return (
-    <div className="w-full bg-white-50 mt-24 pb-10">
-      <div className="max-w-6xl mx-auto px-4 md:px-6 flex flex-col md:flex-row gap-6">
-        {/* Video Section */}
-        <div className="flex-1 max-w-3xl">
-          <div className="relative w-full bg-black rounded-lg overflow-hidden">
+    <>
+      <Head>
+        <title>{video.title} | Nyantube</title>
+        <meta name="description" content={ogDescription} />
+        <meta property="og:title" content={video.title} />
+        <meta property="og:description" content={ogDescription} />
+        <meta
+          property="og:image"
+          content={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/thumbnails/${video.thumbnail_url}`}
+        />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta property="og:type" content="video.other" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <link rel="canonical" href={`${process.env.NEXT_PUBLIC_SITE_URL}/watch/${id}`} />
+      </Head>
+
+      <div className="w-full bg-white mt-24 pb-10">
+        <div className="max-w-6xl mx-auto px-4 md:px-6 flex flex-col md:flex-row gap-6">
+          <div className="flex-1 max-w-3xl">
             <video
               src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/videos/${video.video_url}`}
               controls
-              className="w-full max-h-[480px] object-contain"
+              className="w-full max-h-[480px] bg-black rounded-lg"
             />
-          </div>
-          <h1 className="text-xl font-bold mt-4 mb-2">{video.title}</h1>
-
-          {/* Like & Channel */}
-          <div className="flex items-center gap-3 mb-4">
-            <Link href={`/${video.profiles.username}`}>
-              <Image
-                src={
-                  video.profiles.avatar_url
-                    ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${video.profiles.avatar_url}`
-                    : `https://ui-avatars.com/api/?name=${video.profiles.channel_name || video.profiles.username}`
-                }
-                alt="avatar"
-                width={40}
-                height={40}
-                className="rounded-full w-10 h-10 object-cover"
-              />
-            </Link>
-            <div className="flex-1">
-              <Link href={`/${video.profiles.username}`} className="font-semibold hover:underline flex items-center gap-1">
-                {video.profiles.channel_name || video.profiles.username}
+            <h1 className="text-xl font-bold mt-4 mb-2">{video.title}</h1>
+            <div className="flex items-center gap-3 mb-4">
+              <Link href={`/${video.profiles.username}`}>
+                <Image
+                  src={
+                    video.profiles.avatar_url
+                      ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${video.profiles.avatar_url}`
+                      : `https://ui-avatars.com/api/?name=${video.profiles.channel_name || video.profiles.username}`
+                  }
+                  alt="avatar"
+                  width={40}
+                  height={40}
+                  className="rounded-full w-10 h-10 object-cover"
+                />
               </Link>
-              <p className="text-sm text-gray-500">
-                {video.views} views • {new Date(video.created_at).toLocaleString()}
-              </p>
+              <div>
+                <Link href={`/${video.profiles.username}`} className="font-semibold hover:underline flex items-center gap-1">
+                  {video.profiles.channel_name || video.profiles.username}
+                  {video.profiles.is_verified && (
+                    <span className="relative group">
+                      <Image src="/verified.svg" alt="verified user" width={14} height={14} />
+                      <span className="absolute top-full left-1/2 -translate-x-1/2 mt-1 hidden group-hover:block bg-black text-white text-[10px] px-2 py-1 rounded">
+                        VERIFIED USER
+                      </span>
+                    </span>
+                  )}
+                  {video.profiles.is_mod && (
+                    <span className="relative group">
+                      <Image src="/mod.svg" alt="verified admin" width={14} height={14} />
+                      <span className="absolute top-full left-1/2 -translate-x-1/2 mt-1 hidden group-hover:block bg-black text-white text-[10px] px-2 py-1 rounded">
+                        VERIFIED ADMIN
+                      </span>
+                    </span>
+                  )}
+                </Link>
+                <p className="text-sm text-gray-500">
+                  {video.views} views • {new Date(video.created_at).toLocaleString()}
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => handleVote("like")}
+                  className={`flex items-center gap-1 px-2 py-1 rounded ${
+                    userVote === "like" ? "bg-blue-100 text-blue-600" : "bg-gray-100 text-gray-600"
+                  }`}
+                >
+                  👍 {likes}
+                </button>
+                <button
+                  onClick={() => handleVote("dislike")}
+                  className={`flex items-center gap-1 px-2 py-1 rounded ${
+                    userVote === "dislike" ? "bg-red-100 text-red-600" : "bg-gray-100 text-gray-600"
+                  }`}
+                >
+                  👎 {dislikes}
+                </button>
+              </div>
             </div>
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => handleVote("like")}
-                className={`flex items-center gap-1 px-2 py-1 rounded ${
-                  userVote === "like" ? "bg-blue-100 text-blue-600" : "bg-gray-100 text-gray-600"
-                }`}
-              >
-                👍 {likes}
-              </button>
-              <button
-                onClick={() => handleVote("dislike")}
-                className={`flex items-center gap-1 px-2 py-1 rounded ${
-                  userVote === "dislike" ? "bg-red-100 text-red-600" : "bg-gray-100 text-gray-600"
-                }`}
-              >
-                👎 {dislikes}
-              </button>
-            </div>
-          </div>
+            <p className="mb-6">{video.description}</p>
 
-          <p className="mb-6">{video.description}</p>
-
-          {/* Comments */}
-          <div className="mt-6">
-            <h2 className="font-semibold mb-3">Comments ({comments.length})</h2>
-            <div className="flex gap-2 mb-4">
-              <input
-                type="text"
-                value={newComment}
-                onChange={(e) => setNewComment(e.target.value)}
-                placeholder="Add a comment..."
-                className="flex-1 border rounded px-3 py-2"
-              />
-              <button
-                onClick={handleAddComment}
-                className="bg-blue-500 text-white px-4 py-2 rounded"
-              >
-                Post
-              </button>
-            </div>
-
-            {comments.map((c) => {
-              const isOwner = c.user_id === currentUserId;
-              return (
-                <div key={c.id} className="mb-3">
-                  <div className="flex gap-2">
-                    <Link href={`/${c.profiles.username}`}>
-                      <Image
-                        src={
-                          c.profiles.avatar_url
-                            ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${c.profiles.avatar_url}`
-                            : `https://ui-avatars.com/api/?name=${c.profiles.username}`
-                        }
-                        alt="avatar"
-                        width={32}
-                        height={32}
-                        className="rounded-full w-8 h-8 object-cover"
-                      />
-                    </Link>
-                    <div>
-                      <p className="font-semibold">{c.profiles.username}</p>
-                      {editComment?.id === c.id ? (
-                        <div className="flex gap-2 mt-1">
-                          <input
-                            type="text"
-                            value={editComment.content}
-                            onChange={(e) =>
-                              setEditComment({ ...editComment, content: e.target.value })
-                            }
-                            className="border px-2 py-1 rounded text-sm"
-                          />
-                          <button onClick={handleEditComment} className="text-blue-500 text-sm">
-                            Save
-                          </button>
-                          <button onClick={() => setEditComment(null)} className="text-gray-500 text-sm">
-                            Cancel
-                          </button>
-                        </div>
-                      ) : (
-                        <p>{c.content}</p>
-                      )}
-
-                      {isOwner && (
-                        <div className="flex gap-3 text-xs text-gray-500 mt-1">
-                          <button onClick={() => handleDeleteComment(c.id)} className="text-red-500">
-                            Delete
-                          </button>
-                        </div>
-                      )}
+            {/* Comments */}
+            <div>
+              <h2 className="font-semibold mb-3">Comments ({comments.length})</h2>
+              <div className="flex gap-2 mb-4">
+                <input
+                  type="text"
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
+                  placeholder="Add a comment..."
+                  className="flex-1 border rounded px-3 py-2"
+                />
+                <button onClick={handleAddComment} className="bg-blue-500 text-white px-4 py-2 rounded">
+                  Post
+                </button>
+              </div>
+              {comments.map((c) => {
+                const isOwner = c.user_id === currentUserId;
+                return (
+                  <div key={c.id} className="mb-3">
+                    <div className="flex gap-2">
+                      <Link href={`/${c.profiles.username}`}>
+                        <Image
+                          src={
+                            c.profiles.avatar_url
+                              ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${c.profiles.avatar_url}`
+                              : `https://ui-avatars.com/api/?name=${c.profiles.username}`
+                          }
+                          alt="avatar"
+                          width={32}
+                          height={32}
+                          className="rounded-full w-8 h-8 object-cover"
+                        />
+                      </Link>
+                      <div>
+                        <p className="font-semibold flex items-center gap-1">
+                          {c.profiles.username}
+                          {c.profiles.is_verified && (
+                            <span className="relative group">
+                              <Image src="/verified.svg" alt="verified user" width={12} height={12} />
+                              <span className="absolute top-full left-1/2 -translate-x-1/2 mt-1 hidden group-hover:block bg-black text-white text-[10px] px-2 py-1 rounded">
+                                VERIFIED USER
+                              </span>
+                            </span>
+                          )}
+                          {c.profiles.is_mod && (
+                            <span className="relative group">
+                              <Image src="/mod.svg" alt="verified admin" width={12} height={12} />
+                              <span className="absolute top-full left-1/2 -translate-x-1/2 mt-1 hidden group-hover:block bg-black text-white text-[10px] px-2 py-1 rounded">
+                                VERIFIED ADMIN
+                              </span>
+                            </span>
+                          )}
+                          {c.edited && <span className="text-xs text-gray-500">[edited]</span>}
+                        </p>
+                        {editComment?.id === c.id ? (
+                          <div className="flex gap-2 mt-1">
+                            <input
+                              type="text"
+                              value={editComment.content}
+                              onChange={(e) => setEditComment({ ...editComment, content: e.target.value })}
+                              className="border px-2 py-1 rounded text-sm"
+                            />
+                            <button onClick={handleEditComment} className="text-blue-500 text-sm">
+                              Save
+                            </button>
+                            <button onClick={() => setEditComment(null)} className="text-gray-500 text-sm">
+                              Cancel
+                            </button>
+                          </div>
+                        ) : (
+                          <p>{c.content}</p>
+                        )}
+                        {isOwner && (
+                          <div className="flex gap-3 text-xs text-gray-500 mt-1">
+                            <button onClick={() => handleDeleteComment(c.id)} className="text-red-500">
+                              Delete
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Related videos */}
+          <div className="w-full md:w-72">
+            <h2 className="font-semibold mb-3">Related Videos</h2>
+            {relatedVideos.map((v) => (
+              <Link
+                key={v.id}
+                href={`/watch/${v.id}`}
+                className="flex gap-2 mb-3 hover:bg-gray-100 p-1 rounded"
+              >
+                <div className="relative w-32 h-20 bg-gray-200 rounded-md overflow-hidden">
+                  <Image
+                    src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/thumbnails/${v.thumbnail_url}`}
+                    alt={v.title}
+                    fill
+                    className="object-cover"
+                  />
                 </div>
-              );
-            })}
+                <div className="flex-1">
+                  <p className="text-sm font-semibold line-clamp-2">{v.title}</p>
+                  <div className="flex items-center gap-1 text-xs text-gray-500">
+                    <Link href={`/${v.profiles.username}`} className="hover:underline flex items-center gap-1">
+                      {v.profiles.channel_name || v.profiles.username}
+                      {v.profiles.is_verified && (
+                        <Image src="/verified.svg" alt="verified" width={10} height={10} />
+                      )}
+                      {v.profiles.is_mod && (
+                        <Image src="/mod.svg" alt="verified admin" width={10} height={10} />
+                      )}
+                    </Link>
+                  </div>
+                  <p className="text-xs text-gray-500">{v.views} views</p>
+                </div>
+              </Link>
+            ))}
           </div>
         </div>
-
-        {/* Related Videos */}
-        <div className="w-full md:w-72">
-          <h2 className="font-semibold mb-3">Related Videos</h2>
-          {relatedVideos.map((v) => (
-            <Link
-              key={v.id}
-              href={`/watch/${v.id}`}
-              className="flex gap-2 mb-3 hover:bg-gray-100 p-1 rounded"
-            >
-              <div className="relative w-32 h-20 bg-gray-200 rounded-md overflow-hidden">
-                <Image
-                  src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/thumbnails/${v.thumbnail_url}`}
-                  alt={v.title}
-                  fill
-                  className="object-cover"
-                />
-              </div>
-              <div className="flex-1">
-                <p className="text-sm font-semibold line-clamp-2">{v.title}</p>
-                <p className="text-xs text-gray-500">{v.views} views</p>
-              </div>
-            </Link>
-          ))}
-        </div>
       </div>
-    </div>
+    </>
   );
 }
