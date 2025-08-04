@@ -1,4 +1,4 @@
-import { supabase } from "@/supabase/server"; // pastikan ini server-side client
+import { supabase } from "@/supabase/client"; // pastikan ini server-side client
 import PublicProfilePage from "./PublicProfile";
 
 export async function generateMetadata({ params }: { params: { username: string } }) {
@@ -44,3 +44,4 @@ export async function generateMetadata({ params }: { params: { username: string 
 export default function Page({ params }: { params: { username: string } }) {
   return <PublicProfilePage username={params.username} />;
 }
+
