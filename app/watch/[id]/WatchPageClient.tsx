@@ -11,7 +11,7 @@ interface Profile {
   avatar_url: string | null;
   channel_name?: string;
   is_verified?: boolean;
-  is_mod?:boolean;
+  is_mod?: boolean;
 }
 
 interface Video {
@@ -46,7 +46,6 @@ export default function WatchPageClient({ id }: { id: string }) {
   const [userVote, setUserVote] = useState<"like" | "dislike" | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
-  // 🟢 Load data video
   useEffect(() => {
     if (!id) return;
 
@@ -59,8 +58,6 @@ export default function WatchPageClient({ id }: { id: string }) {
 
       if (videoData) {
         setVideo(videoData);
-
-        // Tambah views
         await supabase
           .from("videos")
           .update({ views: (videoData.views || 0) + 1 })
@@ -102,7 +99,6 @@ export default function WatchPageClient({ id }: { id: string }) {
     fetchData();
   }, [id, currentUserId]);
 
-  // 🟢 Refresh Comments
   const refreshComments = async () => {
     const { data } = await supabase
       .from("comments")
@@ -113,7 +109,6 @@ export default function WatchPageClient({ id }: { id: string }) {
     setComments(data || []);
   };
 
-  // 🟢 Add Comment
   const handleAddComment = async () => {
     if (!currentUserId || !newComment.trim()) return;
     await supabase.from("comments").insert({
@@ -125,13 +120,11 @@ export default function WatchPageClient({ id }: { id: string }) {
     refreshComments();
   };
 
-  // 🟢 Delete Comment
   const handleDeleteComment = async (commentId: string) => {
     await supabase.from("comments").delete().eq("id", commentId);
     refreshComments();
   };
 
-  // 🟢 Edit Comment
   const handleEditComment = async () => {
     if (!editComment || !editComment.content.trim()) return;
     await supabase
@@ -142,7 +135,6 @@ export default function WatchPageClient({ id }: { id: string }) {
     refreshComments();
   };
 
-  // 🟢 Like / Dislike
   const handleVote = async (type: "like" | "dislike") => {
     if (!currentUserId) return;
     if (userVote === type) {
@@ -201,31 +193,16 @@ export default function WatchPageClient({ id }: { id: string }) {
                 height={40}
                 className="rounded-full w-10 h-10 object-cover"
               />
-                {video.profiles.is_verified && (
-                  <Image
-                    src="/verified.svg"
-                    alt="Verified User"
-                    width={14}
-                    height={14}
-                    className="inline-block"
-                    title="Verified User"
-                  />
-                )}
-              
-                {video.profiles.is_mod && (
-                  <Image
-                    src="/mod.svg"
-                    alt="Verified Admin"
-                    width={14}
-                    height={14}
-                    className="inline-block"
-                    title="Verified Admin"
-                  />
-                )}
             </Link>
             <div className="flex-1">
               <Link href={`/${video.profiles.username}`} className="font-semibold hover:underline flex items-center gap-1">
                 {video.profiles.channel_name || video.profiles.username}
+                {video.profiles.is_verified && (
+                  <Image src="/verified.svg" alt="verified" width={14} height={14} title="Verified User" />
+                )}
+                {video.profiles.is_mod && (
+                  <Image src="/mod.svg" alt="mod" width={14} height={14} title="Verified Admin" />
+                )}
               </Link>
               <p className="text-sm text-gray-500">
                 {video.views} views • {new Date(video.created_at).toLocaleString()}
@@ -234,17 +211,13 @@ export default function WatchPageClient({ id }: { id: string }) {
             <div className="flex items-center gap-3">
               <button
                 onClick={() => handleVote("like")}
-                className={`flex items-center gap-1 px-2 py-1 rounded ${
-                  userVote === "like" ? "bg-blue-100 text-blue-600" : "bg-gray-100 text-gray-600"
-                }`}
+                className={`flex items-center gap-1 px-2 py-1 rounded ${userVote === "like" ? "bg-blue-100 text-blue-600" : "bg-gray-100 text-gray-600"}`}
               >
                 👍 {likes}
               </button>
               <button
                 onClick={() => handleVote("dislike")}
-                className={`flex items-center gap-1 px-2 py-1 rounded ${
-                  userVote === "dislike" ? "bg-red-100 text-red-600" : "bg-gray-100 text-gray-600"
-                }`}
+                className={`flex items-center gap-1 px-2 py-1 rounded ${userVote === "dislike" ? "bg-red-100 text-red-600" : "bg-gray-100 text-gray-600"}`}
               >
                 👎 {dislikes}
               </button>
@@ -264,10 +237,7 @@ export default function WatchPageClient({ id }: { id: string }) {
                 placeholder="Add a comment..."
                 className="flex-1 border rounded px-3 py-2"
               />
-              <button
-                onClick={handleAddComment}
-                className="bg-blue-500 text-white px-4 py-2 rounded"
-              >
+              <button onClick={handleAddComment} className="bg-blue-500 text-white px-4 py-2 rounded">
                 Post
               </button>
             </div>
@@ -293,35 +263,20 @@ export default function WatchPageClient({ id }: { id: string }) {
                     <div>
                       <p className="font-semibold flex items-center gap-1">
                         {c.profiles.username}
-                      
                         {c.profiles.is_verified && (
-                          <Image
-                            src="/verified.svg"
-                            alt="Verified User"
-                            width={12}
-                            height={12}
-                            title="Verified User"
-                          />
+                          <Image src="/verified.svg" alt="verified" width={12} height={12} title="Verified User" />
                         )}
-                      
                         {c.profiles.is_mod && (
-                          <Image
-                            src="/mod.svg"
-                            alt="Verified Admin"
-                            width={12}
-                            height={12}
-                            title="Verified Admin"
-                          />
+                          <Image src="/mod.svg" alt="mod" width={12} height={12} title="Verified Admin" />
                         )}
+                        {c.edited && <span className="text-xs text-gray-500">[edited]</span>}
                       </p>
                       {editComment?.id === c.id ? (
                         <div className="flex gap-2 mt-1">
                           <input
                             type="text"
                             value={editComment.content}
-                            onChange={(e) =>
-                              setEditComment({ ...editComment, content: e.target.value })
-                            }
+                            onChange={(e) => setEditComment({ ...editComment, content: e.target.value })}
                             className="border px-2 py-1 rounded text-sm"
                           />
                           <button onClick={handleEditComment} className="text-blue-500 text-sm">
@@ -354,11 +309,7 @@ export default function WatchPageClient({ id }: { id: string }) {
         <div className="w-full md:w-72">
           <h2 className="font-semibold mb-3">Related Videos</h2>
           {relatedVideos.map((v) => (
-            <Link
-              key={v.id}
-              href={`/watch/${v.id}`}
-              className="flex gap-2 mb-3 hover:bg-gray-100 p-1 rounded"
-            >
+            <Link key={v.id} href={`/watch/${v.id}`} className="flex gap-2 mb-3 hover:bg-gray-100 p-1 rounded">
               <div className="relative w-32 h-20 bg-gray-200 rounded-md overflow-hidden">
                 <Image
                   src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/thumbnails/${v.thumbnail_url}`}
@@ -369,6 +320,15 @@ export default function WatchPageClient({ id }: { id: string }) {
               </div>
               <div className="flex-1">
                 <p className="text-sm font-semibold line-clamp-2">{v.title}</p>
+                <div className="flex items-center gap-1 text-xs text-gray-500">
+                  {v.profiles.channel_name || v.profiles.username}
+                  {v.profiles.is_verified && (
+                    <Image src="/verified.svg" alt="verified" width={10} height={10} title="Verified User" />
+                  )}
+                  {v.profiles.is_mod && (
+                    <Image src="/mod.svg" alt="mod" width={10} height={10} title="Verified Admin" />
+                  )}
+                </div>
                 <p className="text-xs text-gray-500">{v.views} views</p>
               </div>
             </Link>
