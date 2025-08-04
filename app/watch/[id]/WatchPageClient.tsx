@@ -200,6 +200,27 @@ export default function WatchPageClient({ id }: { id: string }) {
                 height={40}
                 className="rounded-full w-10 h-10 object-cover"
               />
+                {video.profiles.is_verified && (
+                  <Image
+                    src="/verified.svg"
+                    alt="Verified User"
+                    width={14}
+                    height={14}
+                    className="inline-block"
+                    title="Verified User"
+                  />
+                )}
+              
+                {video.profiles.is_mod && (
+                  <Image
+                    src="/mod.svg"
+                    alt="Verified Admin"
+                    width={14}
+                    height={14}
+                    className="inline-block"
+                    title="Verified Admin"
+                  />
+                )}
             </Link>
             <div className="flex-1">
               <Link href={`/${video.profiles.username}`} className="font-semibold hover:underline flex items-center gap-1">
