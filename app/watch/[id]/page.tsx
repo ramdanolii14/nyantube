@@ -1,29 +1,10 @@
-import { Metadata } from "next";
 import { supabase } from "@/supabase/client";
 import WatchPageClient from "./WatchPageClient";
+import { Metadata } from "next";
 
-interface Profile {
-  id: string;
-  username: string;
-  avatar_url: string | null;
-  channel_name?: string;
-  is_verified?: boolean;
-}
-
-interface Video {
-  id: string;
-  title: string;
-  description: string;
-  video_url: string;
-  thumbnail_url: string;
-  views: number;
-  created_at: string;
-  profiles: Profile;
-}
-
-type Props = {
+interface Props {
   params: { id: string };
-};
+}
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { data: video } = await supabase
@@ -39,9 +20,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     };
   }
 
+  const viewsText = `${video.views || 0} views`;
+  const dateText = new Date(video.created_at).toLocaleDateString();
+  const shortDesc = video.description?.slice(0, 120) || "";
+  const description = `${viewsText} • Uploaded on ${dateText}${shortDesc ? " — " + shortDesc : ""}`;
+
   const title = `${video.title} | Nyantube`;
-  const description =
-    video.description?.slice(0, 160) || "Watch videos on Nyantube";
   const thumbnailUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/thumbnails/${video.thumbnail_url}`;
   const canonicalUrl = `${process.env.NEXT_PUBLIC_SITE_URL}/watch/${params.id}`;
 
@@ -70,7 +54,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       images: [thumbnailUrl],
     },
     other: {
-      // Schema.org VideoObject untuk SEO Video
       "script:ld+json": JSON.stringify({
         "@context": "https://schema.org",
         "@type": "VideoObject",
@@ -90,7 +73,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-// 🟢 Halaman utama
 export default function WatchPage({ params }: Props) {
   return <WatchPageClient id={params.id} />;
 }
