@@ -1,78 +1,63 @@
 import { supabase } from "@/supabase/client";
 import WatchPageClient from "./WatchPageClient";
-import { Metadata } from "next";
 
-interface Props {
-  params: { id: string };
+export const revalidate = 0;
+
+interface Profile {
+  id: string;
+  username: string;
+  avatar_url: string | null;
+  channel_name?: string;
+  is_verified?: boolean;
+  is_mod?: boolean;
 }
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { data: video } = await supabase
+interface Video {
+  id: string;
+  title: string;
+  description: string;
+  video_url: string;
+  thumbnail_url: string;
+  views: number;
+  created_at: string;
+  profiles: Profile;
+}
+
+export default async function WatchPage({ params }: { params: { id: string } }) {
+  const { id } = params;
+
+  // Ambil data video + creator
+  const { data: videoData } = await supabase
     .from("videos")
-    .select("*, profiles(id, username, channel_name)")
-    .eq("id", params.id)
+    .select("*, profiles(id, username, avatar_url, channel_name, is_verified, is_mod)")
+    .eq("id", id)
     .single();
 
-  if (!video) {
-    return {
-      title: "Video not found | Nyantube",
-      description: "The requested video could not be found.",
-    };
+  if (!videoData) {
+    return <p className="text-center mt-10">Video not found</p>;
   }
 
-  const viewsText = `${video.views || 0} views`;
-  const dateText = new Date(video.created_at).toLocaleDateString();
-  const shortDesc = video.description?.slice(0, 120) || "";
-  const description = `${viewsText} • Uploaded on ${dateText}${shortDesc ? " — " + shortDesc : ""}`;
-
-  const title = `${video.title} | Nyantube`;
-  const thumbnailUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/thumbnails/${video.thumbnail_url}`;
-  const canonicalUrl = `${process.env.NEXT_PUBLIC_SITE_URL}/watch/${params.id}`;
-
-  return {
-    title,
-    description,
-    alternates: { canonical: canonicalUrl },
-    openGraph: {
-      title,
-      description,
-      url: canonicalUrl,
-      type: "video.other",
-      images: [
-        {
-          url: thumbnailUrl,
-          width: 1200,
-          height: 630,
-          alt: video.title,
+  // Mapping supaya aman kalau null
+  const video: Video = {
+    ...videoData,
+    profiles: videoData.profiles
+      ? {
+          id: videoData.profiles.id,
+          username: videoData.profiles.username,
+          avatar_url: videoData.profiles.avatar_url,
+          channel_name: videoData.profiles.channel_name,
+          is_verified: videoData.profiles.is_verified,
+          is_mod: videoData.profiles.is_mod,
+        }
+      : {
+          id: "",
+          username: "Unknown",
+          avatar_url: null,
+          channel_name: "",
+          is_verified: false,
+          is_mod: false,
         },
-      ],
-    },
-    twitter: {
-      card: "summary_large_image",
-      title,
-      description,
-      images: [thumbnailUrl],
-    },
-    other: {
-      "script:ld+json": JSON.stringify({
-        "@context": "https://schema.org",
-        "@type": "VideoObject",
-        name: video.title,
-        description,
-        thumbnailUrl: [thumbnailUrl],
-        uploadDate: video.created_at,
-        contentUrl: `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/videos/${video.video_url}`,
-        embedUrl: canonicalUrl,
-        interactionStatistic: {
-          "@type": "InteractionCounter",
-          interactionType: { "@type": "WatchAction" },
-          userInteractionCount: video.views || 0,
-        },
-      }),
-    },
   };
-}
 
-export default function WatchPage({ params }: Props) {
-  return <WatchPageClient id={params.id} />;
+  return <WatchPageClient video={video} />;
 }
