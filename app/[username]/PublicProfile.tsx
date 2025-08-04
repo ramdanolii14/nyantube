@@ -28,6 +28,7 @@ export default function PublicProfilePage({ username }: { username: string }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [videos, setVideos] = useState<Video[]>([]);
   const [userId, setUserId] = useState<string | null>(null);
+  const [avatarSrc, setAvatarSrc] = useState<string>("");
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -36,7 +37,15 @@ export default function PublicProfilePage({ username }: { username: string }) {
         .select("id, username, channel_name, avatar_url, is_verified, is_mod, created_at")
         .eq("username", username)
         .single();
-      if (data) setProfile(data as Profile);
+
+      if (data) {
+        setProfile(data as Profile);
+        setAvatarSrc(
+          data.avatar_url
+            ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${data.avatar_url}`
+            : `https://ui-avatars.com/api/?name=${encodeURIComponent(data.username)}`
+        );
+      }
     };
 
     const fetchUser = async () => {
@@ -81,12 +90,6 @@ export default function PublicProfilePage({ username }: { username: string }) {
 
   if (!profile) return <p className="text-center mt-10">Loading profile...</p>;
 
-  const [avatarSrc, setAvatarSrc] = useState(
-    profile.avatar_url
-      ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${profile.avatar_url}`
-      : `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.username)}`
-  );
-
   return (
     <div className="max-w-5xl mx-auto mt-20 px-4">
       {/* Profile Header */}
@@ -106,6 +109,7 @@ export default function PublicProfilePage({ username }: { username: string }) {
             }
           />
         </div>
+
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-1">
             {profile.channel_name}
@@ -113,7 +117,7 @@ export default function PublicProfilePage({ username }: { username: string }) {
               <Image src="/verified.svg" alt="verified" width={16} height={16} />
             )}
             {profile.is_mod && (
-              <Image src="/mod.svg" alt="verified" width={16} height={16} />
+              <Image src="/mod.svg" alt="moderator" width={16} height={16} />
             )}
           </h1>
           <p className="text-gray-500">@{profile.username}</p>
