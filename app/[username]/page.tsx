@@ -13,6 +13,7 @@ interface Profile {
   channel_name: string;
   avatar_url: string | null;
   is_verified?: boolean;
+  is_mod?: boolean;
   created_at: string; // ✅ Tambah ini
 }
 
@@ -237,4 +238,5 @@ export default function PublicProfilePage() {
     </>
   );
 }
+
 
