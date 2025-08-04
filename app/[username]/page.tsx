@@ -166,7 +166,7 @@ export default function PublicProfilePage() {
                     className="inline-block align-middle"
                   />
                   <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-1 hidden group-hover:block bg-black text-white text-[10px] px-2 py-1 rounded">
-                    MOD
+                    Verified Dev :3
                   </div>
                 </div>
               )}
@@ -238,5 +238,6 @@ export default function PublicProfilePage() {
     </>
   );
 }
+
 
 
