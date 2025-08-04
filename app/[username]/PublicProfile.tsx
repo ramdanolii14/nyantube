@@ -81,9 +81,11 @@ export default function PublicProfilePage({ username }: { username: string }) {
 
   if (!profile) return <p className="text-center mt-10">Loading profile...</p>;
 
-  const avatarUrl = profile.avatar_url
-    ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${profile.avatar_url}`
-    : `https://ui-avatars.com/api/?name=${profile.username}`;
+  const [avatarSrc, setAvatarSrc] = useState(
+    profile.avatar_url
+      ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${profile.avatar_url}`
+      : `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.username)}`
+  );
 
   return (
     <div className="max-w-5xl mx-auto mt-20 px-4">
