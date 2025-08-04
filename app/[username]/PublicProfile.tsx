@@ -97,6 +97,8 @@ export default function PublicProfilePage({ username }: { username: string }) {
             height={80}
             className="object-cover w-full h-full"
             unoptimized
+            onError={() =>
+              setAvatarSrc(`https://ui-avatars.com/api/?name=${encodeURIComponent(profile.username)}`)
           />
         </div>
 
