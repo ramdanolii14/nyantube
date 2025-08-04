@@ -1,77 +1,39 @@
-import { supabase } from "@/supabase/client"; // Supabase server client
+import { supabase } from "@/supabase/client";
 
 export async function GET() {
-  const baseUrl = "https://nyantube.ramdan.fun";
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://nyantube.ramdan.fun";
 
-  // Ambil semua video
-  const { data: videos, error: videoError } = await supabase
-    .from("videos")
-    .select("id, created_at")
-    .order("created_at", { ascending: false });
-
-  if (videoError) {
-    console.error(videoError);
-  }
-
-  // Ambil semua user (channel)
-  const { data: profiles, error: profileError } = await supabase
-    .from("profiles")
-    .select("username, updated_at");
-
-  if (profileError) {
-    console.error(profileError);
-  }
-
-  // Buat daftar URL statis
-  const staticUrls = [
-    { loc: `${baseUrl}/`, priority: "1.0" },
-    { loc: `${baseUrl}/about`, priority: "0.5" },
-    { loc: `${baseUrl}/contact`, priority: "0.5" },
-    { loc: `${baseUrl}/terms`, priority: "0.5" },
+  // Halaman statis
+  const staticPages = [
+    "",
+    "about",
+    "contact",
+    "terms",
   ];
 
-  let urls = "";
+  // Sitemap index
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  ${staticPages
+    .map(
+      (page) => `
+    <sitemap>
+      <loc>${baseUrl}/${page}</loc>
+      <lastmod>${new Date().toISOString()}</lastmod>
+    </sitemap>`
+    )
+    .join("")}
+  <sitemap>
+    <loc>${baseUrl}/video-sitemap.xml</loc>
+    <lastmod>${new Date().toISOString()}</lastmod>
+  </sitemap>
+  <sitemap>
+    <loc>${baseUrl}/channel-sitemap.xml</loc>
+    <lastmod>${new Date().toISOString()}</lastmod>
+  </sitemap>
+</sitemapindex>`;
 
-  // Tambahkan halaman statis
-  staticUrls.forEach((page) => {
-    urls += `
-      <url>
-        <loc>${page.loc}</loc>
-        <priority>${page.priority}</priority>
-      </url>
-    `;
+  return new Response(xml, {
+    headers: { "Content-Type": "application/xml" },
   });
-
-  // Tambahkan semua video
-  videos?.forEach((v) => {
-    urls += `
-      <url>
-        <loc>${baseUrl}/watch/${v.id}</loc>
-        <lastmod>${new Date(v.created_at).toISOString()}</lastmod>
-        <priority>0.8</priority>
-      </url>
-    `;
-  });
-
-  // Tambahkan semua channel
-  profiles?.forEach((p) => {
-    urls += `
-      <url>
-        <loc>${baseUrl}/${p.username}</loc>
-        <lastmod>${p.updated_at ? new Date(p.updated_at).toISOString() : new Date().toISOString()}</lastmod>
-        <priority>0.6</priority>
-      </url>
-    `;
-  });
-
-  // Return XML response
-  return new Response(
-    `<?xml version="1.0" encoding="UTF-8"?>
-    <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-      ${urls}
-    </urlset>`,
-    {
-      headers: { "Content-Type": "application/xml" },
-    }
-  );
 }
