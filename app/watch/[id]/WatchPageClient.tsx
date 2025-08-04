@@ -291,7 +291,29 @@ export default function WatchPageClient({ id }: { id: string }) {
                       />
                     </Link>
                     <div>
-                      <p className="font-semibold">{c.profiles.username}</p>
+                      <p className="font-semibold flex items-center gap-1">
+                        {c.profiles.username}
+                      
+                        {c.profiles.is_verified && (
+                          <Image
+                            src="/verified.svg"
+                            alt="Verified User"
+                            width={12}
+                            height={12}
+                            title="Verified User"
+                          />
+                        )}
+                      
+                        {c.profiles.is_mod && (
+                          <Image
+                            src="/mod.svg"
+                            alt="Verified Admin"
+                            width={12}
+                            height={12}
+                            title="Verified Admin"
+                          />
+                        )}
+                      </p>
                       {editComment?.id === c.id ? (
                         <div className="flex gap-2 mt-1">
                           <input
