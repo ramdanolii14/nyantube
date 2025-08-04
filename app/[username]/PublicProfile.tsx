@@ -40,11 +40,16 @@ export default function PublicProfilePage({ username }: { username: string }) {
 
       if (data) {
         setProfile(data as Profile);
-        setAvatarSrc(
-          data.avatar_url
-            ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${data.avatar_url}`
-            : `https://ui-avatars.com/api/?name=${encodeURIComponent(data.username)}`
-        );
+
+        if (data.avatar_url) {
+          // Ambil public URL langsung dari Supabase
+          const { data: publicUrl } = supabase.storage
+            .from("avatars")
+            .getPublicUrl(data.avatar_url);
+          setAvatarSrc(publicUrl.publicUrl);
+        } else {
+          setAvatarSrc(`https://ui-avatars.com/api/?name=${encodeURIComponent(data.username)}`);
+        }
       }
     };
 
@@ -88,7 +93,25 @@ export default function PublicProfilePage({ username }: { username: string }) {
     }
   };
 
-  if (!profile) return <p className="text-center mt-10">Loading profile...</p>;
+  // SKELETON LOADING
+  if (!profile) {
+    return (
+      <div className="max-w-5xl mx-auto mt-20 px-4 animate-pulse">
+        <div className="flex items-center gap-4">
+          <div className="w-20 h-20 rounded-full bg-gray-300" />
+          <div className="flex-1">
+            <div className="h-6 w-40 bg-gray-300 rounded mb-2"></div>
+            <div className="h-4 w-24 bg-gray-300 rounded"></div>
+          </div>
+        </div>
+        <div className="mt-8 space-y-4">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="h-40 bg-gray-300 rounded"></div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-5xl mx-auto mt-20 px-4">
