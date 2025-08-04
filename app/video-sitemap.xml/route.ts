@@ -8,9 +8,7 @@ interface VideoRow {
   title: string;
   created_at: string;
   thumbnail_url: string;
-  profiles: {
-    username: string;
-  };
+  profiles: { username: string }[]; // ← array karena Supabase nested select return array
 }
 
 export async function GET() {
@@ -27,8 +25,9 @@ export async function GET() {
   }
 
   const videoEntries = (videos as VideoRow[])
-    .map(
-      (video) => `
+    .map((video) => {
+      const username = video.profiles?.[0]?.username || "Unknown";
+      return `
       <url>
         <loc>${baseUrl}/watch/${video.id}</loc>
         <video:video>
@@ -36,11 +35,11 @@ export async function GET() {
           <video:title><![CDATA[${video.title}]]></video:title>
           <video:description><![CDATA[${video.title}]]></video:description>
           <video:publication_date>${new Date(video.created_at).toISOString()}</video:publication_date>
-          <video:uploader>${video.profiles.username || "Unknown"}</video:uploader>
+          <video:uploader>${username}</video:uploader>
           <video:player_loc allow_embed="yes" autoplay="ap=1">${baseUrl}/watch/${video.id}</video:player_loc>
         </video:video>
-      </url>`
-    )
+      </url>`;
+    })
     .join("");
 
   const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
