@@ -35,7 +35,7 @@ export default function PublicProfilePage() {
     const fetchProfile = async () => {
       const { data } = await supabase
         .from("profiles")
-        .select("id, username, channel_name, avatar_url, is_verified, created_at") // ✅ Ambil created_at
+        .select("id, username, channel_name, avatar_url, is_verified, is_mod, created_at") // ✅ Ambil created_at
         .eq("username", username)
         .single();
       if (data) setProfile(data as Profile);
@@ -155,6 +155,20 @@ export default function PublicProfilePage() {
                   </div>
                 </div>
               )}
+              {profile.is_mod && (
+                <div className="relative group inline-block">
+                  <Image
+                    src="/mod.svg"
+                    alt="verified"
+                    width={16}
+                    height={16}
+                    className="inline-block align-middle"
+                  />
+                  <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-1 hidden group-hover:block bg-black text-white text-[10px] px-2 py-1 rounded">
+                    MOD
+                  </div>
+                </div>
+              )}
             </h1>
             <p className="text-gray-500">@{profile.username}</p>
           </div>
@@ -223,3 +237,4 @@ export default function PublicProfilePage() {
     </>
   );
 }
+
