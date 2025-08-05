@@ -237,7 +237,7 @@ export default function WatchPageClient({ id }: { id: string }) {
                 placeholder="Add a comment..."
                 className="flex-1 border rounded px-3 py-2"
               />
-              <button onClick={handleAddComment} className="bg-blue-500 text-white px-4 py-2 rounded">
+              <button onClick={handleAddComment} className="bg-red-500 text-white px-4 py-2 rounded">
                 Post
               </button>
             </div>
