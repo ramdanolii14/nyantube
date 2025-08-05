@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://nyantube.ramdan.fun/sitemap.xml
+Sitemap: https://nyanstream.ramdan.fun/sitemap.xml
