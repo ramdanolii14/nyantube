@@ -2,8 +2,8 @@ import "./globals.css";
 import Navbar from "@/app/components/Navbar";
 
 export const metadata = {
-  title: "NyanTube",
-  description: "Streaming Online Tanpa Batas Bersama NyanTube. Powerfull video platform, only for Sigma.",
+  title: "NyanTube - Online Video Sharing For Everyone",
+  description: "Streaming Online Tanpa Batas Bersama NyanTube. Powerfull video platform, only for Sigma. Share your moment here, make memories with us. We all are like family here.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
