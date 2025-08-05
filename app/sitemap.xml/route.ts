@@ -9,56 +9,84 @@ export async function GET() {
 
   // Halaman statis
   const staticPages = ["", "about", "contact", "terms"].map((page) => ({
-    loc: `${baseUrl}/${page}`,
-    lastmod: new Date().toISOString(),
+    xml: `
+    <url>
+      <loc>${baseUrl}/${page}</loc>
+      <lastmod>${new Date().toISOString()}</lastmod>
+      <changefreq>daily</changefreq>
+      <priority>0.8</priority>
+    </url>`,
   }));
 
-  // Ambil semua video
+  // Ambil video
   const { data: videos, error: videoError } = await supabase
     .from("videos")
-    .select("id, created_at")
+    .select("id, title, created_at, thumbnail_url, profiles(username)")
     .order("created_at", { ascending: false });
 
-  // Ambil semua channel
+  // Ambil channel
   const { data: channels, error: channelError } = await supabase
     .from("profiles")
-    .select("username, updated_at")
-    .order("updated_at", { ascending: false });
+    .select("username")
+    .order("username", { ascending: true });
 
-  if (videoError || channelError) {
-    console.error("Sitemap error:", videoError || channelError);
-    return new NextResponse("Error generating sitemap", { status: 500 });
+  if (videoError) {
+    console.error("Video sitemap error:", videoError);
+  }
+  if (channelError) {
+    console.error("Channel sitemap error:", channelError);
   }
 
-  // Convert ke format URL
+  // Video URLs
   const videoUrls =
-    videos?.map((video) => ({
-      loc: `${baseUrl}/watch/${video.id}`,
-      lastmod: new Date(video.created_at).toISOString(),
-    })) || [];
+    videos?.map((video) => {
+      const username =
+        Array.isArray(video.profiles) && video.profiles.length > 0
+          ? video.profiles[0].username
+          : "Unknown";
 
+      const thumbUrl = video.thumbnail_url
+        ? `${baseUrl}/storage/v1/object/public/thumbnails/${video.thumbnail_url}`
+        : `${baseUrl}/default-thumbnail.jpg`;
+
+      return {
+        xml: `
+        <url>
+          <loc>${baseUrl}/watch/${video.id}</loc>
+          <lastmod>${new Date(video.created_at || new Date()).toISOString()}</lastmod>
+          <changefreq>daily</changefreq>
+          <priority>0.9</priority>
+          <video:video>
+            <video:thumbnail_loc>${thumbUrl}</video:thumbnail_loc>
+            <video:title><![CDATA[${video.title || "Untitled"}]]></video:title>
+            <video:description><![CDATA[${video.title || "No description"}]]></video:description>
+            <video:publication_date>${new Date(video.created_at || new Date()).toISOString()}</video:publication_date>
+            <video:uploader>${username}</video:uploader>
+            <video:player_loc allow_embed="yes" autoplay="ap=1">${baseUrl}/watch/${video.id}</video:player_loc>
+          </video:video>
+        </url>`,
+      };
+    }) || [];
+
+  // Channel URLs
   const channelUrls =
     channels?.map((ch) => ({
-      loc: `${baseUrl}/${ch.username}`,
-      lastmod: new Date(ch.updated_at || new Date()).toISOString(),
+      xml: `
+      <url>
+        <loc>${baseUrl}/${ch.username}</loc>
+        <lastmod>${new Date().toISOString()}</lastmod>
+        <changefreq>daily</changefreq>
+        <priority>0.7</priority>
+      </url>`,
     })) || [];
 
-  // Gabungkan semua URL
+  // Gabung semua
   const allUrls = [...staticPages, ...videoUrls, ...channelUrls];
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${allUrls
-  .map(
-    (url) => `
-  <url>
-    <loc>${url.loc}</loc>
-    <lastmod>${url.lastmod}</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.8</priority>
-  </url>`
-  )
-  .join("")}
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:video="http://www.google.com/schemas/sitemap-video/1.1">
+${allUrls.map((u) => u.xml).join("")}
 </urlset>`;
 
   return new NextResponse(xml, {
