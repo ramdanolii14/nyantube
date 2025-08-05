@@ -170,11 +170,11 @@ export default function WatchPageClient({ id }: { id: string }) {
       <div className="max-w-6xl mx-auto px-4 md:px-6 flex flex-col md:flex-row gap-6">
         {/* Video Section */}
         <div className="flex-1 max-w-3xl">
-          <div className="relative w-full bg-black rounded-lg overflow-hidden">
+          <div className="relative w-full bg-black rounded-lg overflow-hidden aspect-video">
             <video
               src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/videos/${video.video_url}`}
               controls
-              className="w-full max-h-[480px] object-contain"
+              className="w-full h-full object-contain"
             />
           </div>
           <h1 className="text-xl font-bold mt-4 mb-2">{video.title}</h1>
