@@ -1,5 +1,5 @@
 export async function GET() {
-  const baseUrl = "https://nyantube.ramdan.fun";
+  const baseUrl = "https://nyanstream.ramdan.fun";
 
   return new Response(
     `User-agent: *
