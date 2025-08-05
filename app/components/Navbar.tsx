@@ -67,7 +67,7 @@ export default function Navbar() {
       <div className="max-w-6xl mx-auto px-4 flex items-center justify-between h-14">
         {/* Logo */}
         <Link href="/">
-          <span className="text-xl font-bold text-red-600">NyanTube</span>
+          <span className="text-xl font-bold text-red-600">NyanStream</span>
         </Link>
 
         {/* Search Bar */}
@@ -203,3 +203,4 @@ export default function Navbar() {
     </nav>
   );
 }
+
