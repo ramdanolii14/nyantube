@@ -3,23 +3,31 @@ import { NextResponse } from "next/server";
 
 export const revalidate = 60 * 60; // update tiap 1 jam
 
+interface VideoRow {
+  id: string;
+  title: string;
+  created_at: string;
+  thumbnail_url: string;
+  profiles?: { username: string }[];
+}
+
 export async function GET() {
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://nyantube.ramdan.fun";
 
-  let videos = [];
+  let videos: VideoRow[] = [];
   try {
     const { data, error } = await supabase
       .from("videos")
       .select("id, title, created_at, thumbnail_url, profiles(username)")
       .order("created_at", { ascending: false });
 
-    if (!error && data) videos = data;
+    if (!error && data) videos = data as VideoRow[];
   } catch (err) {
     console.error("Video sitemap fetch error:", err);
   }
 
   const videoEntries = videos
-    .map((video: any) => {
+    .map((video) => {
       const username = video.profiles?.[0]?.username || "Unknown";
       return `
       <url>
