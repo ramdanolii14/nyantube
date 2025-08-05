@@ -2,7 +2,7 @@ import "./globals.css";
 import Navbar from "@/app/components/Navbar";
 
 export const metadata = {
-  title: "NyanTube - Online Video Sharing For Everyone",
+  title: "NyanStream - Online Video Sharing For Everyone",
   description: "Streaming Online Tanpa Batas Bersama NyanTube. Powerfull video platform, only for Sigma. Share your moment here, make memories with us. We all are like family here.",
 };
 
