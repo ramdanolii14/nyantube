@@ -6,7 +6,6 @@ export async function GET() {
 Allow: /
 
 Sitemap: ${baseUrl}/sitemap.xml
-Sitemap: ${baseUrl}/video-sitemap.xml
 `,
     {
       headers: { "Content-Type": "text/plain" },
