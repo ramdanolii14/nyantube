@@ -43,7 +43,8 @@ export default function HomePage() {
       <div className="min-h-screen flex items-center justify-center bg-red-100">
         <div className="bg-white p-6 rounded shadow text-center">
           <h1 className="text-xl font-bold text-red-600 mb-2">Akun Diblokir</h1>
-          <p className="text-gray-700">Akun Anda telah di-banned dan tidak dapat mengakses situs ini.</p>
+          <p className="text-gray-700">Akun Anda telah di-banned dan tidak dapat mengakses project ini.</p>
+          <p className="text-gray-700">Appeal: dev@ramdan.fun</p>
         </div>
       </div>
     );
