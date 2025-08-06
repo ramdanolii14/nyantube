@@ -46,9 +46,15 @@ export default function WatchPageClient({ id }: { id: string }) {
   const [userVote, setUserVote] = useState<"like" | "dislike" | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
-  // error state + fade
   const [commentError, setCommentError] = useState<string | null>(null);
   const [fadeOut, setFadeOut] = useState(false);
+
+  // fungsi helper buat fallback avatar
+  const getAvatarUrl = (avatar_url: string | null, name: string) => {
+    return avatar_url
+      ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${avatar_url}`
+      : `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random&color=fff`;
+  };
 
   useEffect(() => {
     if (commentError) {
@@ -86,7 +92,7 @@ export default function WatchPageClient({ id }: { id: string }) {
 
       const { data: commentData } = await supabase
         .from("comments")
-        .select("*, profiles(id, username, avatar_url, is_verified, is_mod)")
+        .select("*, profiles(id, username, avatar_url, channel_name, is_verified, is_mod)")
         .eq("video_id", id)
         .order("created_at", { ascending: false })
         .limit(50);
@@ -108,7 +114,7 @@ export default function WatchPageClient({ id }: { id: string }) {
   const refreshComments = async () => {
     const { data } = await supabase
       .from("comments")
-      .select("*, profiles(id, username, avatar_url, is_verified, is_mod)")
+      .select("*, profiles(id, username, avatar_url, channel_name, is_verified, is_mod)")
       .eq("video_id", id)
       .order("created_at", { ascending: false });
     setComments(data || []);
@@ -117,7 +123,6 @@ export default function WatchPageClient({ id }: { id: string }) {
   const handleAddComment = async () => {
     if (!currentUserId || !newComment.trim()) return;
 
-    // cek limit 2 komentar / jam
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
     const { count } = await supabase
       .from("comments")
@@ -191,11 +196,7 @@ export default function WatchPageClient({ id }: { id: string }) {
           <div className="flex items-center gap-3 mb-4">
             <Link href={`/${video.profiles.username}`}>
               <Image
-                src={
-                  video.profiles.avatar_url
-                    ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${video.profiles.avatar_url}`
-                    : `https://ui-avatars.com/api/?name=${encodeURIComponent(video.profiles.channel_name || video.profiles.username)}`
-                }
+                src={getAvatarUrl(video.profiles.avatar_url, video.profiles.channel_name || video.profiles.username)}
                 alt="avatar"
                 width={40}
                 height={40}
@@ -272,11 +273,7 @@ export default function WatchPageClient({ id }: { id: string }) {
                   <div className="flex gap-2">
                     <Link href={`/${c.profiles.username}`}>
                       <Image
-                        src={
-                          c.profiles.avatar_url
-                            ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${c.profiles.avatar_url}`
-                            : `https://ui-avatars.com/api/?name=${encodeURIComponent(c.profiles.channel_name || c.profiles.username)}`
-                        }
+                        src={getAvatarUrl(c.profiles.avatar_url, c.profiles.channel_name || c.profiles.username)}
                         alt="avatar"
                         width={32}
                         height={32}
@@ -321,7 +318,7 @@ export default function WatchPageClient({ id }: { id: string }) {
         <div className="w-full md:w-72">
           <h2 className="font-semibold mb-3">Related Videos</h2>
           {relatedVideos.map((v) => (
-            <Link key={v.id} href={`/watch/{v.id}`} className="flex gap-2 mb-3 hover:bg-gray-100 p-1 rounded">
+            <Link key={v.id} href={`/watch/${v.id}`} className="flex gap-2 mb-3 hover:bg-gray-100 p-1 rounded">
               <div className="relative w-32 h-20 bg-gray-200 rounded-md overflow-hidden">
                 <Image
                   src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/thumbnails/${v.thumbnail_url}`}
