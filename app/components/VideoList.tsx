@@ -19,6 +19,8 @@ interface Video {
     channel_name: string;
     avatar_url: string | null;
     is_verified?: boolean;
+    is_mod?: boolean;
+    is_bughunter?: boolean;
   };
 }
 
@@ -43,7 +45,7 @@ export default function VideoList() {
     const fetchVideos = async () => {
       const { data } = await supabase
         .from("videos")
-        .select("*, profiles(channel_name, avatar_url, is_verified)");
+        .select("*, profiles(channel_name, avatar_url, is_verified, is_mod, is_bughunter)");
 
       if (data) {
         const withDefaults = data.map((v: any) => ({
@@ -52,6 +54,8 @@ export default function VideoList() {
             channel_name: "Unknown",
             avatar_url: null,
             is_verified: false,
+            is_mod: false,
+            is_bughunter: false,
           },
         })) as Video[];
 
@@ -177,13 +181,35 @@ export default function VideoList() {
                       <Image
                         src="/verified.svg"
                         alt="verified"
+                        title="AKUN TERVERIFIKASI"
                         width={12}
                         height={12}
                         className="inline-block align-middle translate-y-[0.5px]"
                       />
-                      <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-1 hidden group-hover:block bg-black text-white text-[10px] px-2 py-1 rounded">
-                        VERIFIED USER
-                      </div>
+                    </div>
+                  )}
+                  {video.profiles?.is_mod && (
+                    <div className="relative group flex items-center">
+                      <Image
+                        src="/mod.svg"
+                        alt="admin"
+                        title="TERVERIFIKASI ADMIN"
+                        width={12}
+                        height={12}
+                        className="inline-block align-middle translate-y-[0.5px]"
+                      />
+                    </div>
+                  )}
+                  {video.profiles?.is_bughunter && (
+                    <div className="relative group flex items-center">
+                      <Image
+                        src="/bughunter.svg"
+                        alt="bughunter"
+                        title="TERVERIFIKASI BUGHUNTER"
+                        width={12}
+                        height={12}
+                        className="inline-block align-middle translate-y-[0.5px]"
+                      />
                     </div>
                   )}
                 </p>
@@ -198,3 +224,4 @@ export default function VideoList() {
     </div>
   );
 }
+
