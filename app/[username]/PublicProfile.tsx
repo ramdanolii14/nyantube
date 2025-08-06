@@ -132,12 +132,20 @@ export default function PublicProfilePage({ username }: { username: string }) {
       return;
     }
 
+    // Hapus file di bucket videos
     if (video.video_url) {
-      await supabase.storage.from("videos").remove([video.video_url]);
+      const fileName = video.video_url.split("/").pop();
+      if (fileName) {
+        await supabase.storage.from("videos").remove([fileName]);
+      }
     }
 
+    // Hapus file di bucket thumbnails
     if (video.thumbnail_url) {
-      await supabase.storage.from("thumbnails").remove([video.thumbnail_url]);
+      const fileName = video.thumbnail_url.split("/").pop();
+      if (fileName) {
+        await supabase.storage.from("thumbnails").remove([fileName]);
+      }
     }
 
     setVideos((prev) => prev.filter((v) => v.id !== video.id));
