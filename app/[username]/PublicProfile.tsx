@@ -12,6 +12,7 @@ interface Profile {
   avatar_url: string | null;
   is_verified?: boolean;
   is_mod?: boolean;
+  is_bughunter?: boolean;
   created_at: string;
 }
 
@@ -56,7 +57,7 @@ export default function PublicProfilePage({ username }: { username: string }) {
     const fetchProfile = async () => {
       const { data } = await supabase
         .from("profiles")
-        .select("id, username, channel_name, avatar_url, is_verified, is_mod, created_at")
+        .select("id, username, channel_name, avatar_url, is_verified, is_mod, is_bughunter, created_at")
         .eq("username", username)
         .single();
 
@@ -244,10 +245,13 @@ export default function PublicProfilePage({ username }: { username: string }) {
           <h1 className="text-2xl font-bold flex items-center gap-1">
             {profile.channel_name}
             {profile.is_verified && (
-              <Image src="/verified.svg" alt="verified" width={16} height={16} title="Verified User" />
+              <Image src="/verified.svg" alt="verified" width={16} height={16} title="AKUN TERVERIFIKASI" />
             )}
             {profile.is_mod && (
-              <Image src="/mod.svg" alt="moderator" width={16} height={16} title="Verified Admin" />
+              <Image src="/mod.svg" alt="moderator" width={16} height={16} title="TERVERIFIKASI ADMIN" />
+            )}
+            {profile.is_bughunter && (
+              <Image src="/bughunter.svg" alt="bughunter" width={16} height={16} title="TERVERIFIKASI BUGHUNTER" />
             )}
           </h1>
           <p className="text-gray-500">@{profile.username}</p>
