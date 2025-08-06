@@ -363,6 +363,7 @@ export default function WatchPageClient({ id }: { id: string }) {
             </Link>
           ))}
         </div>
+      </div>
 
       {/* Popup Konfirmasi Delete */}
       {confirmDeleteId && (
