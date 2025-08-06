@@ -272,7 +272,6 @@ export default function WatchPageClient({ id }: { id: string }) {
                   <div className="flex gap-2">
                     <Link href={`/${c.profiles.username}`}>
                       <Image
-                        src={
                           src={
                             c.profiles.avatar_url
                               ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${c.profiles.avatar_url}`
