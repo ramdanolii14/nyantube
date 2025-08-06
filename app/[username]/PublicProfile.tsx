@@ -28,6 +28,7 @@ export default function PublicProfilePage({ username }: { username: string }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [videos, setVideos] = useState<Video[]>([]);
   const [userId, setUserId] = useState<string | null>(null);
+  const [isMod, setIsMod] = useState<boolean>(false);
   const [avatarSrc, setAvatarSrc] = useState<string>("");
 
   useEffect(() => {
@@ -42,7 +43,6 @@ export default function PublicProfilePage({ username }: { username: string }) {
         setProfile(data as Profile);
 
         if (data.avatar_url) {
-          // Ambil public URL langsung dari Supabase
           const { data: publicUrl } = supabase.storage
             .from("avatars")
             .getPublicUrl(data.avatar_url);
@@ -54,10 +54,19 @@ export default function PublicProfilePage({ username }: { username: string }) {
     };
 
     const fetchUser = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (user) setUserId(user.id);
+      const { data: auth } = await supabase.auth.getUser();
+      if (auth.user) {
+        setUserId(auth.user.id);
+
+        // Ambil data is_mod user login
+        const { data: currentProfile } = await supabase
+          .from("profiles")
+          .select("is_mod")
+          .eq("id", auth.user.id)
+          .single();
+
+        setIsMod(currentProfile?.is_mod || false);
+      }
     };
 
     fetchUser();
@@ -67,7 +76,7 @@ export default function PublicProfilePage({ username }: { username: string }) {
   const fetchVideos = async (user_id: string) => {
     const { data } = await supabase
       .from("videos")
-      .select("id, title, thumbnail_url, views, created_at")
+      .select("id, title, video_url, thumbnail_url, views, created_at")
       .eq("user_id", user_id)
       .order("created_at", { ascending: false });
 
@@ -80,17 +89,33 @@ export default function PublicProfilePage({ username }: { username: string }) {
     }
   }, [profile]);
 
-  const handleDeleteVideo = async (videoId: string) => {
+  const handleDeleteVideo = async (video: Video) => {
     const confirmDelete = confirm("Yakin ingin menghapus video ini?");
     if (!confirmDelete) return;
 
-    const { error } = await supabase.from("videos").delete().eq("id", videoId);
-    if (!error) {
-      setVideos((prev) => prev.filter((v) => v.id !== videoId));
-      alert("Video berhasil dihapus!");
-    } else {
+    // Hapus dari database
+    const { error } = await supabase.from("videos").delete().eq("id", video.id);
+    if (error) {
       alert("Gagal menghapus video!");
+      return;
     }
+
+    // Hapus file video di bucket
+    if (video.video_url) {
+      await supabase.storage
+        .from("videos")
+        .remove([video.video_url]);
+    }
+
+    // Hapus file thumbnail di bucket
+    if (video.thumbnail_url) {
+      await supabase.storage
+        .from("thumbnails")
+        .remove([video.thumbnail_url]);
+    }
+
+    setVideos((prev) => prev.filter((v) => v.id !== video.id));
+    alert("Video berhasil dihapus!");
   };
 
   // SKELETON LOADING
@@ -165,43 +190,46 @@ export default function PublicProfilePage({ username }: { username: string }) {
         <p className="text-gray-500">Belum ada video diunggah.</p>
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-          {videos.map((v) => (
-            <div
-              key={v.id}
-              className="border rounded-md overflow-hidden hover:shadow-md transition relative group"
-            >
-              <Link href={`/watch/${v.id}`}>
-                <Image
-                  src={
-                    v.thumbnail_url
-                      ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/thumbnails/${v.thumbnail_url}`
-                      : "/default-thumbnail.jpg"
-                  }
-                  alt={v.title}
-                  width={400}
-                  height={225}
-                  className="w-full h-40 object-cover"
-                  unoptimized
-                />
-                <div className="p-2">
-                  <h3 className="font-semibold text-sm line-clamp-2">
-                    {v.title}
-                  </h3>
-                  <p className="text-xs text-gray-500">{v.views} views</p>
-                </div>
-              </Link>
+          {videos.map((v) => {
+            const canDelete = userId === profile.id || isMod;
+            return (
+              <div
+                key={v.id}
+                className="border rounded-md overflow-hidden hover:shadow-md transition relative group"
+              >
+                <Link href={`/watch/${v.id}`}>
+                  <Image
+                    src={
+                      v.thumbnail_url
+                        ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/thumbnails/${v.thumbnail_url}`
+                        : "/default-thumbnail.jpg"
+                    }
+                    alt={v.title}
+                    width={400}
+                    height={225}
+                    className="w-full h-40 object-cover"
+                    unoptimized
+                  />
+                  <div className="p-2">
+                    <h3 className="font-semibold text-sm line-clamp-2">
+                      {v.title}
+                    </h3>
+                    <p className="text-xs text-gray-500">{v.views} views</p>
+                  </div>
+                </Link>
 
-              {userId === profile.id && (
-                <button
-                  onClick={() => handleDeleteVideo(v.id)}
-                  className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded hover:bg-red-600 opacity-0 group-hover:opacity-100 transition"
-                  title="Hapus Video"
-                >
-                  🗑
-                </button>
-              )}
-            </div>
-          ))}
+                {canDelete && (
+                  <button
+                    onClick={() => handleDeleteVideo(v)}
+                    className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded hover:bg-red-600 opacity-0 group-hover:opacity-100 transition"
+                    title="Hapus Video"
+                  >
+                    🗑
+                  </button>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
