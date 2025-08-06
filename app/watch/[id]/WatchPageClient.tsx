@@ -194,7 +194,7 @@ export default function WatchPageClient({ id }: { id: string }) {
                 src={
                   video.profiles.avatar_url
                     ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${video.profiles.avatar_url}`
-                    : `https://ui-avatars.com/api/?name=${video.profiles.channel_name || video.profiles.username}`
+                    : `https://ui-avatars.com/api/?name=${encodeURIComponent(video.profiles.channel_name || video.profiles.username)}`
                 }
                 alt="avatar"
                 width={40}
@@ -272,11 +272,11 @@ export default function WatchPageClient({ id }: { id: string }) {
                   <div className="flex gap-2">
                     <Link href={`/${c.profiles.username}`}>
                       <Image
-                          src={
-                            c.profiles.avatar_url
-                              ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${c.profiles.avatar_url}`
-                              : `https://ui-avatars.com/api/?name=${c.profiles.channel_name || c.profiles.username}`
-                          }
+                        src={
+                          c.profiles.avatar_url
+                            ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${c.profiles.avatar_url}`
+                            : `https://ui-avatars.com/api/?name=${encodeURIComponent(c.profiles.channel_name || c.profiles.username)}`
+                        }
                         alt="avatar"
                         width={32}
                         height={32}
@@ -321,7 +321,7 @@ export default function WatchPageClient({ id }: { id: string }) {
         <div className="w-full md:w-72">
           <h2 className="font-semibold mb-3">Related Videos</h2>
           {relatedVideos.map((v) => (
-            <Link key={v.id} href={`/watch/${v.id}`} className="flex gap-2 mb-3 hover:bg-gray-100 p-1 rounded">
+            <Link key={v.id} href={`/watch/{v.id}`} className="flex gap-2 mb-3 hover:bg-gray-100 p-1 rounded">
               <div className="relative w-32 h-20 bg-gray-200 rounded-md overflow-hidden">
                 <Image
                   src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/thumbnails/${v.thumbnail_url}`}
