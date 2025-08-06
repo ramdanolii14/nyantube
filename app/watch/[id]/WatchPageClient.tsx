@@ -49,7 +49,6 @@ export default function WatchPageClient({ id }: { id: string }) {
   const [commentError, setCommentError] = useState<string | null>(null);
   const [fadeOut, setFadeOut] = useState(false);
 
-  // fungsi helper buat fallback avatar
   const getAvatarUrl = (avatar_url: string | null, name: string) => {
     return avatar_url
       ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${avatar_url}`
@@ -281,12 +280,12 @@ export default function WatchPageClient({ id }: { id: string }) {
                       />
                     </Link>
                     <div>
-                      <p className="font-semibold flex items-center gap-1">
-                        {c.profiles.username}
+                      <Link href={`/${c.profiles.username}`} className="font-semibold hover:underline flex items-center gap-1">
+                        {c.profiles.channel_name || c.profiles.username}
                         {c.profiles.is_verified && <Image src="/verified.svg" alt="verified" title="VERIFIED USER" width={12} height={12} />}
                         {c.profiles.is_mod && <Image src="/mod.svg" alt="mod" title="VERIFIED ADMIN" width={12} height={12} />}
-                        {c.edited && <span className="text-xs text-gray-500">[edited]</span>}
-                      </p>
+                      </Link>
+                      {c.edited && <span className="text-xs text-gray-500 ml-1">[edited]</span>}
                       {editComment?.id === c.id ? (
                         <div className="flex gap-2 mt-1">
                           <input
