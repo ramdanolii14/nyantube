@@ -31,13 +31,16 @@ export default function PublicProfilePage({ username }: { username: string }) {
   const [isMod, setIsMod] = useState<boolean>(false);
   const [avatarSrc, setAvatarSrc] = useState<string>("");
 
+  const [totalVideos, setTotalVideos] = useState(0);
+  const [totalViews, setTotalViews] = useState(0);
+
   // Popup message
   const [popupMessage, setPopupMessage] = useState<string | null>(null);
   const [popupType, setPopupType] = useState<"success" | "error">("success");
   const [fadeOut, setFadeOut] = useState(false);
 
-  // Confirm delete modal
-  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  // Modal state
+  const [showConfirm, setShowConfirm] = useState(false);
   const [videoToDelete, setVideoToDelete] = useState<Video | null>(null);
 
   useEffect(() => {
@@ -69,7 +72,9 @@ export default function PublicProfilePage({ username }: { username: string }) {
             .getPublicUrl(data.avatar_url);
           setAvatarSrc(publicUrl.publicUrl);
         } else {
-          setAvatarSrc(`https://ui-avatars.com/api/?name=${encodeURIComponent(data.username)}`);
+          setAvatarSrc(
+            `https://ui-avatars.com/api/?name=${encodeURIComponent(data.channel_name)}&background=random&color=fff`
+          );
         }
       }
     };
@@ -100,7 +105,11 @@ export default function PublicProfilePage({ username }: { username: string }) {
       .eq("user_id", user_id)
       .order("created_at", { ascending: false });
 
-    if (data) setVideos(data as Video[]);
+    if (data) {
+      setVideos(data as Video[]);
+      setTotalVideos(data.length);
+      setTotalViews(data.reduce((sum, vid) => sum + vid.views, 0));
+    }
   };
 
   useEffect(() => {
@@ -109,19 +118,19 @@ export default function PublicProfilePage({ username }: { username: string }) {
     }
   }, [profile]);
 
-  const confirmDeleteVideo = (video: Video) => {
+  const confirmDelete = (video: Video) => {
     setVideoToDelete(video);
-    setShowConfirmModal(true);
+    setShowConfirm(true);
   };
 
-  const handleDeleteVideo = async () => {
+  const handleDeleteConfirmed = async () => {
     if (!videoToDelete) return;
 
     const { error } = await supabase.from("videos").delete().eq("id", videoToDelete.id);
     if (error) {
       setPopupType("error");
       setPopupMessage("Gagal menghapus video!");
-      setShowConfirmModal(false);
+      setShowConfirm(false);
       return;
     }
 
@@ -134,9 +143,12 @@ export default function PublicProfilePage({ username }: { username: string }) {
     }
 
     setVideos((prev) => prev.filter((v) => v.id !== videoToDelete.id));
+    setTotalVideos((prev) => prev - 1);
+    setTotalViews((prev) => prev - (videoToDelete?.views || 0));
+
     setPopupType("success");
     setPopupMessage("Video berhasil dihapus!");
-    setShowConfirmModal(false);
+    setShowConfirm(false);
     setVideoToDelete(null);
   };
 
@@ -177,26 +189,24 @@ export default function PublicProfilePage({ username }: { username: string }) {
       )}
 
       {/* Confirm Delete Modal */}
-      {showConfirmModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded shadow-lg max-w-sm w-full">
-            <h2 className="text-lg font-semibold mb-2">Confirm Deletion</h2>
-            <p className="text-gray-600 mb-4">
+      {showConfirm && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+          <div className="bg-white rounded-lg p-6 max-w-sm w-full text-center shadow-lg">
+            <h2 className="text-lg font-semibold mb-4">Confirm Deletion</h2>
+            <p className="text-gray-600 mb-6">
               Are you sure you want to delete this video? <br />
-              <span className="text-red-500">
-                We can't restore your video if you confirm the deletion.
-              </span>
+              We can't restore your video if you confirm the deletion.
             </p>
-            <div className="flex justify-end gap-2">
+            <div className="flex justify-center gap-4">
               <button
-                onClick={() => setShowConfirmModal(false)}
-                className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300"
+                onClick={() => setShowConfirm(false)}
+                className="px-4 py-2 rounded bg-gray-300 hover:bg-gray-400"
               >
                 Cancel
               </button>
               <button
-                onClick={handleDeleteVideo}
-                className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+                onClick={handleDeleteConfirmed}
+                className="px-4 py-2 rounded bg-red-500 text-white hover:bg-red-600"
               >
                 Delete
               </button>
@@ -217,7 +227,7 @@ export default function PublicProfilePage({ username }: { username: string }) {
             unoptimized
             onError={() =>
               setAvatarSrc(
-                `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.username)}`
+                `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.channel_name)}&background=random&color=fff`
               )
             }
           />
@@ -234,6 +244,9 @@ export default function PublicProfilePage({ username }: { username: string }) {
             )}
           </h1>
           <p className="text-gray-500">@{profile.username}</p>
+          <div className="text-sm text-gray-600 mt-1">
+            Video: {totalVideos} • Views: {totalViews}
+          </div>
         </div>
 
         {userId === profile.id && (
@@ -248,9 +261,7 @@ export default function PublicProfilePage({ username }: { username: string }) {
 
       <hr className="my-5" />
 
-      <h2 className="text-xl font-bold mb-3">
-        Video dari {profile.channel_name}
-      </h2>
+      <h2 className="text-xl font-bold mb-3">Video dari {profile.channel_name}</h2>
       {videos.length === 0 ? (
         <p className="text-gray-500">Belum ada video diunggah.</p>
       ) : (
@@ -276,16 +287,14 @@ export default function PublicProfilePage({ username }: { username: string }) {
                     unoptimized
                   />
                   <div className="p-2">
-                    <h3 className="font-semibold text-sm line-clamp-2">
-                      {v.title}
-                    </h3>
+                    <h3 className="font-semibold text-sm line-clamp-2">{v.title}</h3>
                     <p className="text-xs text-gray-500">{v.views} views</p>
                   </div>
                 </Link>
 
                 {canDelete && (
                   <button
-                    onClick={() => confirmDeleteVideo(v)}
+                    onClick={() => confirmDelete(v)}
                     className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded hover:bg-red-600 opacity-0 group-hover:opacity-100 transition"
                     title="Hapus Video"
                   >
