@@ -49,6 +49,9 @@ export default function WatchPageClient({ id }: { id: string }) {
   const [commentError, setCommentError] = useState<string | null>(null);
   const [fadeOut, setFadeOut] = useState(false);
 
+  // modal delete
+  const [commentToDelete, setCommentToDelete] = useState<string | null>(null);
+
   const getAvatarUrl = (avatar_url: string | null, name: string) => {
     return avatar_url
       ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${avatar_url}`
@@ -144,8 +147,10 @@ export default function WatchPageClient({ id }: { id: string }) {
     refreshComments();
   };
 
-  const handleDeleteComment = async (commentId: string) => {
-    await supabase.from("comments").delete().eq("id", commentId);
+  const confirmDeleteComment = async () => {
+    if (!commentToDelete) return;
+    await supabase.from("comments").delete().eq("id", commentToDelete);
+    setCommentToDelete(null);
     refreshComments();
   };
 
@@ -179,7 +184,30 @@ export default function WatchPageClient({ id }: { id: string }) {
   if (!video) return <p className="text-center mt-10">Loading...</p>;
 
   return (
-    <div className="w-full bg-white-50 mt-24 pb-10">
+    <div className="w-full bg-white-50 mt-24 pb-10 relative">
+      {/* Modal Konfirmasi */}
+      {commentToDelete && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg w-80 text-center">
+            <h3 className="font-semibold text-lg mb-4">Delete this comment?</h3>
+            <div className="flex justify-center gap-4">
+              <button
+                onClick={confirmDeleteComment}
+                className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
+              >
+                Yes
+              </button>
+              <button
+                onClick={() => setCommentToDelete(null)}
+                className="bg-gray-300 px-4 py-2 rounded hover:bg-gray-400"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="max-w-6xl mx-auto px-4 md:px-6 flex flex-col md:flex-row gap-6">
         <div className="flex-1 max-w-3xl">
           <div className="relative w-full bg-black rounded-lg overflow-hidden aspect-video">
@@ -300,7 +328,7 @@ export default function WatchPageClient({ id }: { id: string }) {
                       )}
                       {canDelete && (
                         <div className="flex gap-3 text-xs text-gray-500 mt-1">
-                          <button onClick={() => handleDeleteComment(c.id)} className="text-red-500">Delete</button>
+                          <button onClick={() => setCommentToDelete(c.id)} className="text-red-500">Delete</button>
                         </div>
                       )}
                     </div>
