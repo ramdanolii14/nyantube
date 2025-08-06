@@ -31,6 +31,22 @@ export default function PublicProfilePage({ username }: { username: string }) {
   const [isMod, setIsMod] = useState<boolean>(false);
   const [avatarSrc, setAvatarSrc] = useState<string>("");
 
+  // Untuk popup message
+  const [popupMessage, setPopupMessage] = useState<string | null>(null);
+  const [fadeOut, setFadeOut] = useState(false);
+
+  useEffect(() => {
+    if (popupMessage) {
+      setFadeOut(false);
+      const fadeTimer = setTimeout(() => setFadeOut(true), 4500);
+      const removeTimer = setTimeout(() => setPopupMessage(null), 5000);
+      return () => {
+        clearTimeout(fadeTimer);
+        clearTimeout(removeTimer);
+      };
+    }
+  }, [popupMessage]);
+
   useEffect(() => {
     const fetchProfile = async () => {
       const { data } = await supabase
@@ -58,7 +74,6 @@ export default function PublicProfilePage({ username }: { username: string }) {
       if (auth.user) {
         setUserId(auth.user.id);
 
-        // Ambil data is_mod user login
         const { data: currentProfile } = await supabase
           .from("profiles")
           .select("is_mod")
@@ -93,32 +108,24 @@ export default function PublicProfilePage({ username }: { username: string }) {
     const confirmDelete = confirm("Yakin ingin menghapus video ini?");
     if (!confirmDelete) return;
 
-    // Hapus dari database
     const { error } = await supabase.from("videos").delete().eq("id", video.id);
     if (error) {
-      alert("Gagal menghapus video!");
+      setPopupMessage("Gagal menghapus video!");
       return;
     }
 
-    // Hapus file video di bucket
     if (video.video_url) {
-      await supabase.storage
-        .from("videos")
-        .remove([video.video_url]);
+      await supabase.storage.from("videos").remove([video.video_url]);
     }
 
-    // Hapus file thumbnail di bucket
     if (video.thumbnail_url) {
-      await supabase.storage
-        .from("thumbnails")
-        .remove([video.thumbnail_url]);
+      await supabase.storage.from("thumbnails").remove([video.thumbnail_url]);
     }
 
     setVideos((prev) => prev.filter((v) => v.id !== video.id));
-    alert("Video berhasil dihapus!");
+    setPopupMessage("Video berhasil dihapus!");
   };
 
-  // SKELETON LOADING
   if (!profile) {
     return (
       <div className="max-w-5xl mx-auto mt-20 px-4 animate-pulse">
@@ -140,6 +147,17 @@ export default function PublicProfilePage({ username }: { username: string }) {
 
   return (
     <div className="max-w-5xl mx-auto mt-20 px-4">
+      {/* Popup Notification */}
+      {popupMessage && (
+        <div
+          className={`fixed top-20 left-1/2 transform -translate-x-1/2 bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded shadow-lg transition-all duration-500 ${
+            fadeOut ? "opacity-0 -translate-y-1" : "opacity-100 translate-y-0"
+          }`}
+        >
+          {popupMessage}
+        </div>
+      )}
+
       {/* Profile Header */}
       <div className="flex items-center gap-4">
         <div className="w-20 h-20 rounded-full overflow-hidden border">
