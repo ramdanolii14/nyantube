@@ -342,7 +342,7 @@ export default function WatchPageClient({ id }: { id: string }) {
         <div className="w-full md:w-72">
           <h2 className="font-semibold mb-3">Related Videos</h2>
           {relatedVideos.map((v) => (
-            <Link key={v.id} href={`/watch/{v.id}`} className="flex gap-2 mb-3 hover:bg-gray-100 p-1 rounded">
+            <Link key={v.id} href={`/watch/${v.id}`} className="flex gap-2 mb-3 hover:bg-gray-100 p-1 rounded">
               <div className="relative w-32 h-20 bg-gray-200 rounded-md overflow-hidden">
                 <Image
                   src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/thumbnails/${v.thumbnail_url}`}
@@ -363,7 +363,6 @@ export default function WatchPageClient({ id }: { id: string }) {
             </Link>
           ))}
         </div>
-      </div>
 
       {/* Popup Konfirmasi Delete */}
       {confirmDeleteId && (
