@@ -206,8 +206,8 @@ export default function WatchPageClient({ id }: { id: string }) {
             <div className="flex-1">
               <Link href={`/${video.profiles.username}`} className="font-semibold hover:underline flex items-center gap-1">
                 {video.profiles.channel_name || video.profiles.username}
-                {video.profiles.is_verified && <Image src="/verified.svg" alt="verified" width={14} height={14} />}
-                {video.profiles.is_mod && <Image src="/mod.svg" alt="mod" width={14} height={14} />}
+                {video.profiles.is_verified && <Image src="/verified.svg" alt="verified" title="VERIFIED USER" width={14} height={14} />}
+                {video.profiles.is_mod && <Image src="/mod.svg" alt="mod" title="VERIFIED ADMIN" width={14} height={14} />}
               </Link>
               <p className="text-sm text-gray-500">
                 {video.views} views • {new Date(video.created_at).toLocaleString()}
@@ -283,8 +283,8 @@ export default function WatchPageClient({ id }: { id: string }) {
                     <div>
                       <p className="font-semibold flex items-center gap-1">
                         {c.profiles.username}
-                        {c.profiles.is_verified && <Image src="/verified.svg" alt="verified" width={12} height={12} />}
-                        {c.profiles.is_mod && <Image src="/mod.svg" alt="mod" width={12} height={12} />}
+                        {c.profiles.is_verified && <Image src="/verified.svg" alt="verified" title="VERIFIED USER" width={12} height={12} />}
+                        {c.profiles.is_mod && <Image src="/mod.svg" alt="mod" title="VERIFIED ADMIN" width={12} height={12} />}
                         {c.edited && <span className="text-xs text-gray-500">[edited]</span>}
                       </p>
                       {editComment?.id === c.id ? (
@@ -331,8 +331,8 @@ export default function WatchPageClient({ id }: { id: string }) {
                 <p className="text-sm font-semibold line-clamp-2">{v.title}</p>
                 <div className="flex items-center gap-1 text-xs text-gray-500">
                   {v.profiles.channel_name || v.profiles.username}
-                  {v.profiles.is_verified && <Image src="/verified.svg" alt="verified" width={10} height={10} />}
-                  {v.profiles.is_mod && <Image src="/mod.svg" alt="mod" width={10} height={10} />}
+                  {v.profiles.is_verified && <Image src="/verified.svg" alt="verified" title="VERIFIED USER" width={10} height={10} />}
+                  {v.profiles.is_mod && <Image src="/mod.svg" alt="mod" title="VERIFIED ADMIN" width={10} height={10} />}
                 </div>
                 <p className="text-xs text-gray-500">{v.views} views</p>
               </div>
