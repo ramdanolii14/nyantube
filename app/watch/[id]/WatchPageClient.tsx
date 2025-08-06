@@ -46,6 +46,22 @@ export default function WatchPageClient({ id }: { id: string }) {
   const [userVote, setUserVote] = useState<"like" | "dislike" | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
+  // error state + fade
+  const [commentError, setCommentError] = useState<string | null>(null);
+  const [fadeOut, setFadeOut] = useState(false);
+
+  useEffect(() => {
+    if (commentError) {
+      setFadeOut(false);
+      const fadeTimer = setTimeout(() => setFadeOut(true), 4500);
+      const removeTimer = setTimeout(() => setCommentError(null), 5000);
+      return () => {
+        clearTimeout(fadeTimer);
+        clearTimeout(removeTimer);
+      };
+    }
+  }, [commentError]);
+
   useEffect(() => {
     if (!id) return;
 
@@ -58,10 +74,7 @@ export default function WatchPageClient({ id }: { id: string }) {
 
       if (videoData) {
         setVideo(videoData);
-        await supabase
-          .from("videos")
-          .update({ views: (videoData.views || 0) + 1 })
-          .eq("id", id);
+        await supabase.from("videos").update({ views: (videoData.views || 0) + 1 }).eq("id", id);
       }
 
       const { data: relatedData } = await supabase
@@ -69,7 +82,6 @@ export default function WatchPageClient({ id }: { id: string }) {
         .select("*, profiles(id, username, avatar_url, channel_name, is_verified, is_mod)")
         .neq("id", id)
         .limit(10);
-
       setRelatedVideos(relatedData || []);
 
       const { data: commentData } = await supabase
@@ -78,20 +90,14 @@ export default function WatchPageClient({ id }: { id: string }) {
         .eq("video_id", id)
         .order("created_at", { ascending: false })
         .limit(50);
-
       setComments(commentData || []);
 
       const { data: authData } = await supabase.auth.getUser();
       setCurrentUserId(authData.user?.id || null);
 
-      const { data: likesData } = await supabase
-        .from("video_likes")
-        .select("type, user_id")
-        .eq("video_id", id);
-
+      const { data: likesData } = await supabase.from("video_likes").select("type, user_id").eq("video_id", id);
       setLikes(likesData?.filter((v) => v.type === "like").length || 0);
       setDislikes(likesData?.filter((v) => v.type === "dislike").length || 0);
-
       const current = likesData?.find((v) => v.user_id === currentUserId);
       setUserVote(current ? (current.type as "like" | "dislike") : null);
     };
@@ -105,12 +111,26 @@ export default function WatchPageClient({ id }: { id: string }) {
       .select("*, profiles(id, username, avatar_url, is_verified, is_mod)")
       .eq("video_id", id)
       .order("created_at", { ascending: false });
-
     setComments(data || []);
   };
 
   const handleAddComment = async () => {
     if (!currentUserId || !newComment.trim()) return;
+
+    // cek limit 2 komentar / jam
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    const { count } = await supabase
+      .from("comments")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", currentUserId)
+      .gte("created_at", oneHourAgo);
+
+    if ((count ?? 0) >= 2) {
+      setCommentError("You can only post 2 comments per hour.");
+      return;
+    }
+
+    setCommentError(null);
     await supabase.from("comments").insert({
       video_id: id,
       content: newComment,
@@ -127,10 +147,7 @@ export default function WatchPageClient({ id }: { id: string }) {
 
   const handleEditComment = async () => {
     if (!editComment || !editComment.content.trim()) return;
-    await supabase
-      .from("comments")
-      .update({ content: editComment.content, edited: true })
-      .eq("id", editComment.id);
+    await supabase.from("comments").update({ content: editComment.content, edited: true }).eq("id", editComment.id);
     setEditComment(null);
     refreshComments();
   };
@@ -138,20 +155,12 @@ export default function WatchPageClient({ id }: { id: string }) {
   const handleVote = async (type: "like" | "dislike") => {
     if (!currentUserId) return;
     if (userVote === type) {
-      await supabase
-        .from("video_likes")
-        .delete()
-        .eq("video_id", id)
-        .eq("user_id", currentUserId);
+      await supabase.from("video_likes").delete().eq("video_id", id).eq("user_id", currentUserId);
       if (type === "like") setLikes((p) => p - 1);
       else setDislikes((p) => p - 1);
       setUserVote(null);
     } else {
-      await supabase.from("video_likes").upsert({
-        video_id: id,
-        user_id: currentUserId,
-        type,
-      });
+      await supabase.from("video_likes").upsert({ video_id: id, user_id: currentUserId, type });
       if (type === "like") {
         if (userVote === "dislike") setDislikes((p) => p - 1);
         setLikes((p) => p + 1);
@@ -168,7 +177,6 @@ export default function WatchPageClient({ id }: { id: string }) {
   return (
     <div className="w-full bg-white-50 mt-24 pb-10">
       <div className="max-w-6xl mx-auto px-4 md:px-6 flex flex-col md:flex-row gap-6">
-        {/* Video Section */}
         <div className="flex-1 max-w-3xl">
           <div className="relative w-full bg-black rounded-lg overflow-hidden aspect-video">
             <video
@@ -197,12 +205,8 @@ export default function WatchPageClient({ id }: { id: string }) {
             <div className="flex-1">
               <Link href={`/${video.profiles.username}`} className="font-semibold hover:underline flex items-center gap-1">
                 {video.profiles.channel_name || video.profiles.username}
-                {video.profiles.is_verified && (
-                  <Image src="/verified.svg" alt="verified" width={14} height={14} title="Verified User" />
-                )}
-                {video.profiles.is_mod && (
-                  <Image src="/mod.svg" alt="mod" width={14} height={14} title="Verified Admin" />
-                )}
+                {video.profiles.is_verified && <Image src="/verified.svg" alt="verified" width={14} height={14} />}
+                {video.profiles.is_mod && <Image src="/mod.svg" alt="mod" width={14} height={14} />}
               </Link>
               <p className="text-sm text-gray-500">
                 {video.views} views • {new Date(video.created_at).toLocaleString()}
@@ -211,13 +215,17 @@ export default function WatchPageClient({ id }: { id: string }) {
             <div className="flex items-center gap-3">
               <button
                 onClick={() => handleVote("like")}
-                className={`flex items-center gap-1 px-2 py-1 rounded ${userVote === "like" ? "bg-blue-100 text-blue-600" : "bg-gray-100 text-gray-600"}`}
+                className={`flex items-center gap-1 px-2 py-1 rounded ${
+                  userVote === "like" ? "bg-blue-100 text-blue-600" : "bg-gray-100 text-gray-600"
+                }`}
               >
                 👍 {likes}
               </button>
               <button
                 onClick={() => handleVote("dislike")}
-                className={`flex items-center gap-1 px-2 py-1 rounded ${userVote === "dislike" ? "bg-red-100 text-red-600" : "bg-gray-100 text-gray-600"}`}
+                className={`flex items-center gap-1 px-2 py-1 rounded ${
+                  userVote === "dislike" ? "bg-red-100 text-red-600" : "bg-gray-100 text-gray-600"
+                }`}
               >
                 👎 {dislikes}
               </button>
@@ -229,17 +237,32 @@ export default function WatchPageClient({ id }: { id: string }) {
           {/* Comments */}
           <div className="mt-6">
             <h2 className="font-semibold mb-3">Comments ({comments.length})</h2>
-            <div className="flex gap-2 mb-4">
-              <input
-                type="text"
-                value={newComment}
-                onChange={(e) => setNewComment(e.target.value)}
-                placeholder="Add a comment..."
-                className="flex-1 border rounded px-3 py-2"
-              />
-              <button onClick={handleAddComment} className="bg-red-500 text-white px-4 py-2 rounded">
-                Post
-              </button>
+
+            <div className="flex flex-col gap-1 mb-4">
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
+                  placeholder="Add a comment..."
+                  className="flex-1 border rounded px-3 py-2"
+                />
+                <button onClick={handleAddComment} className="bg-red-500 text-white px-4 py-2 rounded">
+                  Post
+                </button>
+              </div>
+              {commentError && (
+                <div
+                  className={`flex items-center gap-2 bg-red-100 border border-red-400 text-red-700 px-3 py-2 rounded transition-all duration-500 ${
+                    fadeOut ? "opacity-0 -translate-y-1" : "opacity-100 translate-y-0"
+                  }`}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M4.34 16l6.928-12a2 2 0 013.464 0l6.928 12a2 2 0 01-1.732 3H6.072a2 2 0 01-1.732-3z" />
+                  </svg>
+                  <span className="text-sm">{commentError}</span>
+                </div>
+              )}
             </div>
 
             {comments.map((c) => {
@@ -263,12 +286,8 @@ export default function WatchPageClient({ id }: { id: string }) {
                     <div>
                       <p className="font-semibold flex items-center gap-1">
                         {c.profiles.username}
-                        {c.profiles.is_verified && (
-                          <Image src="/verified.svg" alt="verified" width={12} height={12} title="Verified User" />
-                        )}
-                        {c.profiles.is_mod && (
-                          <Image src="/mod.svg" alt="mod" width={12} height={12} title="Verified Admin" />
-                        )}
+                        {c.profiles.is_verified && <Image src="/verified.svg" alt="verified" width={12} height={12} />}
+                        {c.profiles.is_mod && <Image src="/mod.svg" alt="mod" width={12} height={12} />}
                         {c.edited && <span className="text-xs text-gray-500">[edited]</span>}
                       </p>
                       {editComment?.id === c.id ? (
@@ -279,22 +298,15 @@ export default function WatchPageClient({ id }: { id: string }) {
                             onChange={(e) => setEditComment({ ...editComment, content: e.target.value })}
                             className="border px-2 py-1 rounded text-sm"
                           />
-                          <button onClick={handleEditComment} className="text-blue-500 text-sm">
-                            Save
-                          </button>
-                          <button onClick={() => setEditComment(null)} className="text-gray-500 text-sm">
-                            Cancel
-                          </button>
+                          <button onClick={handleEditComment} className="text-blue-500 text-sm">Save</button>
+                          <button onClick={() => setEditComment(null)} className="text-gray-500 text-sm">Cancel</button>
                         </div>
                       ) : (
                         <p>{c.content}</p>
                       )}
-
                       {isOwner && (
                         <div className="flex gap-3 text-xs text-gray-500 mt-1">
-                          <button onClick={() => handleDeleteComment(c.id)} className="text-red-500">
-                            Delete
-                          </button>
+                          <button onClick={() => handleDeleteComment(c.id)} className="text-red-500">Delete</button>
                         </div>
                       )}
                     </div>
@@ -322,12 +334,8 @@ export default function WatchPageClient({ id }: { id: string }) {
                 <p className="text-sm font-semibold line-clamp-2">{v.title}</p>
                 <div className="flex items-center gap-1 text-xs text-gray-500">
                   {v.profiles.channel_name || v.profiles.username}
-                  {v.profiles.is_verified && (
-                    <Image src="/verified.svg" alt="verified" width={10} height={10} title="Verified User" />
-                  )}
-                  {v.profiles.is_mod && (
-                    <Image src="/mod.svg" alt="mod" width={10} height={10} title="Verified Admin" />
-                  )}
+                  {v.profiles.is_verified && <Image src="/verified.svg" alt="verified" width={10} height={10} />}
+                  {v.profiles.is_mod && <Image src="/mod.svg" alt="mod" width={10} height={10} />}
                 </div>
                 <p className="text-xs text-gray-500">{v.views} views</p>
               </div>
