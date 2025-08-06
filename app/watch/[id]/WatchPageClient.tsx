@@ -273,10 +273,11 @@ export default function WatchPageClient({ id }: { id: string }) {
                     <Link href={`/${c.profiles.username}`}>
                       <Image
                         src={
-                          c.profiles.avatar_url
-                            ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${c.profiles.avatar_url}`
-                            : `https://ui-avatars.com/api/?name=${c.profiles.username}`
-                        }
+                          src={
+                            c.profiles.avatar_url
+                              ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${c.profiles.avatar_url}`
+                              : `https://ui-avatars.com/api/?name=${c.profiles.channel_name || c.profiles.username}`
+                          }
                         alt="avatar"
                         width={32}
                         height={32}
