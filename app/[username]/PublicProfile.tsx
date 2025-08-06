@@ -36,6 +36,10 @@ export default function PublicProfilePage({ username }: { username: string }) {
   const [popupType, setPopupType] = useState<"success" | "error">("success");
   const [fadeOut, setFadeOut] = useState(false);
 
+  // Confirm delete modal
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [videoToDelete, setVideoToDelete] = useState<Video | null>(null);
+
   useEffect(() => {
     if (popupMessage) {
       setFadeOut(false);
@@ -105,28 +109,35 @@ export default function PublicProfilePage({ username }: { username: string }) {
     }
   }, [profile]);
 
-  const handleDeleteVideo = async (video: Video) => {
-    const confirmDelete = confirm("Yakin ingin menghapus video ini?");
-    if (!confirmDelete) return;
+  const confirmDeleteVideo = (video: Video) => {
+    setVideoToDelete(video);
+    setShowConfirmModal(true);
+  };
 
-    const { error } = await supabase.from("videos").delete().eq("id", video.id);
+  const handleDeleteVideo = async () => {
+    if (!videoToDelete) return;
+
+    const { error } = await supabase.from("videos").delete().eq("id", videoToDelete.id);
     if (error) {
       setPopupType("error");
       setPopupMessage("Gagal menghapus video!");
+      setShowConfirmModal(false);
       return;
     }
 
-    if (video.video_url) {
-      await supabase.storage.from("videos").remove([video.video_url]);
+    if (videoToDelete.video_url) {
+      await supabase.storage.from("videos").remove([videoToDelete.video_url]);
     }
 
-    if (video.thumbnail_url) {
-      await supabase.storage.from("thumbnails").remove([video.thumbnail_url]);
+    if (videoToDelete.thumbnail_url) {
+      await supabase.storage.from("thumbnails").remove([videoToDelete.thumbnail_url]);
     }
 
-    setVideos((prev) => prev.filter((v) => v.id !== video.id));
+    setVideos((prev) => prev.filter((v) => v.id !== videoToDelete.id));
     setPopupType("success");
     setPopupMessage("Video berhasil dihapus!");
+    setShowConfirmModal(false);
+    setVideoToDelete(null);
   };
 
   if (!profile) {
@@ -162,6 +173,35 @@ export default function PublicProfilePage({ username }: { username: string }) {
           }`}
         >
           {popupMessage}
+        </div>
+      )}
+
+      {/* Confirm Delete Modal */}
+      {showConfirmModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded shadow-lg max-w-sm w-full">
+            <h2 className="text-lg font-semibold mb-2">Confirm Deletion</h2>
+            <p className="text-gray-600 mb-4">
+              Are you sure you want to delete this video? <br />
+              <span className="text-red-500">
+                We can't restore your video if you confirm the deletion.
+              </span>
+            </p>
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setShowConfirmModal(false)}
+                className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteVideo}
+                className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -245,7 +285,7 @@ export default function PublicProfilePage({ username }: { username: string }) {
 
                 {canDelete && (
                   <button
-                    onClick={() => handleDeleteVideo(v)}
+                    onClick={() => confirmDeleteVideo(v)}
                     className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded hover:bg-red-600 opacity-0 group-hover:opacity-100 transition"
                     title="Hapus Video"
                   >
