@@ -49,9 +49,6 @@ export default function WatchPageClient({ id }: { id: string }) {
   const [commentError, setCommentError] = useState<string | null>(null);
   const [fadeOut, setFadeOut] = useState(false);
 
-  // State modal
-  const [deleteModal, setDeleteModal] = useState<{ open: boolean; commentId: string | null }>({ open: false, commentId: null });
-
   const getAvatarUrl = (avatar_url: string | null, name: string) => {
     return avatar_url
       ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${avatar_url}`
@@ -149,7 +146,6 @@ export default function WatchPageClient({ id }: { id: string }) {
 
   const handleDeleteComment = async (commentId: string) => {
     await supabase.from("comments").delete().eq("id", commentId);
-    setDeleteModal({ open: false, commentId: null });
     refreshComments();
   };
 
@@ -186,14 +182,59 @@ export default function WatchPageClient({ id }: { id: string }) {
     <div className="w-full bg-white-50 mt-24 pb-10">
       <div className="max-w-6xl mx-auto px-4 md:px-6 flex flex-col md:flex-row gap-6">
         <div className="flex-1 max-w-3xl">
-          {/* ... Video Player & Like buttons (sama seperti sebelumnya) ... */}
+          <div className="relative w-full bg-black rounded-lg overflow-hidden aspect-video">
+            <video
+              src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/videos/${video.video_url}`}
+              controls
+              className="w-full h-full object-contain"
+            />
+          </div>
+          <h1 className="text-xl font-bold mt-4 mb-2">{video.title}</h1>
+
+          {/* Like & Channel */}
+          <div className="flex items-center gap-3 mb-4">
+            <Link href={`/${video.profiles.username}`}>
+              <Image
+                src={getAvatarUrl(video.profiles.avatar_url, video.profiles.channel_name || video.profiles.username)}
+                alt="avatar"
+                width={40}
+                height={40}
+                className="rounded-full w-10 h-10 object-cover"
+              />
+            </Link>
+            <div className="flex-1">
+              <Link href={`/${video.profiles.username}`} className="font-semibold hover:underline flex items-center gap-1">
+                {video.profiles.channel_name || video.profiles.username}
+                {video.profiles.is_verified && <Image src="/verified.svg" alt="verified" title="VERIFIED USER" width={14} height={14} />}
+                {video.profiles.is_mod && <Image src="/mod.svg" alt="mod" title="VERIFIED ADMIN" width={14} height={14} />}
+              </Link>
+              <p className="text-sm text-gray-500">
+                {video.views} views • {new Date(video.created_at).toLocaleString()}
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => handleVote("like")}
+                className={`flex items-center gap-1 px-2 py-1 rounded ${userVote === "like" ? "bg-blue-100 text-blue-600" : "bg-gray-100 text-gray-600"}`}
+              >
+                👍 {likes}
+              </button>
+              <button
+                onClick={() => handleVote("dislike")}
+                className={`flex items-center gap-1 px-2 py-1 rounded ${userVote === "dislike" ? "bg-red-100 text-red-600" : "bg-gray-100 text-gray-600"}`}
+              >
+                👎 {dislikes}
+              </button>
+            </div>
+          </div>
+
+          <p className="mb-6">{video.description}</p>
 
           {/* Comments */}
           <div className="mt-6">
             <h2 className="font-semibold mb-3">Comments ({comments.length})</h2>
 
             <div className="flex flex-col gap-1 mb-4">
-              {/* Input komentar */}
               <div className="flex gap-2">
                 <input
                   type="text"
@@ -206,6 +247,18 @@ export default function WatchPageClient({ id }: { id: string }) {
                   Post
                 </button>
               </div>
+              {commentError && (
+                <div
+                  className={`flex items-center gap-2 bg-red-100 border border-red-400 text-red-700 px-3 py-2 rounded transition-all duration-500 ${
+                    fadeOut ? "opacity-0 -translate-y-1" : "opacity-100 translate-y-0"
+                  }`}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M4.34 16l6.928-12a2 2 0 013.464 0l6.928 12a2 2 0 01-1.732 3H6.072a2 2 0 01-1.732-3z" />
+                  </svg>
+                  <span className="text-sm">{commentError}</span>
+                </div>
+              )}
             </div>
 
             {comments.map((c) => {
@@ -227,16 +280,27 @@ export default function WatchPageClient({ id }: { id: string }) {
                     <div>
                       <Link href={`/${c.profiles.username}`} className="font-semibold hover:underline flex items-center gap-1">
                         {c.profiles.channel_name || c.profiles.username}
+                        {c.profiles.is_verified && <Image src="/verified.svg" alt="verified" title="VERIFIED USER" width={12} height={12} />}
+                        {c.profiles.is_mod && <Image src="/mod.svg" alt="mod" title="VERIFIED ADMIN" width={12} height={12} />}
                       </Link>
-                      <p>{c.content}</p>
+                      {c.edited && <span className="text-xs text-gray-500 ml-1">[edited]</span>}
+                      {editComment?.id === c.id ? (
+                        <div className="flex gap-2 mt-1">
+                          <input
+                            type="text"
+                            value={editComment.content}
+                            onChange={(e) => setEditComment({ ...editComment, content: e.target.value })}
+                            className="border px-2 py-1 rounded text-sm"
+                          />
+                          <button onClick={handleEditComment} className="text-blue-500 text-sm">Save</button>
+                          <button onClick={() => setEditComment(null)} className="text-gray-500 text-sm">Cancel</button>
+                        </div>
+                      ) : (
+                        <p>{c.content}</p>
+                      )}
                       {canDelete && (
                         <div className="flex gap-3 text-xs text-gray-500 mt-1">
-                          <button
-                            onClick={() => setDeleteModal({ open: true, commentId: c.id })}
-                            className="text-red-500"
-                          >
-                            Delete
-                          </button>
+                          <button onClick={() => handleDeleteComment(c.id)} className="text-red-500">Delete</button>
                         </div>
                       )}
                     </div>
@@ -247,29 +311,31 @@ export default function WatchPageClient({ id }: { id: string }) {
           </div>
         </div>
 
-        {/* Modal Konfirmasi */}
-        {deleteModal.open && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg shadow-lg p-6 w-80">
-              <h3 className="text-lg font-semibold mb-4">Delete Comment</h3>
-              <p className="text-sm mb-6">Are you sure you want to delete this comment?</p>
-              <div className="flex justify-end gap-3">
-                <button
-                  onClick={() => setDeleteModal({ open: false, commentId: null })}
-                  className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => deleteModal.commentId && handleDeleteComment(deleteModal.commentId)}
-                  className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
-                >
-                  Yes, Delete
-                </button>
+        {/* Related Videos */}
+        <div className="w-full md:w-72">
+          <h2 className="font-semibold mb-3">Related Videos</h2>
+          {relatedVideos.map((v) => (
+            <Link key={v.id} href={`/watch/${v.id}`} className="flex gap-2 mb-3 hover:bg-gray-100 p-1 rounded">
+              <div className="relative w-32 h-20 bg-gray-200 rounded-md overflow-hidden">
+                <Image
+                  src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/thumbnails/${v.thumbnail_url}`}
+                  alt={v.title}
+                  fill
+                  className="object-cover"
+                />
               </div>
-            </div>
-          </div>
-        )}
+              <div className="flex-1">
+                <p className="text-sm font-semibold line-clamp-2">{v.title}</p>
+                <div className="flex items-center gap-1 text-xs text-gray-500">
+                  {v.profiles.channel_name || v.profiles.username}
+                  {v.profiles.is_verified && <Image src="/verified.svg" alt="verified" title="VERIFIED USER" width={10} height={10} />}
+                  {v.profiles.is_mod && <Image src="/mod.svg" alt="mod" title="VERIFIED ADMIN" width={10} height={10} />}
+                </div>
+                <p className="text-xs text-gray-500">{v.views} views</p>
+              </div>
+            </Link>
+          ))}
+        </div>
       </div>
     </div>
   );
