@@ -31,8 +31,9 @@ export default function PublicProfilePage({ username }: { username: string }) {
   const [isMod, setIsMod] = useState<boolean>(false);
   const [avatarSrc, setAvatarSrc] = useState<string>("");
 
-  // Untuk popup message
+  // Popup message
   const [popupMessage, setPopupMessage] = useState<string | null>(null);
+  const [popupType, setPopupType] = useState<"success" | "error">("success");
   const [fadeOut, setFadeOut] = useState(false);
 
   useEffect(() => {
@@ -110,6 +111,7 @@ export default function PublicProfilePage({ username }: { username: string }) {
 
     const { error } = await supabase.from("videos").delete().eq("id", video.id);
     if (error) {
+      setPopupType("error");
       setPopupMessage("Gagal menghapus video!");
       return;
     }
@@ -123,6 +125,7 @@ export default function PublicProfilePage({ username }: { username: string }) {
     }
 
     setVideos((prev) => prev.filter((v) => v.id !== video.id));
+    setPopupType("success");
     setPopupMessage("Video berhasil dihapus!");
   };
 
@@ -150,7 +153,11 @@ export default function PublicProfilePage({ username }: { username: string }) {
       {/* Popup Notification */}
       {popupMessage && (
         <div
-          className={`fixed top-20 left-1/2 transform -translate-x-1/2 bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded shadow-lg transition-all duration-500 ${
+          className={`fixed top-20 left-1/2 transform -translate-x-1/2 ${
+            popupType === "success"
+              ? "bg-green-100 border border-green-400 text-green-700"
+              : "bg-red-100 border border-red-400 text-red-700"
+          } px-4 py-2 rounded shadow-lg transition-all duration-500 ${
             fadeOut ? "opacity-0 -translate-y-1" : "opacity-100 translate-y-0"
           }`}
         >
