@@ -1,10 +1,6 @@
 export function timeAgo(dateString: string): string {
   const now = new Date();
-  const past = new Date(dateString.replace(" ", "T"));
-
-  console.log("⏰ NOW:", now.toISOString());
-  console.log("📅 PAST:", past.toISOString());
-  console.log("🕒 Selisih detik:", Math.floor((now.getTime() - past.getTime()) / 1000));
+  const past = new Date(dateString);
 
   const seconds = Math.floor((now.getTime() - past.getTime()) / 1000);
 
