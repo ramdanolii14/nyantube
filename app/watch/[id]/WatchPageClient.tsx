@@ -259,7 +259,7 @@ export default function WatchPageClient({ id }: { id: string }) {
             </div>
           </div>
 
-          <p className="mb-6">{video.description}</p>
+          <p className="mb-6 text-sm text-gray-800 break-words">{video.description}</p>
 
           {/* Comments */}
           <div className="mt-6">
