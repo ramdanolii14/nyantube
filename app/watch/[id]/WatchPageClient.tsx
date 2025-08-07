@@ -205,7 +205,7 @@ export default function WatchPageClient({ id }: { id: string }) {
 
   if (!video) {
     return <p className="text-center mt-10">Loading...</p>;
-}
+  }
 
   return (
     <div className="w-full bg-white-50 mt-24 pb-10">
@@ -220,9 +220,8 @@ export default function WatchPageClient({ id }: { id: string }) {
           </div>
           <h1 className="text-xl font-bold mt-4 mb-2">{video.title}</h1>
 
-          {/* Like & Channel */}
           <div className="flex items-center gap-3 mb-4">
-            <Link href={/${video.profiles.username}}>
+            <Link href={`/${video.profiles.username}`}>
               <Image
                 src={getAvatarUrl(video.profiles.avatar_url, video.profiles.channel_name || video.profiles.username)}
                 alt="avatar"
@@ -233,7 +232,7 @@ export default function WatchPageClient({ id }: { id: string }) {
             </Link>
             <div className="flex-1">
               <Link
-                href={/${video.profiles.username}}
+                href={`/${video.profiles.username}`}
                 className="font-semibold hover:underline flex items-center gap-1"
               >
                 {video.profiles.channel_name || video.profiles.username}
@@ -248,13 +247,17 @@ export default function WatchPageClient({ id }: { id: string }) {
             <div className="flex items-center gap-3">
               <button
                 onClick={() => handleVote("like")}
-                className={flex items-center gap-1 px-2 py-1 rounded ${userVote === "like" ? "bg-blue-100 text-blue-600" : "bg-gray-100 text-gray-600"}}
+                className={`flex items-center gap-1 px-2 py-1 rounded ${
+                  userVote === "like" ? "bg-blue-100 text-blue-600" : "bg-gray-100 text-gray-600"
+                }`}
               >
                 👍 {likes}
               </button>
               <button
                 onClick={() => handleVote("dislike")}
-                className={flex items-center gap-1 px-2 py-1 rounded ${userVote === "dislike" ? "bg-red-100 text-red-600" : "bg-gray-100 text-gray-600"}}
+                className={`flex items-center gap-1 px-2 py-1 rounded ${
+                  userVote === "dislike" ? "bg-red-100 text-red-600" : "bg-gray-100 text-gray-600"
+                }`}
               >
                 👎 {dislikes}
               </button>
@@ -263,7 +266,6 @@ export default function WatchPageClient({ id }: { id: string }) {
 
           <p className="mb-6 text-sm text-gray-800 break-words whitespace-pre-line">{video.description}</p>
 
-          {/* Comments */}
           <div className="mt-6 break-words">
             <h2 className="font-semibold mb-3 break-words">Comments ({comments.length})</h2>
 
@@ -282,9 +284,9 @@ export default function WatchPageClient({ id }: { id: string }) {
               </div>
               {commentError && (
                 <div
-                  className={flex items-center gap-2 bg-red-100 border border-red-400 text-red-700 px-3 py-2 rounded transition-all duration-500 ${
+                  className={`flex items-center gap-2 bg-red-100 border border-red-400 text-red-700 px-3 py-2 rounded transition-all duration-500 ${
                     fadeOut ? "opacity-0 -translate-y-1" : "opacity-100 translate-y-0"
-                  }}
+                  }`}
                 >
                   <span className="text-sm">{commentError}</span>
                 </div>
@@ -298,7 +300,7 @@ export default function WatchPageClient({ id }: { id: string }) {
               return (
                 <div key={c.id} className="mb-3">
                   <div className="flex gap-2">
-                    <Link href={/${c.profiles.username}}>
+                    <Link href={`/${c.profiles.username}`}>
                       <Image
                         src={getAvatarUrl(c.profiles.avatar_url, c.profiles.channel_name || c.profiles.username)}
                         alt="avatar"
@@ -308,7 +310,7 @@ export default function WatchPageClient({ id }: { id: string }) {
                       />
                     </Link>
                     <div>
-                      <Link href={/${c.profiles.username}} className="font-semibold hover:underline flex items-center gap-1">
+                      <Link href={`/${c.profiles.username}`} className="font-semibold hover:underline flex items-center gap-1">
                         {c.profiles.channel_name || c.profiles.username}
                         {c.profiles.is_verified && <Image src="/verified.svg" alt="verified" title="AKUN TERVERIFIKASI" width={12} height={12} />}
                         {c.profiles.is_mod && <Image src="/mod.svg" alt="mod" title="TERVERIFIKASI ADMIN" width={12} height={12} />}
@@ -345,14 +347,13 @@ export default function WatchPageClient({ id }: { id: string }) {
           </div>
         </div>
 
-        {/* Related Videos */}
         <div className="w-full md:w-72">
           <h2 className="font-semibold mb-3">Related Videos</h2>
           {relatedVideos.map((v) => (
-            <Link key={v.id} href={/watch/${v.id}} className="flex gap-2 mb-3 hover:bg-gray-100 p-1 rounded">
+            <Link key={v.id} href={`/watch/${v.id}`} className="flex gap-2 mb-3 hover:bg-gray-100 p-1 rounded">
               <div className="relative w-32 h-20 bg-gray-200 rounded-md overflow-hidden">
                 <Image
-                  src={${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/thumbnails/${v.thumbnail_url}}
+                  src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/thumbnails/${v.thumbnail_url}`}
                   alt={v.title}
                   fill
                   className="object-cover"
@@ -372,7 +373,6 @@ export default function WatchPageClient({ id }: { id: string }) {
         </div>
       </div>
 
-      {/* Popup Konfirmasi Delete */}
       {confirmDeleteId && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
           <div className="bg-white rounded-lg p-6 shadow-lg w-80">
