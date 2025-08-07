@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/supabase/client";
 import { timeAgo } from "@/lib/timeAgo";
 import Image from "next/image";
@@ -333,6 +333,12 @@ export default function WatchPageClient({ id }: { id: string }) {
                           <button onClick={() => setConfirmDeleteId(c.id)} className="bg-red-500 text-white px-3 py-1 rounded w-20 text-center">
                             Delete
                           </button>
+                          <button
+                            onClick={() => setConfirmDeleteId(c.id)}
+                            className="bg-red-500 text-white px-3 py-1 rounded w-20 text-center"
+                          >
+                            Delete
+                        </button>
                         </div>
                       )}
                     </div>
