@@ -1,6 +1,6 @@
 export function timeAgo(dateString: string): string {
   const now = new Date();
-  const past = new Date(dateString + "Z");
+  const past = new Date(dateString.replace(" ", "T"));
 
   console.log("⏰ NOW:", now.toISOString());
   console.log("📅 PAST:", past.toISOString());
