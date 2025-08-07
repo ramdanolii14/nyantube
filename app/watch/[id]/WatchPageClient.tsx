@@ -139,6 +139,11 @@ export default function WatchPageClient({ id }: { id: string }) {
   const handleAddComment = async () => {
     if (!currentUserId || !newComment.trim()) return;
 
+    if (newComment.length > 110) {
+      setCommentError("Komentar tidak boleh lebih dari 110 karakter.");
+    return;
+  }
+
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
     const { count } = await supabase
       .from("comments")
@@ -274,7 +279,11 @@ export default function WatchPageClient({ id }: { id: string }) {
                 <input
                   type="text"
                   value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
+                    onChange={(e) => {
+                      if (e.target.value.length <= 110) {
+                          setNewComment(e.target.value);
+                        }
+                    }}
                   placeholder="Add a comment..."
                   className="flex-1 border rounded px-3 py-2"
                 />
