@@ -63,15 +63,18 @@ export default function AuthPage() {
     setMessage("");
 
     try {
-      // ✅ Ambil IP dari API
+      // Ambil IP dari API
       const res = await fetch("/api/get-ip");
       const { ip } = await res.json();
 
-      // ✅ Hitung jumlah register dari IP
+      // Hitung jumlah pendaftaran hari ini dari IP ini
+      const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
       const { count, error: countError } = await supabase
         .from("ip_registers")
         .select("*", { count: "exact", head: true })
-        .eq("ip_address", ip);
+        .eq("ip_address", ip)
+        .gte("created_at", `${today}T00:00:00.000Z`)
+        .lt("created_at", `${today}T23:59:59.999Z`);
 
       if (countError) {
         setMessage("❌ Gagal memeriksa IP.");
@@ -80,12 +83,12 @@ export default function AuthPage() {
       }
 
       if (count >= 2) {
-        setMessage("❌ Batas pendaftaran dari IP ini sudah tercapai (maks 2 akun).");
+        setMessage("❌ Batas pendaftaran harian dari IP ini sudah tercapai (maks 2 akun per hari).");
         setLoading(false);
         return;
       }
 
-      // ✅ Proses signup
+      // Proses signup
       const { data, error } = await supabase.auth.signUp({ email, password });
 
       if (error) {
@@ -99,7 +102,7 @@ export default function AuthPage() {
           })
           .eq("id", data.user.id);
 
-        // ✅ Simpan IP pendaftaran
+        // Simpan IP ke database
         await supabase.from("ip_registers").insert({
           ip_address: ip,
         });
