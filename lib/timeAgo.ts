@@ -1,6 +1,6 @@
 export function timeAgo(dateString: string): string {
   const now = new Date();
-  const past = new Date(dateString + "Z");
+  const past = new Date(dateString + "Z"); // 👉 Treat timestamp as UTC
   const seconds = Math.floor((now.getTime() - past.getTime()) / 1000);
 
   if (seconds < 60) return "just now";
