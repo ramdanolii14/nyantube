@@ -108,7 +108,7 @@ export default function WatchPageClient({ id }: { id: string }) {
 
       const { data: commentData } = await supabase
         .from("comments")
-        .select("*, profiles(id, username, avatar_url, channel_name, is_verified, is_mod, is_bughunter)")
+        .select("*, profiles(id, username, avatar_url, channel_name, created_at, is_verified, is_mod, is_bughunter)")
         .eq("video_id", id)
         .order("created_at", { ascending: false })
         .limit(50);
@@ -240,7 +240,7 @@ export default function WatchPageClient({ id }: { id: string }) {
                 {video.profiles.is_bughunter && <Image src="/bughunter.svg" alt="bughunter" title="TERVERIFIKASI BUGHUNTER" width={14} height={14} />}
               </Link>
               <p className="text-sm text-gray-500">
-                {video.views} views • {timeAgo(video.created_at)}
+                {video.views} views • <p className="text-sm text-gray-500">{video.created_at}</p>
               </p>
             </div>
             <div className="flex items-center gap-3">
@@ -312,9 +312,6 @@ export default function WatchPageClient({ id }: { id: string }) {
                         {c.profiles.is_mod && <Image src="/mod.svg" alt="mod" title="TERVERIFIKASI ADMIN" width={12} height={12} />}
                         {c.profiles.is_bughunter && <Image src="/bughunter.svg" alt="bughunter" title="TERVERIFIKASI BUGHUNTER" width={12} height={12} />}
                       </Link>
-                        <p className="text-sm text-gray-500">
-                          {timeAgo(comment.created_at)}
-                        </p>
                       {c.edited && <span className="text-xs text-gray-500 ml-1">[edited]</span>}
                       {editComment?.id === c.id ? (
                         <div className="flex gap-2 mt-1">
