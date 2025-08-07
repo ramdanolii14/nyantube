@@ -312,7 +312,7 @@ export default function WatchPageClient({ id }: { id: string }) {
                         {c.profiles.is_mod && <Image src="/mod.svg" alt="mod" title="TERVERIFIKASI ADMIN" width={12} height={12} />}
                         {c.profiles.is_bughunter && <Image src="/bughunter.svg" alt="bughunter" title="TERVERIFIKASI BUGHUNTER" width={12} height={12} />}
                       </Link>
-                      {timeAgo(comment.created_at)}
+                      {timeAgo(c.created_at)}
                       {c.edited && <span className="text-xs text-gray-500 ml-1">[edited]</span>}
                       {editComment?.id === c.id ? (
                         <div className="flex gap-2 mt-1">
