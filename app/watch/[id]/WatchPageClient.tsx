@@ -263,7 +263,7 @@ export default function WatchPageClient({ id }: { id: string }) {
 
           {/* Comments */}
           <div className="mt-6">
-            <h2 className="font-semibold mb-3">Comments ({comments.length})</h2>
+            <h2 className="font-semibold mb-3 break-words">Comments ({comments.length})</h2>
 
             <div className="flex flex-col gap-1 mb-4">
               <div className="flex gap-2">
