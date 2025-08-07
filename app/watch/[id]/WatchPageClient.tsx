@@ -326,7 +326,7 @@ export default function WatchPageClient({ id }: { id: string }) {
                           <button onClick={() => setEditComment(null)} className="text-gray-500 text-sm">Cancel</button>
                         </div>
                       ) : (
-                        <p> ClassName="break-words" {c.content}</p>
+                        <p ClassName="break-words">{c.content}</p>
                       )}
                       {canDelete && (
                         <div className="flex gap-3 text-xs text-gray-500 mt-1">
