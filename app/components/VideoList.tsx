@@ -6,6 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Listbox, Transition } from "@headlessui/react";
 import { Eye, Clock, Heart, History, ChevronsUpDown } from "lucide-react";
+import { timeAgo } from "@/lib/timeAgo";
 
 interface Video {
   id: string;
@@ -227,5 +228,6 @@ export default function VideoList() {
     </div>
   );
 }
+
 
 
