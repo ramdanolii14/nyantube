@@ -330,15 +330,15 @@ export default function WatchPageClient({ id }: { id: string }) {
                       )}
                       {canDelete && (
                         <div className="flex gap-3 text-xs text-gray-500 mt-1">
+                            <button
+                                onClick={() => setEditComment({ id: c.id, content: c.content })}
+                                className="bg-blue-500 text-white px-3 py-1 rounded w-20 text-center"
+                            >
+                            Edit
+                          </button>
                           <button onClick={() => setConfirmDeleteId(c.id)} className="bg-red-500 text-white px-3 py-1 rounded w-20 text-center">
                             Delete
                           </button>
-                          <button
-                            onClick={() => setConfirmDeleteId(c.id)}
-                            className="bg-red-500 text-white px-3 py-1 rounded w-20 text-center"
-                          >
-                            Delete
-                        </button>
                         </div>
                       )}
                     </div>
