@@ -161,7 +161,7 @@ export default function UploadPage() {
       <div className="mb-3">
         <label className="block font-medium mb-1">Description</label>
         <textarea
-          className="w-full border rounded p-2"
+          className="w-full border rounded p-2 break-words"
           rows={3}
           value={description}
           maxLength={255}
@@ -250,4 +250,5 @@ export default function UploadPage() {
     </div>
   );
 }
+
 
