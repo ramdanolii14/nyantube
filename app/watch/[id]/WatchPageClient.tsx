@@ -312,7 +312,7 @@ export default function WatchPageClient({ id }: { id: string }) {
                         {c.profiles.is_mod && <Image src="/mod.svg" alt="mod" title="TERVERIFIKASI ADMIN" width={12} height={12} />}
                         {c.profiles.is_bughunter && <Image src="/bughunter.svg" alt="bughunter" title="TERVERIFIKASI BUGHUNTER" width={12} height={12} />}
                       </Link>
-                      {timeAgo(c.created_at)}
+                      <span className="text-gray-500">· {timeAgo(c.created_at)}</span>
                       {c.edited && <span className="text-xs text-gray-500 ml-1">[edited]</span>}
                       {editComment?.id === c.id ? (
                         <div className="flex gap-2 mt-1">
@@ -363,7 +363,6 @@ export default function WatchPageClient({ id }: { id: string }) {
                   {v.profiles.is_verified && <Image src="/verified.svg" alt="verified" title="AKUN TERVERIFIKASI" width={10} height={10} />}
                   {v.profiles.is_mod && <Image src="/mod.svg" alt="mod" title="TERVERIFIKASI ADMIN" width={10} height={10} />}
                   {v.profiles.is_bughunter && <Image src="/bughunter.svg" alt="bughunter" title="TERVERIFIKASI BUGHUNTER" width={10} height={10} />}
-                  <span className="text-gray-500">· {timeAgo(c.created_at)}</span>
                 </div>
               </div>
             </Link>
