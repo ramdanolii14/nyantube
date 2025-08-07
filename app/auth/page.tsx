@@ -62,24 +62,55 @@ export default function AuthPage() {
     setLoading(true);
     setMessage("");
 
-    const { data, error } = await supabase.auth.signUp({ email, password });
+    try {
+      // ✅ Ambil IP dari API
+      const res = await fetch("/api/get-ip");
+      const { ip } = await res.json();
 
-    if (error) {
-      setMessage(`❌ ${error.message}`);
-    } else if (data.user) {
-      // ✅ Update profil sesuai input user (trigger sudah bikin row awal)
-      await supabase
-        .from("profiles")
-        .update({
-          username,
-          channel_name: channelName,
-        })
-        .eq("id", data.user.id);
+      // ✅ Hitung jumlah register dari IP
+      const { count, error: countError } = await supabase
+        .from("ip_registers")
+        .select("*", { count: "exact", head: true })
+        .eq("ip_address", ip);
 
-      setMessage("✅ Pendaftaran berhasil! Cek email untuk verifikasi.");
-      setMode("login");
-      setUsername("");
-      setChannelName("");
+      if (countError) {
+        setMessage("❌ Gagal memeriksa IP.");
+        setLoading(false);
+        return;
+      }
+
+      if (count >= 2) {
+        setMessage("❌ Batas pendaftaran dari IP ini sudah tercapai (maks 2 akun).");
+        setLoading(false);
+        return;
+      }
+
+      // ✅ Proses signup
+      const { data, error } = await supabase.auth.signUp({ email, password });
+
+      if (error) {
+        setMessage(`❌ ${error.message}`);
+      } else if (data.user) {
+        await supabase
+          .from("profiles")
+          .update({
+            username,
+            channel_name: channelName,
+          })
+          .eq("id", data.user.id);
+
+        // ✅ Simpan IP pendaftaran
+        await supabase.from("ip_registers").insert({
+          ip_address: ip,
+        });
+
+        setMessage("✅ Pendaftaran berhasil! Cek email untuk verifikasi.");
+        setMode("login");
+        setUsername("");
+        setChannelName("");
+      }
+    } catch (err) {
+      setMessage("❌ Terjadi kesalahan saat proses pendaftaran.");
     }
 
     setLoading(false);
