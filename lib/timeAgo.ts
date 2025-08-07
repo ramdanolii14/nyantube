@@ -1,4 +1,6 @@
 export function timeAgo(dateString: string) {
+  console.log("⏳ dateString:", dateString);
+  
   if (!dateString || typeof dateString !== "string") {
     return "Invalid date";
   }
@@ -19,4 +21,3 @@ export function timeAgo(dateString: string) {
   return past.toLocaleDateString();
 }
 
-console.log("⏳ dateString:", dateString);
