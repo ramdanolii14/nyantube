@@ -32,12 +32,10 @@ export default function PublicProfilePage({ username }: { username: string }) {
   const [isMod, setIsMod] = useState<boolean>(false);
   const [avatarSrc, setAvatarSrc] = useState<string>("");
 
-  // Popup message
   const [popupMessage, setPopupMessage] = useState<string | null>(null);
   const [popupType, setPopupType] = useState<"success" | "error">("success");
   const [fadeOut, setFadeOut] = useState(false);
 
-  // Delete confirmation popup
   const [showConfirm, setShowConfirm] = useState(false);
   const [videoToDelete, setVideoToDelete] = useState<Video | null>(null);
 
@@ -133,7 +131,6 @@ export default function PublicProfilePage({ username }: { username: string }) {
       return;
     }
 
-    // Hapus file di bucket videos
     if (video.video_url) {
       const fileName = video.video_url.split("/").pop();
       if (fileName) {
@@ -141,7 +138,6 @@ export default function PublicProfilePage({ username }: { username: string }) {
       }
     }
 
-    // Hapus file di bucket thumbnails
     if (video.thumbnail_url) {
       const fileName = video.thumbnail_url.split("/").pop();
       if (fileName) {
@@ -179,7 +175,6 @@ export default function PublicProfilePage({ username }: { username: string }) {
 
   return (
     <div className="max-w-5xl mx-auto mt-20 px-4">
-      {/* Popup Notification */}
       {popupMessage && (
         <div
           className={`fixed top-20 left-1/2 transform -translate-x-1/2 ${
@@ -194,7 +189,6 @@ export default function PublicProfilePage({ username }: { username: string }) {
         </div>
       )}
 
-      {/* Delete Confirmation Modal */}
       {showConfirm && videoToDelete && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-sm text-center">
@@ -220,7 +214,6 @@ export default function PublicProfilePage({ username }: { username: string }) {
         </div>
       )}
 
-      {/* Profile Header */}
       <div className="flex items-center gap-4">
         <div className="w-20 h-20 rounded-full overflow-hidden border">
           <Image
@@ -273,9 +266,8 @@ export default function PublicProfilePage({ username }: { username: string }) {
 
       <hr className="my-5" />
 
-      <h2 className="text-xl font-bold mb-3">
-        Video dari {profile.channel_name}
-      </h2>
+      <h2 className="text-xl font-bold mb-3">Video dari {profile.channel_name}</h2>
+
       {videos.length === 0 ? (
         <p className="text-gray-500">Belum ada video diunggah.</p>
       ) : (
@@ -301,9 +293,7 @@ export default function PublicProfilePage({ username }: { username: string }) {
                     unoptimized
                   />
                   <div className="p-2">
-                    <h3 className="font-semibold text-sm line-clamp-2">
-                      {v.title}
-                    </h3>
+                    <h3 className="font-semibold text-sm line-clamp-2">{v.title}</h3>
                     <p className="text-xs text-gray-500">{v.views} views</p>
                   </div>
                 </Link>
