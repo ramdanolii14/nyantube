@@ -16,8 +16,9 @@ export default function UploadPage() {
   const [previewThumbnail, setPreviewThumbnail] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
-  const [username, setUsername] = useState<string | null>(null); // untuk redirect
+  const [username, setUsername] = useState<string | null>(null);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [isBanned, setIsBanned] = useState<boolean | null>(null); // 🔴 Tambahan
 
   useEffect(() => {
     const checkUser = async () => {
@@ -28,14 +29,48 @@ export default function UploadPage() {
         setUserId(user.id);
         const { data: profile } = await supabase
           .from("profiles")
-          .select("username")
+          .select("username, is_banned")
           .eq("id", user.id)
           .single();
-        if (profile) setUsername(profile.username);
+
+        if (profile?.is_banned) {
+          setIsBanned(true);
+          await supabase.auth.signOut();
+        } else {
+          setIsBanned(false);
+          setUsername(profile?.username);
+        }
+      } else {
+        setIsBanned(false);
       }
     };
     checkUser();
   }, []);
+
+  if (isBanned === null) {
+    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  }
+
+  if (isBanned) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-red-100">
+        <div className="bg-white p-6 rounded shadow text-center">
+          <h1 className="text-xl font-bold text-red-600 mb-2">Akun Diblokir</h1>
+          <p className="text-gray-700">Akun Anda telah di-banned dan tidak dapat mengakses halaman ini.</p>
+          <p className="text-gray-700">Appeal: dev@ramdan.fun</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!userId) {
+    return (
+      <div className="max-w-2xl mx-auto p-6 mt-10 text-center bg-white shadow rounded">
+        <h1 className="text-xl font-bold mb-2">Harus Login</h1>
+        <p className="text-gray-600">Silakan login dulu untuk bisa upload video.</p>
+      </div>
+    );
+  }
 
   const handleVideoChange = (file: File | null) => {
     if (!file) return;
@@ -96,7 +131,6 @@ export default function UploadPage() {
 
       setMessage({ type: "success", text: "Upload berhasil! Redirect ke profile..." });
 
-      // Tunggu sebentar lalu redirect
       setTimeout(() => {
         if (username) router.push(`/${username}`);
       }, 700);
@@ -106,15 +140,6 @@ export default function UploadPage() {
       setUploading(false);
     }
   };
-
-  if (!userId) {
-    return (
-      <div className="max-w-2xl mx-auto p-6 mt-10 text-center bg-white shadow rounded">
-        <h1 className="text-xl font-bold mb-2">Harus Login</h1>
-        <p className="text-gray-600">Silakan login dulu untuk bisa upload video.</p>
-      </div>
-    );
-  }
 
   return (
     <div className="max-w-2xl mx-auto p-6 mt-10 bg-white shadow rounded">
@@ -209,7 +234,6 @@ export default function UploadPage() {
         )}
       </button>
 
-      {/* ✅ Pesan muncul di bawah tombol */}
       {message && (
         <div
           className={`mt-4 text-center p-2 rounded ${
