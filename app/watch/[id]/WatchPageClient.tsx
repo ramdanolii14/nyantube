@@ -363,8 +363,8 @@ export default function WatchPageClient({ id }: { id: string }) {
                   {v.profiles.is_verified && <Image src="/verified.svg" alt="verified" title="AKUN TERVERIFIKASI" width={10} height={10} />}
                   {v.profiles.is_mod && <Image src="/mod.svg" alt="mod" title="TERVERIFIKASI ADMIN" width={10} height={10} />}
                   {v.profiles.is_bughunter && <Image src="/bughunter.svg" alt="bughunter" title="TERVERIFIKASI BUGHUNTER" width={10} height={10} />}
+                  <span className="text-gray-500">· {timeAgo(c.created_at)}</span>
                 </div>
-                <p className="text-xs text-gray-500">{v.views} views</p>
               </div>
             </Link>
           ))}
