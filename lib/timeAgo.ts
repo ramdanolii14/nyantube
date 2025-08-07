@@ -1,11 +1,8 @@
 export function timeAgo(dateString: string): string {
+  const past = new Date(dateString);
   const now = new Date();
-  const pastUTC = new Date(dateString);
 
-  // Konversi waktu UTC ke waktu lokal browser
-  const past = new Date(
-    pastUTC.getTime() + now.getTimezoneOffset() * 60 * 1000 * -1
-  );
+  if (isNaN(past.getTime())) return "invalid date";
 
   const seconds = Math.floor((now.getTime() - past.getTime()) / 1000);
 
@@ -15,5 +12,9 @@ export function timeAgo(dateString: string): string {
   if (seconds < 604800) return `${Math.floor(seconds / 86400)}d ago`;
   if (seconds < 2592000) return `${Math.floor(seconds / 604800)}w ago`;
 
-  return past.toLocaleDateString();
+  return past.toLocaleDateString("en-US", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
 }
