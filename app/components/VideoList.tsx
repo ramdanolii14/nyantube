@@ -216,6 +216,9 @@ export default function VideoList() {
                 <p className="text-xs text-gray-500">
                   {video.views} x ditonton
                 </p>
+                <p className="text-xs text-gray-500">
+                  {timeAgo(video.created_at)}
+                </p>
               </div>
             </div>
           </Link>
@@ -224,4 +227,5 @@ export default function VideoList() {
     </div>
   );
 }
+
 
