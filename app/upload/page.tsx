@@ -151,9 +151,11 @@ export default function UploadPage() {
           type="text"
           className="w-full border rounded p-2"
           value={title}
+          maxLength={25}
           onChange={(e) => setTitle(e.target.value)}
           required
         />
+        <div className="text-xs text-gray-500 mt-1">{title.length}/25</div>
       </div>
 
       <div className="mb-3">
@@ -162,9 +164,11 @@ export default function UploadPage() {
           className="w-full border rounded p-2"
           rows={3}
           value={description}
+          maxLength={255}
           onChange={(e) => setDescription(e.target.value)}
           required
         />
+        <div className="text-xs text-gray-500 mt-1">{description.length}/255</div>
       </div>
 
       <div
@@ -246,3 +250,4 @@ export default function UploadPage() {
     </div>
   );
 }
+
