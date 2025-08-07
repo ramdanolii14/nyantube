@@ -203,7 +203,7 @@ export default function WatchPageClient({ id }: { id: string }) {
     }
   };
 
-  if (!video) 
+  if (!video) {
     return <p className="text-center mt-10">Loading...</p>;
 }
 
