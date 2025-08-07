@@ -203,7 +203,9 @@ export default function WatchPageClient({ id }: { id: string }) {
     }
   };
 
-  if (!video) return <p className="text-center mt-10">Loading...</p>;
+  if (!video) 
+    return <p className="text-center mt-10">Loading...</p>;
+}
 
   return (
     <div className="w-full bg-white-50 mt-24 pb-10">
