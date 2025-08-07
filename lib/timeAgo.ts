@@ -3,7 +3,8 @@ export function timeAgo(dateString: string) {
     return "Invalid date";
   }
 
-  const past = new Date(dateString.replace(" ", "T"));
+  const sanitized = dateString.replace(" ", "T").replace(/\.\d+/, "");
+  const past = new Date(sanitized);
   if (isNaN(past.getTime())) {
     return "Invalid date";
   }
