@@ -158,7 +158,7 @@ export default function VideoList() {
               />
             </div>
 
-            <div className="flex items-center gap-2 mt-2">
+            <div className="flex items-center gap-2 mt-4">
               <Image
                 src={
                   video.profiles?.avatar_url
@@ -172,7 +172,7 @@ export default function VideoList() {
                 unoptimized
               />
               <div className="flex flex-col">
-                <h3 className="font-semibold text-sm line-clamp-2 mb-1">
+                <h3 className="font-semibold text-sm line-clamp-2 mb-2">
                   {video.title}
                 </h3>
                 <p className="text-xs text-gray-600 flex items-center gap-1">
@@ -228,6 +228,7 @@ export default function VideoList() {
     </div>
   );
 }
+
 
 
 
