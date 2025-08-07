@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/supabase/client";
 import { timeAgo } from "@/lib/timeAgo";
 import Image from "next/image";
@@ -55,8 +55,8 @@ export default function WatchPageClient({ id }: { id: string }) {
 
   const getAvatarUrl = (avatar_url: string | null, name: string) => {
     return avatar_url
-      ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${avatar_url}`
-      : `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random&color=fff`;
+      ? ${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${avatar_url}
+      : https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random&color=fff;
   };
 
   useEffect(() => {
@@ -168,21 +168,11 @@ export default function WatchPageClient({ id }: { id: string }) {
   };
 
   const handleEditComment = async () => {
-    if (!editComment || !editComment.content.trim()) {
-      console.log("Edit comment invalid:", editComment);
-      return;
-    }
-
-    const { error } = await supabase
+    if (!editComment || !editComment.content.trim()) return;
+    await supabase
       .from("comments")
       .update({ content: editComment.content, edited: true })
       .eq("id", editComment.id);
-
-    if (error) {
-      console.error("Edit comment failed:", error.message);
-      return;
-    }
-
     setEditComment(null);
     refreshComments();
   };
@@ -216,98 +206,183 @@ export default function WatchPageClient({ id }: { id: string }) {
   if (!video) return <p className="text-center mt-10">Loading...</p>;
 
   return (
-    <div className="mt-24 pb-10 px-4 max-w-6xl mx-auto">
-      {/* ...Video player & video info... (tidak diubah) */}
-
-      {/* Comment Section */}
-      <div className="mt-6">
-        <h2 className="font-semibold mb-3">Comments ({comments.length})</h2>
-
-        <div className="flex flex-col gap-1 mb-4">
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={newComment}
-              onChange={(e) => setNewComment(e.target.value)}
-              placeholder="Add a comment..."
-              className="flex-1 border rounded px-3 py-2"
+    <div className="w-full bg-white-50 mt-24 pb-10">
+      <div className="max-w-6xl mx-auto px-4 md:px-6 flex flex-col md:flex-row gap-6">
+        <div className="flex-1 max-w-3xl">
+          <div className="relative w-full bg-black rounded-lg overflow-hidden aspect-video">
+            <video
+              src={${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/videos/${video.video_url}}
+              controls
+              className="w-full h-full object-contain"
             />
-            <button onClick={handleAddComment} className="bg-red-500 text-white px-4 py-2 rounded">
-              Post
-            </button>
           </div>
-          {commentError && (
-            <div className={`text-sm px-3 py-2 rounded bg-red-100 text-red-700 mt-1 transition-all ${fadeOut ? "opacity-0" : ""}`}>
-              {commentError}
+          <h1 className="text-xl font-bold mt-4 mb-2">{video.title}</h1>
+
+          {/* Like & Channel */}
+          <div className="flex items-center gap-3 mb-4">
+            <Link href={/${video.profiles.username}}>
+              <Image
+                src={getAvatarUrl(video.profiles.avatar_url, video.profiles.channel_name || video.profiles.username)}
+                alt="avatar"
+                width={40}
+                height={40}
+                className="rounded-full w-10 h-10 object-cover"
+              />
+            </Link>
+            <div className="flex-1">
+              <Link
+                href={/${video.profiles.username}}
+                className="font-semibold hover:underline flex items-center gap-1"
+              >
+                {video.profiles.channel_name || video.profiles.username}
+                {video.profiles.is_verified && <Image src="/verified.svg" alt="verified" title="AKUN TERVERIFIKASI" width={14} height={14} />}
+                {video.profiles.is_mod && <Image src="/mod.svg" alt="mod" title="TERVERIFIKASI ADMIN" width={14} height={14} />}
+                {video.profiles.is_bughunter && <Image src="/bughunter.svg" alt="bughunter" title="TERVERIFIKASI BUGHUNTER" width={14} height={14} />}
+              </Link>
+              <p className="text-sm text-gray-500">
+                {video.views} views • {timeAgo(video.created_at)}
+              </p>
             </div>
-          )}
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => handleVote("like")}
+                className={flex items-center gap-1 px-2 py-1 rounded ${userVote === "like" ? "bg-blue-100 text-blue-600" : "bg-gray-100 text-gray-600"}}
+              >
+                👍 {likes}
+              </button>
+              <button
+                onClick={() => handleVote("dislike")}
+                className={flex items-center gap-1 px-2 py-1 rounded ${userVote === "dislike" ? "bg-red-100 text-red-600" : "bg-gray-100 text-gray-600"}}
+              >
+                👎 {dislikes}
+              </button>
+            </div>
+          </div>
+
+          <p className="mb-6 text-sm text-gray-800 break-words whitespace-pre-line">{video.description}</p>
+
+          {/* Comments */}
+          <div className="mt-6 break-words">
+            <h2 className="font-semibold mb-3 break-words">Comments ({comments.length})</h2>
+
+            <div className="flex flex-col gap-1 mb-4">
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
+                  placeholder="Add a comment..."
+                  className="flex-1 border rounded px-3 py-2"
+                />
+                <button onClick={handleAddComment} className="bg-red-500 text-white px-4 py-2 rounded">
+                  Post
+                </button>
+              </div>
+              {commentError && (
+                <div
+                  className={flex items-center gap-2 bg-red-100 border border-red-400 text-red-700 px-3 py-2 rounded transition-all duration-500 ${
+                    fadeOut ? "opacity-0 -translate-y-1" : "opacity-100 translate-y-0"
+                  }}
+                >
+                  <span className="text-sm">{commentError}</span>
+                </div>
+              )}
+            </div>
+
+            {comments.map((c) => {
+              const isOwner = c.user_id === currentUserId;
+              const canDelete = isOwner || video?.profiles?.id === currentUserId || currentUserProfile?.is_mod;
+
+              return (
+                <div key={c.id} className="mb-3">
+                  <div className="flex gap-2">
+                    <Link href={/${c.profiles.username}}>
+                      <Image
+                        src={getAvatarUrl(c.profiles.avatar_url, c.profiles.channel_name || c.profiles.username)}
+                        alt="avatar"
+                        width={32}
+                        height={32}
+                        className="rounded-full w-8 h-8 object-cover"
+                      />
+                    </Link>
+                    <div>
+                      <Link href={/${c.profiles.username}} className="font-semibold hover:underline flex items-center gap-1">
+                        {c.profiles.channel_name || c.profiles.username}
+                        {c.profiles.is_verified && <Image src="/verified.svg" alt="verified" title="AKUN TERVERIFIKASI" width={12} height={12} />}
+                        {c.profiles.is_mod && <Image src="/mod.svg" alt="mod" title="TERVERIFIKASI ADMIN" width={12} height={12} />}
+                        {c.profiles.is_bughunter && <Image src="/bughunter.svg" alt="bughunter" title="TERVERIFIKASI BUGHUNTER" width={12} height={12} />}
+                        <span className="text-gray-500">· {timeAgo(c.created_at)}</span>
+                      </Link>
+                      {c.edited && <span className="text-xs text-gray-500 ml-1">[edited]</span>}
+                      {editComment?.id === c.id ? (
+                        <div className="flex gap-2 mt-1">
+                          <input
+                            type="text"
+                            value={editComment.content}
+                            onChange={(e) => setEditComment({ ...editComment, content: e.target.value })}
+                            className="border px-2 py-1 rounded text-sm"
+                          />
+                          <button onClick={handleEditComment} className="text-blue-500 text-sm">Save</button>
+                          <button onClick={() => setEditComment(null)} className="text-gray-500 text-sm">Cancel</button>
+                        </div>
+                      ) : (
+                        <p className="break-words whitespace-pre-line">{c.content}</p>
+                      )}
+                      {canDelete && (
+                        <div className="flex gap-3 text-xs text-gray-500 mt-1">
+                          <button onClick={() => setConfirmDeleteId(c.id)} className="bg-red-500 text-white px-3 py-1 rounded w-20 text-center">
+                            Delete
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
 
-        {comments.map((c) => {
-          const isOwner = c.user_id === currentUserId;
-          const canDelete = isOwner || video?.profiles?.id === currentUserId || currentUserProfile?.is_mod;
-
-          return (
-            <div key={c.id} className="mb-4">
-              <div className="flex gap-2">
+        {/* Related Videos */}
+        <div className="w-full md:w-72">
+          <h2 className="font-semibold mb-3">Related Videos</h2>
+          {relatedVideos.map((v) => (
+            <Link key={v.id} href={/watch/${v.id}} className="flex gap-2 mb-3 hover:bg-gray-100 p-1 rounded">
+              <div className="relative w-32 h-20 bg-gray-200 rounded-md overflow-hidden">
                 <Image
-                  src={getAvatarUrl(c.profiles.avatar_url, c.profiles.username)}
-                  alt="avatar"
-                  width={32}
-                  height={32}
-                  className="rounded-full"
+                  src={${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/thumbnails/${v.thumbnail_url}}
+                  alt={v.title}
+                  fill
+                  className="object-cover"
                 />
-                <div className="flex-1">
-                  <p className="font-semibold">{c.profiles.channel_name || c.profiles.username}</p>
-                  <p className="text-sm text-gray-600">{timeAgo(c.created_at)} {c.edited && "[edited]"}</p>
-
-                  {editComment?.id === c.id ? (
-                    <div className="flex gap-2 mt-2">
-                      <input
-                        type="text"
-                        value={editComment.content}
-                        onChange={(e) => setEditComment({ ...editComment, content: e.target.value })}
-                        className="border px-2 py-1 rounded text-sm flex-1"
-                      />
-                      <button onClick={handleEditComment} className="text-blue-500 text-sm">Save</button>
-                      <button onClick={() => setEditComment(null)} className="text-gray-500 text-sm">Cancel</button>
-                    </div>
-                  ) : (
-                    <p className="mt-1 whitespace-pre-wrap">{c.content}</p>
-                  )}
-
-                  {canDelete && (
-                    <div className="flex gap-2 mt-2">
-                      <button
-                        onClick={() => setEditComment({ id: c.id, content: c.content })}
-                        className="text-blue-600 text-xs underline"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => setConfirmDeleteId(c.id)}
-                        className="text-red-600 text-xs underline"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  )}
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-semibold line-clamp-2">{v.title}</p>
+                <div className="flex items-center gap-1 text-xs text-gray-500">
+                  {v.profiles.channel_name || v.profiles.username}
+                  {v.profiles.is_verified && <Image src="/verified.svg" alt="verified" title="AKUN TERVERIFIKASI" width={10} height={10} />}
+                  {v.profiles.is_mod && <Image src="/mod.svg" alt="mod" title="TERVERIFIKASI ADMIN" width={10} height={10} />}
+                  {v.profiles.is_bughunter && <Image src="/bughunter.svg" alt="bughunter" title="TERVERIFIKASI BUGHUNTER" width={10} height={10} />}
                 </div>
               </div>
-            </div>
-          );
-        })}
+            </Link>
+          ))}
+        </div>
       </div>
 
-      {/* Delete Confirm Modal */}
+      {/* Popup Konfirmasi Delete */}
       {confirmDeleteId && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 shadow-md w-80">
-            <h2 className="text-lg font-semibold mb-4">Confirm Deletion</h2>
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+          <div className="bg-white rounded-lg p-6 shadow-lg w-80">
+            <h3 className="text-lg font-semibold mb-4">Confirm Deletion</h3>
             <p className="text-sm text-gray-600 mb-6">Are you sure you want to delete this comment?</p>
             <div className="flex justify-end gap-3">
-              <button onClick={() => setConfirmDeleteId(null)} className="bg-gray-300 px-4 py-2 rounded">Cancel</button>
-              <button onClick={() => handleDeleteComment(confirmDeleteId)} className="bg-red-500 text-white px-4 py-2 rounded">Delete</button>
+              <button onClick={() => setConfirmDeleteId(null)} className="bg-gray-300 text-gray-800 px-4 py-2 rounded w-20 text-center">
+                Cancel
+              </button>
+              <button onClick={() => handleDeleteComment(confirmDeleteId)} className="bg-red-500 text-white px-4 py-2 rounded w-20 text-center">
+                Delete
+              </button>
             </div>
           </div>
         </div>
