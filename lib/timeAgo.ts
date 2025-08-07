@@ -17,6 +17,6 @@ export function timeAgo(dateString: string) {
   if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
   if (seconds < 604800) return `${Math.floor(seconds / 86400)}d ago`;
 
-  return past.toLocaleDateString();
+  return `${Math.floor(seconds / 86400)}d ago`;
 }
 
