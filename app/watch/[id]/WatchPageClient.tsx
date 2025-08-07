@@ -240,7 +240,7 @@ export default function WatchPageClient({ id }: { id: string }) {
                 {video.profiles.is_bughunter && <Image src="/bughunter.svg" alt="bughunter" title="TERVERIFIKASI BUGHUNTER" width={14} height={14} />}
               </Link>
               <p className="text-sm text-gray-500">
-                {video.views} views • <p className="text-sm text-gray-500">{video.created_at}</p>
+                {video.views} views • {timeAgo(video.created_at)}
               </p>
             </div>
             <div className="flex items-center gap-3">
