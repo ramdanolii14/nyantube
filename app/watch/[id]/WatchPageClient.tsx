@@ -262,7 +262,7 @@ export default function WatchPageClient({ id }: { id: string }) {
           <p className="mb-6 text-sm text-gray-800 break-words">{video.description}</p>
 
           {/* Comments */}
-          <div className="mt-6">
+          <div className="mt-6 break-words">
             <h2 className="font-semibold mb-3 break-words">Comments ({comments.length})</h2>
 
             <div className="flex flex-col gap-1 mb-4">
@@ -326,7 +326,7 @@ export default function WatchPageClient({ id }: { id: string }) {
                           <button onClick={() => setEditComment(null)} className="text-gray-500 text-sm">Cancel</button>
                         </div>
                       ) : (
-                        <p>{c.content}</p>
+                        <p> ClassName="break-words" {c.content}</p>
                       )}
                       {canDelete && (
                         <div className="flex gap-3 text-xs text-gray-500 mt-1">
