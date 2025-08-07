@@ -55,8 +55,8 @@ export default function WatchPageClient({ id }: { id: string }) {
 
   const getAvatarUrl = (avatar_url: string | null, name: string) => {
     return avatar_url
-      ? ${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${avatar_url}
-      : https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random&color=fff;
+      ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${avatar_url}`
+      : `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random&color=fff`;
   };
 
   useEffect(() => {
