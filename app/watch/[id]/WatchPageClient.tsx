@@ -315,7 +315,7 @@ export default function WatchPageClient({ id }: { id: string }) {
               ) : currentUserProfile?.is_verified ? (
                 <div className="text-xs text-green-600">✔ Akun terverifikasi — batas 20 komentar per jam.</div>
               ) : (
-                <div className="text-xs text-green-600">Viewer - Batas 2 komentar per jam.</div>
+                <div className="text-xs text-green-600">Bukan Akun Verified - dibatasi 2 komentar per jam.</div>
               )}
 
               {commentError && (
