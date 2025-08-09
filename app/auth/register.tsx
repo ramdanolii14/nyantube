@@ -3,50 +3,24 @@
 import { useState } from "react";
 import { supabase } from "@/supabase/client";
 
+function generateUsername() {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  let code = "";
+  for (let i = 0; i < 4; i++) {
+    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return `nyan_${code}`;
+}
+
 export default function Register() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [password2, setPassword2] = useState("");
-  const [username, setUsername] = useState("");
-  const [channelName, setChannelName] = useState("");
-  const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      setAvatarFile(e.target.files[0]);
-    }
-  };
-
-  // Upload avatar ke bucket "avatars"
-  const uploadAvatar = async (userId: string) => {
-    if (!avatarFile) return null;
-
-    const fileExt = avatarFile.name.split(".").pop();
-    const fileName = `${userId}.${fileExt}`;
-    const filePath = fileName;
-
-    const { error: uploadError } = await supabase.storage
-      .from("avatars")
-      .upload(filePath, avatarFile, {
-        cacheControl: "3600",
-        upsert: true,
-        contentType: avatarFile.type,
-      });
-
-    if (uploadError) throw uploadError;
-
-    return filePath;
-  };
-
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!username.trim() || !channelName.trim()) {
-      setMessage("❌ Username dan Nama Channel wajib diisi.");
-      return;
-    }
 
     if (password !== password2) {
       setMessage("❌ Password tidak sama.");
@@ -73,26 +47,15 @@ export default function Register() {
       }
 
       const userId = data.user.id;
+      const username = generateUsername();
 
-      // Upload avatar jika ada
-      let avatar_url: string | null = null;
-      if (avatarFile) {
-        try {
-          avatar_url = await uploadAvatar(userId);
-        } catch {
-          setMessage("❌ Gagal upload avatar.");
-          setLoading(false);
-          return;
-        }
-      }
-
-      // Insert profil ke tabel profiles dengan userId yang sudah ada
+      // Simpan profil ke tabel profiles dengan username otomatis
       const { error: profileError } = await supabase.from("profiles").insert({
         id: userId,
         email,
         username,
-        channel_name: channelName,
-        avatar_url,
+        channel_name: username, // agar channel_name juga terisi, sama dengan username
+        avatar_url: null,
       });
 
       if (profileError) {
@@ -107,9 +70,6 @@ export default function Register() {
       setEmail("");
       setPassword("");
       setPassword2("");
-      setUsername("");
-      setChannelName("");
-      setAvatarFile(null);
     } catch {
       setMessage("❌ Terjadi kesalahan saat proses pendaftaran.");
     }
@@ -147,30 +107,6 @@ export default function Register() {
         onChange={(e) => setPassword2(e.target.value)}
         required
       />
-
-      <input
-        type="text"
-        placeholder="Username"
-        className="border p-2 rounded-md w-full"
-        value={username}
-        onChange={(e) => setUsername(e.target.value)}
-        required
-      />
-
-      <input
-        type="text"
-        placeholder="Nama Channel"
-        className="border p-2 rounded-md w-full"
-        value={channelName}
-        onChange={(e) => setChannelName(e.target.value)}
-        required
-      />
-
-      <div>
-        <label className="block mb-1 font-medium">Upload Avatar (opsional)</label>
-        <input type="file" accept="image/*" onChange={handleFileChange} />
-        {avatarFile && <p className="text-sm mt-1">{avatarFile.name}</p>}
-      </div>
 
       <button
         type="submit"
