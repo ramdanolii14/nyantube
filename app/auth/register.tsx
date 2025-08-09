@@ -9,7 +9,7 @@ function generateUsername() {
   for (let i = 0; i < 4; i++) {
     code += chars.charAt(Math.floor(Math.random() * chars.length));
   }
-  return `nyan_${code}`;
+  return "nyan_" + code;
 }
 
 export default function Register() {
@@ -21,18 +21,21 @@ export default function Register() {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+    setMessage("");
 
     if (password !== password2) {
-      setMessage("❌ Password tidak sama.");
+      setMessage("❌ Password dan konfirmasi password harus sama.");
       return;
     }
 
     setLoading(true);
-    setMessage("");
 
     try {
-      // Daftar user di Supabase Auth
-      const { data, error } = await supabase.auth.signUp({ email, password });
+      // Sign up user di Supabase Auth
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+      });
 
       if (error) {
         setMessage(`❌ ${error.message}`);
@@ -41,44 +44,44 @@ export default function Register() {
       }
 
       if (!data.user) {
-        setMessage("❌ Gagal mendapatkan data user setelah pendaftaran.");
+        setMessage("❌ Gagal mendapatkan data user setelah registrasi.");
         setLoading(false);
         return;
       }
 
-      const userId = data.user.id;
+      // Generate username otomatis
       const username = generateUsername();
 
-      // Simpan profil ke tabel profiles dengan username otomatis
-      const { error: profileError } = await supabase.from("profiles").insert({
-        id: userId,
+      // Insert profile ke tabel profiles
+      const { error: upsertError } = await supabase.from("profiles").upsert({
+        id: data.user.id,
         email,
         username,
-        channel_name: username, // agar channel_name juga terisi, sama dengan username
+        channel_name: username, // kalau mau beda bisa diubah nanti
         avatar_url: null,
       });
 
-      if (profileError) {
-        setMessage(`❌ Gagal menyimpan profil: ${profileError.message}`);
+      if (upsertError) {
+        setMessage(`❌ Gagal menyimpan profil: ${upsertError.message}`);
         setLoading(false);
         return;
       }
 
       setMessage("✅ Pendaftaran berhasil! Cek email untuk verifikasi.");
-
-      // Reset form
       setEmail("");
       setPassword("");
       setPassword2("");
     } catch {
       setMessage("❌ Terjadi kesalahan saat proses pendaftaran.");
     }
-
     setLoading(false);
   };
 
   return (
-    <form onSubmit={handleRegister} className="space-y-4 max-w-md mx-auto p-4 bg-white rounded-md shadow-md">
+    <form
+      onSubmit={handleRegister}
+      className="space-y-4 max-w-md mx-auto bg-white p-6 rounded-lg shadow-md"
+    >
       <h1 className="text-2xl font-bold text-center text-red-600">Daftar Nyantube</h1>
 
       <input
