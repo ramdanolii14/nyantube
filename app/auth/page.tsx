@@ -18,6 +18,7 @@ interface User {
 interface Profile {
   id: string;
   username: string;
+  email: string;
   channel_name: string;
   avatar_url: string | null;
 }
@@ -97,6 +98,7 @@ export default function AuthPage() {
           .from("profiles")
           .upsert({
             id: data.user.id, // pastikan ID user ikut diinsert
+            email: email;
             username,
             channel_name: channelName,
           });
@@ -263,3 +265,4 @@ export default function AuthPage() {
     </div>
   );
 }
+
