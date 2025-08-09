@@ -12,6 +12,21 @@ function generateUsername() {
   return "nyan_" + code;
 }
 
+// Tunggu sampai user muncul di auth.users (maks 5x cek tiap 1 detik)
+const waitForUser = async (userId: string, maxRetries = 5, interval = 1000) => {
+  for (let i = 0; i < maxRetries; i++) {
+    const { data, error } = await supabase
+      .from('auth.users')
+      .select('id')
+      .eq('id', userId)
+      .single();
+
+    if (data) return true;
+    await new Promise((r) => setTimeout(r, interval));
+  }
+  return false;
+};
+
 export default function Register() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -31,7 +46,6 @@ export default function Register() {
     setLoading(true);
 
     try {
-      // Sign up user di Supabase Auth
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -49,15 +63,21 @@ export default function Register() {
         return;
       }
 
-      // Generate username otomatis
+      // Tunggu sampai user muncul di auth.users
+      const userExists = await waitForUser(data.user.id);
+      if (!userExists) {
+        setMessage("❌ User belum tersedia di database, coba ulangi beberapa detik lagi.");
+        setLoading(false);
+        return;
+      }
+
       const username = generateUsername();
 
-      // Insert profile ke tabel profiles
       const { error: upsertError } = await supabase.from("profiles").upsert({
         id: data.user.id,
         email,
         username,
-        channel_name: username, // kalau mau beda bisa diubah nanti
+        channel_name: username,
         avatar_url: null,
       });
 
