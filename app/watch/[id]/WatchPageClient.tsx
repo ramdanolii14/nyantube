@@ -141,19 +141,26 @@ export default function WatchPageClient({ id }: { id: string }) {
 
     if (newComment.length > 110) {
       setCommentError("Komentar tidak boleh lebih dari 110 karakter.");
-    return;
-  }
-
-    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
-    const { count } = await supabase
-      .from("comments")
-      .select("id", { count: "exact", head: true })
-      .eq("user_id", currentUserId)
-      .gte("created_at", oneHourAgo);
-
-    if ((count ?? 0) >= 2) {
-      setCommentError("You can only post 2 comments per hour.");
       return;
+    }
+
+    // Tentukan limit berdasarkan role
+    let maxComments: number | null = 2; // default user biasa
+    if (currentUserProfile?.is_verified) maxComments = 20;
+    if (currentUserProfile?.is_mod) maxComments = null; // unlimited
+
+    if (maxComments !== null) {
+      const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+      const { count } = await supabase
+        .from("comments")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", currentUserId)
+        .gte("created_at", oneHourAgo);
+
+      if ((count ?? 0) >= maxComments) {
+        setCommentError(`You can only post ${maxComments} comments per hour.`);
+        return;
+      }
     }
 
     setCommentError(null);
@@ -216,6 +223,7 @@ export default function WatchPageClient({ id }: { id: string }) {
     <div className="w-full bg-white-50 mt-24 pb-10">
       <div className="max-w-6xl mx-auto px-4 md:px-6 flex flex-col md:flex-row gap-6">
         <div className="flex-1 max-w-3xl">
+          {/* Video Player */}
           <div className="relative w-full bg-black rounded-lg overflow-hidden aspect-video">
             <video
               src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/videos/${video.video_url}`}
@@ -223,8 +231,10 @@ export default function WatchPageClient({ id }: { id: string }) {
               className="w-full h-full object-contain"
             />
           </div>
+
           <h1 className="text-xl font-bold mt-4 mb-2">{video.title}</h1>
 
+          {/* Channel Info */}
           <div className="flex items-center gap-3 mb-4">
             <Link href={`/${video.profiles.username}`}>
               <Image
@@ -249,6 +259,8 @@ export default function WatchPageClient({ id }: { id: string }) {
                 {video.views} views • {timeAgo(video.created_at)}
               </p>
             </div>
+
+            {/* Like/Dislike */}
             <div className="flex items-center gap-3">
               <button
                 onClick={() => handleVote("like")}
@@ -269,8 +281,10 @@ export default function WatchPageClient({ id }: { id: string }) {
             </div>
           </div>
 
+          {/* Video Description */}
           <p className="mb-6 text-sm text-gray-800 break-words whitespace-pre-line">{video.description}</p>
 
+          {/* Comments */}
           <div className="mt-6 break-words">
             <h2 className="font-semibold mb-3 break-words">Comments ({comments.length})</h2>
 
@@ -279,11 +293,11 @@ export default function WatchPageClient({ id }: { id: string }) {
                 <input
                   type="text"
                   value={newComment}
-                    onChange={(e) => {
-                      if (e.target.value.length <= 110) {
-                          setNewComment(e.target.value);
-                        }
-                    }}
+                  onChange={(e) => {
+                    if (e.target.value.length <= 110) {
+                      setNewComment(e.target.value);
+                    }
+                  }}
                   placeholder="Add a comment..."
                   className="flex-1 border rounded px-3 py-2"
                 />
@@ -291,9 +305,19 @@ export default function WatchPageClient({ id }: { id: string }) {
                   Post
                 </button>
               </div>
+
+              {/* Counter & Role Info */}
               <div className="text-sm text-gray-500 text-right mt-1">
                 {newComment.length}/110
               </div>
+              {currentUserProfile?.is_mod ? (
+                <div className="text-xs text-purple-600">🛡 Moderator — tidak ada batas komentar per jam.</div>
+              ) : currentUserProfile?.is_verified ? (
+                <div className="text-xs text-green-600">✔ Akun terverifikasi — batas 20 komentar per jam.</div>
+              ) : (
+                <div className="text-xs text-gray-600">Batas 2 komentar per jam.</div>
+              )}
+
               {commentError && (
                 <div
                   className={`flex items-center gap-2 bg-red-100 border border-red-400 text-red-700 px-3 py-2 rounded transition-all duration-500 ${
@@ -305,6 +329,7 @@ export default function WatchPageClient({ id }: { id: string }) {
               )}
             </div>
 
+            {/* Comment List */}
             {comments.map((c) => {
               const isOwner = c.user_id === currentUserId;
               const canDelete = isOwner || video?.profiles?.id === currentUserId || currentUserProfile?.is_mod;
@@ -359,6 +384,7 @@ export default function WatchPageClient({ id }: { id: string }) {
           </div>
         </div>
 
+        {/* Related Videos */}
         <div className="w-full md:w-72">
           <h2 className="font-semibold mb-3">Related Videos</h2>
           {relatedVideos.map((v) => (
