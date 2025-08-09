@@ -93,9 +93,10 @@ export default function AuthPage() {
       } else if (data.user) {
         await supabase
           .from("profiles")
-          .update({
+          .insert({
             username,
             channel_name: channelName,
+            avatar_url: null,
           })
           .eq("id", data.user.id);
 
@@ -261,3 +262,4 @@ export default function AuthPage() {
     </div>
   );
 }
+
