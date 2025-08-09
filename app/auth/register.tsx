@@ -13,14 +13,13 @@ export default function Register() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
-  // Handle perubahan file avatar
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       setAvatarFile(e.target.files[0]);
     }
   };
 
-  // Upload avatar ke bucket 'avatars'
+  // Upload avatar ke bucket "avatars"
   const uploadAvatar = async (userId: string) => {
     if (!avatarFile) return null;
 
@@ -41,15 +40,14 @@ export default function Register() {
     return filePath;
   };
 
-  // Handler submit form register
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validasi sederhana
     if (!username.trim() || !channelName.trim()) {
       setMessage("❌ Username dan Nama Channel wajib diisi.");
       return;
     }
+
     if (password !== password2) {
       setMessage("❌ Password tidak sama.");
       return;
@@ -59,24 +57,28 @@ export default function Register() {
     setMessage("");
 
     try {
-      // 1. Daftar user di Supabase Auth
+      // Daftar user di Supabase Auth
       const { data, error } = await supabase.auth.signUp({ email, password });
+
       if (error) {
         setMessage(`❌ ${error.message}`);
         setLoading(false);
         return;
       }
+
       if (!data.user) {
-        setMessage("❌ Gagal mendapatkan data user.");
+        setMessage("❌ Gagal mendapatkan data user setelah pendaftaran.");
         setLoading(false);
         return;
       }
 
-      // 2. Upload avatar jika ada
+      const userId = data.user.id;
+
+      // Upload avatar jika ada
       let avatar_url: string | null = null;
       if (avatarFile) {
         try {
-          avatar_url = await uploadAvatar(data.user.id);
+          avatar_url = await uploadAvatar(userId);
         } catch {
           setMessage("❌ Gagal upload avatar.");
           setLoading(false);
@@ -84,22 +86,24 @@ export default function Register() {
         }
       }
 
-      // 3. Simpan profil di tabel profiles
-      const { error: upsertError } = await supabase.from("profiles").upsert({
-        id: data.user.id, // wajib sama dengan user id Supabase Auth
+      // Insert profil ke tabel profiles dengan userId yang sudah ada
+      const { error: profileError } = await supabase.from("profiles").insert({
+        id: userId,
         email,
         username,
         channel_name: channelName,
         avatar_url,
       });
-      if (upsertError) {
-        setMessage(`❌ Gagal menyimpan profil: ${upsertError.message}`);
+
+      if (profileError) {
+        setMessage(`❌ Gagal menyimpan profil: ${profileError.message}`);
         setLoading(false);
         return;
       }
 
       setMessage("✅ Pendaftaran berhasil! Cek email untuk verifikasi.");
-      // reset form
+
+      // Reset form
       setEmail("");
       setPassword("");
       setPassword2("");
@@ -109,11 +113,12 @@ export default function Register() {
     } catch {
       setMessage("❌ Terjadi kesalahan saat proses pendaftaran.");
     }
+
     setLoading(false);
   };
 
   return (
-    <form onSubmit={handleRegister} className="space-y-4 max-w-md mx-auto p-6 bg-white rounded-md shadow-md">
+    <form onSubmit={handleRegister} className="space-y-4 max-w-md mx-auto p-4 bg-white rounded-md shadow-md">
       <h1 className="text-2xl font-bold text-center text-red-600">Daftar Nyantube</h1>
 
       <input
@@ -170,7 +175,7 @@ export default function Register() {
       <button
         type="submit"
         disabled={loading}
-        className="bg-red-600 text-white w-full py-2 rounded-md hover:bg-red-700 transition disabled:opacity-50"
+        className="bg-red-600 text-white w-full py-2 rounded-md hover:bg-red-700 transition"
       >
         {loading ? "Mendaftar..." : "Daftar"}
       </button>
