@@ -63,18 +63,16 @@ export default function AuthPage() {
     setMessage("");
 
     try {
-      // Ambil IP dari API internal
       const res = await fetch("/api/get-ip");
       const { ip } = await res.json();
 
-      // Cek berapa kali IP ini sudah mendaftar hari ini
       const today = new Date().toISOString().split("T")[0];
       const { count, error: countError } = await supabase
         .from("ip_registers")
         .select("*", { count: "exact", head: true })
         .eq("ip_address", ip)
-        .gte("created_at", `${today}T00:00:00.000Z`)
-        .lt("created_at", `${today}T23:59:59.999Z`);
+        .gte("created_at", ${today}T00:00:00.000Z)
+        .lt("created_at", ${today}T23:59:59.999Z);
 
       if (countError) {
         setMessage("❌ Gagal memeriksa IP.");
@@ -82,35 +80,25 @@ export default function AuthPage() {
         return;
       }
 
-      if ((count ?? 0) >= 2) {
-        setMessage("❌ Batas pendaftaran harian dari IP ini sudah tercapai (maks 2 akun per hari).");
+      if ((count ?? 0) >= 5) {
+        setMessage("❌ Batas pendaftaran harian dari IP ini sudah tercapai (maks 5 akun per hari).");
         setLoading(false);
         return;
       }
 
-      // Buat akun di Auth Supabase
       const { data, error } = await supabase.auth.signUp({ email, password });
 
       if (error) {
-        setMessage(`❌ ${error.message}`);
+        setMessage(❌ ${error.message});
       } else if (data.user) {
-        // Simpan profil user (harus isi kolom id)
-        await supabase.from("profiles").insert({
-          id: data.user.id,
-          username,
-          channel_name: channelName,
-          avatar_url: null,
-        });
+        await supabase
+          .from("profiles")
+          .upsert({
+            username,
+            channel_name: channelName,
+          })
+          .eq("id", data.user.id);
 
-        //console log hapus setelah kelar
-        if (profileError) {
-          console.error("Profile insert error:", profileError);
-          setMessage(`❌ Gagal menyimpan profil: ${profileError.message}`);
-          setLoading(false);
-            return;
-        }
-        
-        // Simpan log IP untuk pembatasan
         await supabase.from("ip_registers").insert({
           ip_address: ip,
         });
@@ -138,7 +126,7 @@ export default function AuthPage() {
     });
 
     if (error) {
-      setMessage(`❌ ${error.message}`);
+      setMessage(❌ ${error.message});
     } else {
       setMessage("✅ Login berhasil!");
       setUser({ id: data.user!.id, email: data.user!.email! });
@@ -161,8 +149,8 @@ export default function AuthPage() {
 
   if (user && profile) {
     const avatarUrl = profile.avatar_url
-      ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${profile.avatar_url}`
-      : `https://ui-avatars.com/api/?name=${profile.username}`;
+      ? ${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${profile.avatar_url}
+      : https://ui-avatars.com/api/?name=${profile.username};
 
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100">
@@ -273,5 +261,3 @@ export default function AuthPage() {
     </div>
   );
 }
-
-
