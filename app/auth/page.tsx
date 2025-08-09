@@ -73,7 +73,7 @@ export default function AuthPage() {
         .from("ip_registers")
         // head:true + count:'exact' -> kita pakai select id agar count dikembalikan
         .select("id", { count: "exact", head: true })
-        .eq("ip_addresses", ip) // <-- pastikan kolom sesuai (ip_addresses)
+        .eq("ip_address", ip)
         .gte("created_at", `${today}T00:00:00.000Z`)
         .lt("created_at", `${today}T23:59:59.999Z`);
 
@@ -133,7 +133,7 @@ export default function AuthPage() {
         id: typeof crypto !== "undefined" && (crypto as any).randomUUID
           ? (crypto as any).randomUUID()
           : undefined,
-        ip_addresses: ip,
+        ip_address: ip,
       });
 
       if (ipLogError) {
@@ -301,3 +301,4 @@ export default function AuthPage() {
     </div>
   );
 }
+
