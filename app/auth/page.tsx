@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { supabase } from "@supabase/client";
+import { supabase } from "@/supabase/client";
 import Image from "next/image";
 
 interface User {
@@ -271,4 +271,5 @@ export default function AuthPage() {
     </div>
   );
 }
+
 
