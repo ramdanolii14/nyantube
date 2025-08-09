@@ -93,15 +93,26 @@ export default function AuthPage() {
 
       if (error) {
         setMessage(`❌ ${error.message}`);
-      } else if (data.user) {
-        await supabase
+        setLoading(false);
+        return;
+      }
+
+      if (data.user) {
+        // Upsert dengan error handling
+        const { error: upsertError } = await supabase
           .from("profiles")
           .upsert({
-            id: data.user.id, // pastikan ID user ikut diinsert
-            email: email,
+            id: data.user.id,
+            email,
             username,
             channel_name: channelName,
           });
+
+        if (upsertError) {
+          setMessage(`❌ Gagal menyimpan profil: ${upsertError.message}`);
+          setLoading(false);
+          return;
+        }
 
         await supabase.from("ip_registers").insert({
           ip_address: ip,
@@ -265,5 +276,3 @@ export default function AuthPage() {
     </div>
   );
 }
-
-
