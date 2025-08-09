@@ -67,11 +67,14 @@ export default function AuthPage() {
       const res = await fetch("/api/get-ip");
       const { ip } = await res.json();
 
-      // Cek berapa kali IP ini sudah mendaftar (maks 2 akun)
+      // Cek berapa kali IP ini sudah mendaftar hari ini
+      const today = new Date().toISOString().split("T")[0];
       const { count, error: countError } = await supabase
         .from("ip_registers")
         .select("*", { count: "exact", head: true })
-        .eq("ip_address", ip);
+        .eq("ip_address", ip)
+        .gte("created_at", `${today}T00:00:00.000Z`)
+        .lt("created_at", `${today}T23:59:59.999Z`);
 
       if (countError) {
         setMessage("❌ Gagal memeriksa IP.");
@@ -81,50 +84,58 @@ export default function AuthPage() {
 
       if ((count ?? 0) >= 2) {
         setMessage(
-          "❌ Batas pendaftaran dari IP ini sudah tercapai (maks 2 akun)."
+          "❌ Batas pendaftaran harian dari IP ini sudah tercapai (maks 2 akun per hari)."
         );
         setLoading(false);
         return;
       }
 
       // Buat akun di Auth Supabase
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+      const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
       });
 
-      if (signUpError) {
-        setMessage(`❌ ${signUpError.message}`);
+      if (authError) {
+        setMessage(`❌ ${authError.message}`);
         setLoading(false);
         return;
       }
 
-      if (signUpData.user) {
+      if (authData.user) {
         // Simpan profil user
         const { error: profileError } = await supabase.from("profiles").insert({
-          id: signUpData.user.id,
+          id: authData.user.id,
           username,
           channel_name: channelName,
           avatar_url: null,
         });
 
         if (profileError) {
+          console.error("Profile insert error:", profileError);
           setMessage(`❌ Gagal menyimpan profil: ${profileError.message}`);
           setLoading(false);
           return;
         }
 
         // Simpan log IP
-        await supabase.from("ip_registers").insert({
-          ip_address: ip,
-        });
+        const { error: ipLogError } = await supabase
+          .from("ip_registers")
+          .insert({ ip_address: ip });
 
-        setMessage("✅ Pendaftaran berhasil! Cek email untuk verifikasi.");
+        if (ipLogError) {
+          console.error("IP log insert error:", ipLogError);
+          setMessage(`⚠️ Pendaftaran berhasil tapi gagal simpan log IP.`);
+        } else {
+          setMessage("✅ Pendaftaran berhasil! Cek email untuk verifikasi.");
+        }
+
         setMode("login");
         setUsername("");
         setChannelName("");
       }
     } catch (err) {
+      console.error(err);
       setMessage("❌ Terjadi kesalahan saat proses pendaftaran.");
     }
 
