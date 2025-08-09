@@ -96,6 +96,7 @@ export default function AuthPage() {
       } else if (data.user) {
         // Simpan profil user (harus isi kolom id)
         await supabase.from("profiles").insert({
+          id: auth.users.id,
           username,
           channel_name: channelName,
           avatar_url: null,
@@ -264,4 +265,5 @@ export default function AuthPage() {
     </div>
   );
 }
+
 
