@@ -98,7 +98,7 @@ export default function AuthPage() {
           .from("profiles")
           .upsert({
             id: data.user.id, // pastikan ID user ikut diinsert
-            email: email;
+            email: email,
             username,
             channel_name: channelName,
           });
@@ -265,4 +265,5 @@ export default function AuthPage() {
     </div>
   );
 }
+
 
