@@ -1,5 +1,5 @@
 // authHandler.ts
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "@/supabase/client";
 
 /**
  * Register user baru dengan limit 2 akun per IP
@@ -99,3 +99,4 @@ export async function loginUser(email: string, password: string) {
     return { success: false, message: err.message || "Terjadi kesalahan." };
   }
 }
+
