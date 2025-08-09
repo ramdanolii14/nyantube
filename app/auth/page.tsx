@@ -1,278 +1,101 @@
-"use client";
+// authHandler.ts
+import { supabase } from "@/lib/supabaseClient";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { createClient } from "@supabase/supabase-js";
-import Image from "next/image";
+/**
+ * Register user baru dengan limit 2 akun per IP
+ */
+export async function registerUser(
+  username: string,
+  channelName: string,
+  email: string,
+  password: string
+) {
+  try {
+    // 1. Ambil IP publik
+    const ipRes = await fetch("https://api64.ipify.org?format=json");
+    const { ip } = await ipRes.json();
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+    // 2. Cek jumlah akun dari IP ini
+    const { data: ipData, error: ipCheckError } = await supabase
+      .from("ip_registers")
+      .select("id")
+      .eq("ip_addresses", ip);
 
-interface User {
-  id: string;
-  email: string;
-}
-
-interface Profile {
-  id: string;
-  username: string;
-  channel_name: string;
-  avatar_url: string | null;
-}
-
-export default function AuthPage() {
-  const router = useRouter();
-  const [mode, setMode] = useState<"login" | "register">("login");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [username, setUsername] = useState("");
-  const [channelName, setChannelName] = useState("");
-  const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
-
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      if (data.user) {
-        setUser({ id: data.user.id, email: data.user.email! });
-        fetchProfile(data.user.id);
-      }
-    });
-  }, []);
-
-  const fetchProfile = async (userId: string) => {
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", userId)
-      .single();
-    if (!error && data) setProfile(data);
-  };
-
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!username.trim() || !channelName.trim()) {
-      setMessage("❌ Username dan Nama Channel wajib diisi.");
-      return;
+    if (ipCheckError) throw ipCheckError;
+    if (ipData.length >= 2) {
+      return { success: false, message: "❌ Maksimal 2 akun per IP." };
     }
 
-    setLoading(true);
-    setMessage("");
-
-    try {
-      // Ambil IP dari API internal
-      const res = await fetch("/api/get-ip");
-      const { ip } = await res.json();
-
-      // Cek berapa kali IP ini sudah mendaftar hari ini
-      const today = new Date().toISOString().split("T")[0];
-      const { count, error: countError } = await supabase
-        .from("ip_registers")
-        .select("*", { count: "exact", head: true })
-        .eq("ip_address", ip)
-        .gte("created_at", `${today}T00:00:00.000Z`)
-        .lt("created_at", `${today}T23:59:59.999Z`);
-
-      if (countError) {
-        setMessage("❌ Gagal memeriksa IP.");
-        setLoading(false);
-        return;
-      }
-
-      if ((count ?? 0) >= 2) {
-        setMessage("❌ Batas pendaftaran harian dari IP ini sudah tercapai (maks 2 akun per hari).");
-        setLoading(false);
-        return;
-      }
-
-      // Buat akun di Auth Supabase
-      const { data, error } = await supabase.auth.signUp({ email, password });
-
-      if (error) {
-        setMessage(`❌ ${error.message}`);
-      } else if (data.user) {
-        // Simpan profil user (harus isi kolom id)
-        await supabase.from("profiles").insert({
-          id: data.user.id,
-          username,
-          channel_name: channelName,
-          avatar_url: null,
-        });
-
-        //console log hapus setelah kelar
-        if (profileError) {
-          console.error("Profile insert error:", profileError);
-          setMessage(`❌ Gagal menyimpan profil: ${profileError.message}`);
-          setLoading(false);
-            return;
-        }
-        
-        // Simpan log IP untuk pembatasan
-        await supabase.from("ip_registers").insert({
-          ip_address: ip,
-        });
-
-        setMessage("✅ Pendaftaran berhasil! Cek email untuk verifikasi.");
-        setMode("login");
-        setUsername("");
-        setChannelName("");
-      }
-    } catch (err) {
-      setMessage("❌ Terjadi kesalahan saat proses pendaftaran.");
-    }
-
-    setLoading(false);
-  };
-
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setMessage("");
-
-    const { data, error } = await supabase.auth.signInWithPassword({
+    // 3. Signup ke auth
+    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
     });
 
-    if (error) {
-      setMessage(`❌ ${error.message}`);
-    } else {
-      setMessage("✅ Login berhasil!");
-      setUser({ id: data.user!.id, email: data.user!.email! });
-      fetchProfile(data.user!.id);
-      router.push("/");
-    }
-    setLoading(false);
-  };
+    if (signUpError) throw signUpError;
+    const userId = signUpData.user?.id;
+    if (!userId) throw new Error("User ID tidak ditemukan setelah signup.");
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    setUser(null);
-    setProfile(null);
-    setEmail("");
-    setPassword("");
-    setUsername("");
-    setChannelName("");
-    setMessage("");
-  };
+    // 4. Insert ke profiles (id = auth.users.id)
+    const { error: profileError } = await supabase
+      .from("profiles")
+      .insert({
+        id: userId,
+        username,
+        channel_name: channelName,
+        avatar_url: null,
+      });
 
-  if (user && profile) {
-    const avatarUrl = profile.avatar_url
-      ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${profile.avatar_url}`
-      : `https://ui-avatars.com/api/?name=${profile.username}`;
+    if (profileError) throw profileError;
 
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100">
-        <div className="bg-white p-6 rounded-lg shadow-md max-w-md w-full text-center">
-          <Image
-            src={avatarUrl}
-            alt="Avatar"
-            width={80}
-            height={80}
-            className="rounded-full mx-auto mb-3"
-            unoptimized
-          />
-          <h1 className="text-2xl font-bold mb-2">
-            Selamat Datang, {profile.channel_name || "User"}
-          </h1>
-          <p className="text-gray-700">
-            <strong>@{profile.username}</strong>
-          </p>
-          <p className="text-gray-600">{user.email}</p>
-          <button
-            onClick={handleLogout}
-            className="bg-red-600 text-white w-full py-2 rounded-md hover:bg-red-700 mt-4"
-          >
-            Logout
-          </button>
-        </div>
-      </div>
-    );
+    // 5. Simpan IP ke ip_registers
+    const { error: ipInsertError } = await supabase
+      .from("ip_registers")
+      .insert({
+        id: crypto.randomUUID(),
+        ip_addresses: ip,
+      });
+
+    if (ipInsertError) throw ipInsertError;
+
+    return { success: true, message: "✅ Registrasi berhasil." };
+  } catch (err: any) {
+    console.error("Register Error:", err);
+    return { success: false, message: err.message || "Terjadi kesalahan." };
   }
-
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <form
-        onSubmit={mode === "login" ? handleLogin : handleRegister}
-        className="bg-white p-6 rounded-lg shadow-md max-w-md w-full"
-      >
-        <h1 className="text-2xl font-bold mb-4 text-center text-red-600">
-          {mode === "login" ? "Login Nyantube" : "Daftar Nyantube"}
-        </h1>
-
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="border p-2 rounded-md w-full mb-3"
-          required
-        />
-
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="border p-2 rounded-md w-full mb-4"
-          required
-        />
-
-        {mode === "register" && (
-          <>
-            <input
-              type="text"
-              placeholder="Username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className="border p-2 rounded-md w-full mb-3"
-              required
-            />
-
-            <input
-              type="text"
-              placeholder="Nama Channel"
-              value={channelName}
-              onChange={(e) => setChannelName(e.target.value)}
-              className="border p-2 rounded-md w-full mb-4"
-              required
-            />
-          </>
-        )}
-
-        <button
-          type="submit"
-          disabled={loading}
-          className="bg-red-600 text-white w-full py-2 rounded-md hover:bg-red-700 transition"
-        >
-          {loading
-            ? mode === "login"
-              ? "Login..."
-              : "Mendaftar..."
-            : mode === "login"
-            ? "Login"
-            : "Daftar"}
-        </button>
-
-        {message && (
-          <p className="text-center text-sm text-gray-600 mt-3">{message}</p>
-        )}
-
-        <p
-          onClick={() => setMode(mode === "login" ? "register" : "login")}
-          className="text-center text-blue-600 text-sm mt-3 cursor-pointer"
-        >
-          {mode === "login"
-            ? "Belum punya akun? Daftar di sini"
-            : "Sudah punya akun? Login di sini"}
-        </p>
-      </form>
-    </div>
-  );
 }
 
+/**
+ * Login user + ambil profilnya
+ */
+export async function loginUser(email: string, password: string) {
+  try {
+    // 1. Login ke auth
+    const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
 
+    if (loginError) throw loginError;
+    const userId = loginData.user?.id;
+    if (!userId) throw new Error("User ID tidak ditemukan setelah login.");
 
+    // 2. Ambil profil user
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", userId)
+      .single();
+
+    if (profileError) throw profileError;
+
+    return {
+      success: true,
+      message: "✅ Login berhasil.",
+      profile,
+    };
+  } catch (err: any) {
+    console.error("Login Error:", err);
+    return { success: false, message: err.message || "Terjadi kesalahan." };
+  }
+}
