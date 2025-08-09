@@ -63,9 +63,11 @@ export default function AuthPage() {
     setMessage("");
 
     try {
+      // Ambil IP dari API internal
       const res = await fetch("/api/get-ip");
       const { ip } = await res.json();
 
+      // Cek berapa kali IP ini sudah mendaftar hari ini
       const today = new Date().toISOString().split("T")[0];
       const { count, error: countError } = await supabase
         .from("ip_registers")
@@ -86,20 +88,21 @@ export default function AuthPage() {
         return;
       }
 
+      // Buat akun di Auth Supabase
       const { data, error } = await supabase.auth.signUp({ email, password });
 
       if (error) {
         setMessage(`❌ ${error.message}`);
       } else if (data.user) {
-        await supabase
-          .from("profiles")
-          .insert({
-            username,
-            channel_name: channelName,
-            avatar_url: null,
-          })
-          .eq("id", data.user.id);
+        // Simpan profil user (harus isi kolom id)
+        await supabase.from("profiles").insert({
+          id: data.user.id,
+          username,
+          channel_name: channelName,
+          avatar_url: null,
+        });
 
+        // Simpan log IP untuk pembatasan
         await supabase.from("ip_registers").insert({
           ip_address: ip,
         });
@@ -262,4 +265,3 @@ export default function AuthPage() {
     </div>
   );
 }
-
