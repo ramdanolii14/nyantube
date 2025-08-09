@@ -63,20 +63,22 @@ export default function AuthPage() {
     setMessage("");
 
     try {
-      // Ambil IP dari API internal
+      // 1) Ambil IP dari API internal (/api/get-ip sudah kamu sediakan)
       const res = await fetch("/api/get-ip");
       const { ip } = await res.json();
 
-      // Cek berapa kali IP ini sudah mendaftar hari ini
+      // 2) Hitung berapa pendaftaran dari IP ini hari ini (limit 2 / hari)
       const today = new Date().toISOString().split("T")[0];
       const { count, error: countError } = await supabase
         .from("ip_registers")
-        .select("*", { count: "exact", head: true })
-        .eq("ip_address", ip)
+        // head:true + count:'exact' -> kita pakai select id agar count dikembalikan
+        .select("id", { count: "exact", head: true })
+        .eq("ip_addresses", ip) // <-- pastikan kolom sesuai (ip_addresses)
         .gte("created_at", `${today}T00:00:00.000Z`)
         .lt("created_at", `${today}T23:59:59.999Z`);
 
       if (countError) {
+        console.error("IP count error:", countError);
         setMessage("❌ Gagal memeriksa IP.");
         setLoading(false);
         return;
@@ -90,52 +92,63 @@ export default function AuthPage() {
         return;
       }
 
-      // Buat akun di Auth Supabase
+      // 3) Buat akun di Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
       });
 
       if (authError) {
+        console.error("Auth signUp error:", authError);
         setMessage(`❌ ${authError.message}`);
         setLoading(false);
         return;
       }
 
-      if (authData.user) {
-        // Simpan profil user
-        const { error: profileError } = await supabase.from("profiles").insert({
-          id: authData.user.id,
-          username,
-          channel_name: channelName,
-          avatar_url: null,
-        });
-
-        if (profileError) {
-          console.error("Profile insert error:", profileError);
-          setMessage(`❌ Gagal menyimpan profil: ${profileError.message}`);
-          setLoading(false);
-          return;
-        }
-
-        // Simpan log IP
-        const { error: ipLogError } = await supabase
-          .from("ip_registers")
-          .insert({ ip_address: ip });
-
-        if (ipLogError) {
-          console.error("IP log insert error:", ipLogError);
-          setMessage(`⚠️ Pendaftaran berhasil tapi gagal simpan log IP.`);
-        } else {
-          setMessage("✅ Pendaftaran berhasil! Cek email untuk verifikasi.");
-        }
-
-        setMode("login");
-        setUsername("");
-        setChannelName("");
+      const userId = authData?.user?.id;
+      if (!userId) {
+        setMessage("❌ Gagal membuat akun (tidak ada user id).");
+        setLoading(false);
+        return;
       }
+
+      // 4) Insert profil (id harus sama dengan auth.users.id)
+      const { error: profileError } = await supabase.from("profiles").insert({
+        id: userId,
+        username,
+        channel_name: channelName,
+        avatar_url: null,
+      });
+
+      if (profileError) {
+        console.error("Profile insert error:", profileError);
+        setMessage(`❌ Gagal menyimpan profil: ${profileError.message}`);
+        setLoading(false);
+        return;
+      }
+
+      // 5) Insert log IP (sertakan id jika tabel ip_registers tidak punya default)
+      const { error: ipLogError } = await supabase.from("ip_registers").insert({
+        // gunakan crypto.randomUUID() di browser modern
+        id: typeof crypto !== "undefined" && (crypto as any).randomUUID
+          ? (crypto as any).randomUUID()
+          : undefined,
+        ip_addresses: ip,
+      });
+
+      if (ipLogError) {
+        console.error("IP log insert error:", ipLogError);
+        // pendaftaran tetap dianggap berhasil walau log IP gagal
+        setMessage("⚠️ Pendaftaran berhasil tapi gagal menyimpan log IP.");
+      } else {
+        setMessage("✅ Pendaftaran berhasil! Cek email untuk verifikasi.");
+      }
+
+      setMode("login");
+      setUsername("");
+      setChannelName("");
     } catch (err) {
-      console.error(err);
+      console.error("Register catch error:", err);
       setMessage("❌ Terjadi kesalahan saat proses pendaftaran.");
     }
 
