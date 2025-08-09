@@ -96,12 +96,20 @@ export default function AuthPage() {
       } else if (data.user) {
         // Simpan profil user (harus isi kolom id)
         await supabase.from("profiles").insert({
-          id: auth.users.id,
+          id: data.user.id,
           username,
           channel_name: channelName,
           avatar_url: null,
         });
 
+        //console log hapus setelah kelar
+        if (profileError) {
+          console.error("Profile insert error:", profileError);
+          setMessage(`❌ Gagal menyimpan profil: ${profileError.message}`);
+          setLoading(false);
+            return;
+        }
+        
         // Simpan log IP untuk pembatasan
         await supabase.from("ip_registers").insert({
           ip_address: ip,
@@ -265,5 +273,6 @@ export default function AuthPage() {
     </div>
   );
 }
+
 
 
