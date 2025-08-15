@@ -11,7 +11,8 @@ export default function StatusPage() {
   }, []);
 
   return (
-    <div>
+    <div className="bg-white min-h-screen p-5">
+      {/* Load script resmi dari Hetrix */}
       <Script
         src="https://static.hetrix.io/iframeResizer/iframeResizer.min.js"
         strategy="afterInteractive"
@@ -22,12 +23,17 @@ export default function StatusPage() {
         }}
       />
 
+      {/* Iframe Hetrix */}
       <iframe
         className="htframe"
         src="https://wl.hetrixtools.com/r/e33f3d15f1d8738ee74760c132ea972e/"
         width="100%"
         scrolling="no"
-        style={{ border: "none" }}
+        style={{
+          border: "none",
+          marginTop: "20px",
+          backgroundColor: "white",
+        }}
         sandbox="allow-scripts allow-same-origin allow-popups"
       ></iframe>
     </div>
