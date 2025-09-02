@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { supabase } from "@/supabase/client";
 import { useRouter } from "next/navigation";
-import { Turnstile } from "@marsidev/react-turnstile";
 
 export default function Login() {
   const router = useRouter();
@@ -64,14 +63,6 @@ export default function Login() {
         required
       />
 
-      {/* Turnstile widget dari cloudpeler */}
-      <div className="flex justify-center">
-        <Turnstile
-          siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!}
-          onSuccess={(token) => setCaptchaToken(token)}
-          options={{ theme: "light" }}
-        />
-      </div>
 
       <button
         type="submit"
