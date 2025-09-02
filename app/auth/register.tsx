@@ -2,11 +2,13 @@
 
 import { useState } from "react";
 import { supabase } from "@/supabase/client";
+import { Turnstile } from "@marsidev/react-turnstile";
 
 export default function Register() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [password2, setPassword2] = useState("");
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
@@ -18,12 +20,20 @@ export default function Register() {
       return;
     }
 
+    if (!captchaToken) {
+      setMessage("❌ Silakan selesaikan verifikasi CAPTCHA.");
+      return;
+    }
+
     setLoading(true);
     setMessage("");
 
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
+      options: {
+        captchaToken, // <-- token ada bug gak nich? nanti periksa
+      },
     });
 
     if (error) {
@@ -36,12 +46,18 @@ export default function Register() {
     setEmail("");
     setPassword("");
     setPassword2("");
+    setCaptchaToken(null);
     setLoading(false);
   };
 
   return (
-    <form onSubmit={handleRegister} className="space-y-4 max-w-md mx-auto p-6 bg-white rounded shadow">
-      <h1 className="text-2xl font-bold text-center text-red-600">Daftar Nyantube</h1>
+    <form
+      onSubmit={handleRegister}
+      className="space-y-4 max-w-md mx-auto p-6 bg-white rounded shadow"
+    >
+      <h1 className="text-2xl font-bold text-center text-red-600">
+        Daftar Nyantube
+      </h1>
 
       <input
         type="email"
@@ -70,6 +86,13 @@ export default function Register() {
         required
       />
 
+      {/* Widget Turnstile Dari Cloudpeler */}
+      <Turnstile
+        siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!}
+        onSuccess={(token) => setCaptchaToken(token)}
+        options={{ theme: "light" }}
+      />
+
       <button
         type="submit"
         disabled={loading}
@@ -78,7 +101,9 @@ export default function Register() {
         {loading ? "Mendaftar..." : "Daftar"}
       </button>
 
-      {message && <p className="text-center text-sm text-gray-600">{message}</p>}
+      {message && (
+        <p className="text-center text-sm text-gray-600">{message}</p>
+      )}
     </form>
   );
 }
