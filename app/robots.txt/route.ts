@@ -1,5 +1,5 @@
 export async function GET() {
-  const baseUrl = "https://nyanstream.my.id";
+  const baseUrl = "https://www.nyanstream.my.id";
 
   return new Response(
     `User-agent: *
