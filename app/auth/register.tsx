@@ -40,7 +40,7 @@ export default function Register() {
       return;
     }
 
-    setMessage("✅ Pendaftaran berhasil! Cek email untuk verifikasi.");
+    setMessage("✅ Pendaftaran berhasil! Cek email untuk verifikasi, SEKARANG!.");
     setEmail("");
     setPassword("");
     setPassword2("");
@@ -54,7 +54,7 @@ export default function Register() {
       className="space-y-6 max-w-md mx-auto p-8 bg-white rounded-2xl shadow-md"
     >
       <h1 className="text-3xl font-bold text-center text-red-600 mb-4">
-        Daftar Nyantube
+        Daftar Akun Dulu..
       </h1>
 
       <div className="space-y-2">
@@ -63,7 +63,7 @@ export default function Register() {
         </label>
         <input
           type="email"
-          placeholder="contoh@email.com"
+          placeholder="contoh@gmail.com"
           className="border p-3 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-red-400"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
