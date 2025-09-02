@@ -236,29 +236,38 @@ export default function WatchPageClient({ id }: { id: string }) {
 
           {/* Channel Info */}
           <div className="flex items-center gap-3 mb-4">
-            <Link href={`/${video.profiles.username}`}>
-              <Image
-                src={getAvatarUrl(video.profiles.avatar_url, video.profiles.channel_name || video.profiles.username)}
-                alt="avatar"
-                width={40}
-                height={40}
-                className="rounded-full w-10 h-10 object-cover"
-              />
-            </Link>
-            <div className="flex-1">
-              <Link
-                href={`/${video.profiles.username}`}
-                className="font-semibold hover:underline flex items-center gap-1"
-              >
-                {video.profiles.channel_name || video.profiles.username}
-                {video.profiles.is_verified && <Image src="/verified.svg" alt="verified" title="AKUN TERVERIFIKASI" width={14} height={14} />}
-                {video.profiles.is_mod && <Image src="/mod.svg" alt="mod" title="TERVERIFIKASI ADMIN" width={14} height={14} />}
-                {video.profiles.is_bughunter && <Image src="/bughunter.svg" alt="bughunter" title="TERVERIFIKASI BUGHUNTER" width={14} height={14} />}
-              </Link>
-              <p className="text-sm text-gray-500">
-                {video.views} views • {timeAgo(video.created_at)}
-              </p>
-            </div>
+            {video.profiles ? (
+              <>
+                <Link href={`/${video.profiles?.username ?? "#"}`}>
+                  <Image
+                    src={getAvatarUrl(
+                      video.profiles?.avatar_url,
+                      video.profiles?.channel_name || video.profiles?.username || "Unknown"
+                    )}
+                    alt="avatar"
+                    width={40}
+                    height={40}
+                    className="rounded-full w-10 h-10 object-cover"
+                  />
+                </Link>
+                <div className="flex-1">
+                  <Link
+                    href={`/${video.profiles?.username ?? "#"}`}
+                    className="font-semibold hover:underline flex items-center gap-1"
+                  >
+                    {video.profiles?.channel_name || video.profiles?.username || "Unknown Channel"}
+                    {video.profiles?.is_verified && <Image src="/verified.svg" alt="verified" width={14} height={14} />}
+                    {video.profiles?.is_mod && <Image src="/mod.svg" alt="mod" width={14} height={14} />}
+                    {video.profiles?.is_bughunter && <Image src="/bughunter.svg" alt="bughunter" width={14} height={14} />}
+                  </Link>
+                  <p className="text-sm text-gray-500">
+                    {video.views} views • {timeAgo(video.created_at)}
+                  </p>
+                </div>
+              </>
+            ) : (
+              <div className="text-sm text-gray-500">[Unknown Channel]</div>
+            )}
 
             {/* Like/Dislike */}
             <div className="flex items-center gap-3">
@@ -307,9 +316,7 @@ export default function WatchPageClient({ id }: { id: string }) {
               </div>
 
               {/* Counter & Role Info */}
-              <div className="text-sm text-gray-500 text-right mt-1">
-                {newComment.length}/110
-              </div>
+              <div className="text-sm text-gray-500 text-right mt-1">{newComment.length}/110</div>
               {currentUserProfile?.is_mod ? (
                 <div className="text-xs text-purple-600">🛡 Moderator — tidak ada batas komentar per jam.</div>
               ) : currentUserProfile?.is_verified ? (
@@ -337,46 +344,67 @@ export default function WatchPageClient({ id }: { id: string }) {
               return (
                 <div key={c.id} className="mb-3">
                   <div className="flex gap-2">
-                    <Link href={`/${c.profiles.username}`}>
-                      <Image
-                        src={getAvatarUrl(c.profiles.avatar_url, c.profiles.channel_name || c.profiles.username)}
-                        alt="avatar"
-                        width={32}
-                        height={32}
-                        className="rounded-full w-8 h-8 object-cover"
-                      />
-                    </Link>
-                    <div>
-                      <Link href={`/${c.profiles.username}`} className="font-semibold hover:underline flex items-center gap-1">
-                        {c.profiles.channel_name || c.profiles.username}
-                        {c.profiles.is_verified && <Image src="/verified.svg" alt="verified" title="AKUN TERVERIFIKASI" width={12} height={12} />}
-                        {c.profiles.is_mod && <Image src="/mod.svg" alt="mod" title="TERVERIFIKASI ADMIN" width={12} height={12} />}
-                        {c.profiles.is_bughunter && <Image src="/bughunter.svg" alt="bughunter" title="TERVERIFIKASI BUGHUNTER" width={12} height={12} />}
-                        <span className="text-gray-500">· {timeAgo(c.created_at)}</span>
-                      </Link>
-                      {c.edited && <span className="text-xs text-gray-500 ml-1">[edited]</span>}
-                      {editComment?.id === c.id ? (
-                        <div className="flex gap-2 mt-1">
-                          <input
-                            type="text"
-                            value={editComment.content}
-                            onChange={(e) => setEditComment({ ...editComment, content: e.target.value })}
-                            className="border px-2 py-1 rounded text-sm"
+                    {c.profiles ? (
+                      <>
+                        <Link href={`/${c.profiles?.username ?? "#"}`}>
+                          <Image
+                            src={getAvatarUrl(
+                              c.profiles?.avatar_url,
+                              c.profiles?.channel_name || c.profiles?.username || "Unknown"
+                            )}
+                            alt="avatar"
+                            width={32}
+                            height={32}
+                            className="rounded-full w-8 h-8 object-cover"
                           />
-                          <button onClick={handleEditComment} className="text-blue-500 text-sm">Save</button>
-                          <button onClick={() => setEditComment(null)} className="text-gray-500 text-sm">Cancel</button>
+                        </Link>
+                        <div>
+                          <Link
+                            href={`/${c.profiles?.username ?? "#"}`}
+                            className="font-semibold hover:underline flex items-center gap-1"
+                          >
+                            {c.profiles?.channel_name || c.profiles?.username || "Unknown User"}
+                            {c.profiles?.is_verified && <Image src="/verified.svg" alt="verified" width={12} height={12} />}
+                            {c.profiles?.is_mod && <Image src="/mod.svg" alt="mod" width={12} height={12} />}
+                            {c.profiles?.is_bughunter && (
+                              <Image src="/bughunter.svg" alt="bughunter" width={12} height={12} />
+                            )}
+                            <span className="text-gray-500">· {timeAgo(c.created_at)}</span>
+                          </Link>
+                          {c.edited && <span className="text-xs text-gray-500 ml-1">[edited]</span>}
+                          {editComment?.id === c.id ? (
+                            <div className="flex gap-2 mt-1">
+                              <input
+                                type="text"
+                                value={editComment.content}
+                                onChange={(e) => setEditComment({ ...editComment, content: e.target.value })}
+                                className="border px-2 py-1 rounded text-sm"
+                              />
+                              <button onClick={handleEditComment} className="text-blue-500 text-sm">
+                                Save
+                              </button>
+                              <button onClick={() => setEditComment(null)} className="text-gray-500 text-sm">
+                                Cancel
+                              </button>
+                            </div>
+                          ) : (
+                            <p className="break-words whitespace-pre-line">{c.content}</p>
+                          )}
+                          {canDelete && (
+                            <div className="flex gap-3 text-xs text-gray-500 mt-1">
+                              <button
+                                onClick={() => setConfirmDeleteId(c.id)}
+                                className="bg-red-500 text-white px-3 py-1 rounded w-20 text-center"
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          )}
                         </div>
-                      ) : (
-                        <p className="break-words whitespace-pre-line">{c.content}</p>
-                      )}
-                      {canDelete && (
-                        <div className="flex gap-3 text-xs text-gray-500 mt-1">
-                          <button onClick={() => setConfirmDeleteId(c.id)} className="bg-red-500 text-white px-3 py-1 rounded w-20 text-center">
-                            Delete
-                          </button>
-                        </div>
-                      )}
-                    </div>
+                      </>
+                    ) : (
+                      <div className="text-sm text-gray-500">[Deleted User]</div>
+                    )}
                   </div>
                 </div>
               );
