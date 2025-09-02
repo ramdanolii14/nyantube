@@ -427,12 +427,12 @@ export default function WatchPageClient({ id }: { id: string }) {
               </div>
               <div className="flex-1">
                 <p className="text-sm font-semibold line-clamp-2">{v.title}</p>
-                <div className="flex items-center gap-1 text-xs text-gray-500">
-                  {v.profiles.channel_name || v.profiles.username}
-                  {v.profiles.is_verified && <Image src="/verified.svg" alt="verified" title="AKUN TERVERIFIKASI" width={10} height={10} />}
-                  {v.profiles.is_mod && <Image src="/mod.svg" alt="mod" title="TERVERIFIKASI ADMIN" width={10} height={10} />}
-                  {v.profiles.is_bughunter && <Image src="/bughunter.svg" alt="bughunter" title="TERVERIFIKASI BUGHUNTER" width={10} height={10} />}
-                </div>
+                  <div className="flex items-center gap-1 text-xs text-gray-500">
+                    {v.profiles?.channel_name || v.profiles?.username || "[Unknown Channel]"}
+                    {v.profiles?.is_verified && <Image src="/verified.svg" alt="verified" title="AKUN TERVERIFIKASI" width={10} height={10} />}
+                    {v.profiles?.is_mod && <Image src="/mod.svg" alt="mod" title="TERVERIFIKASI ADMIN" width={10} height={10} />}
+                    {v.profiles?.is_bughunter && <Image src="/bughunter.svg" alt="bughunter" title="TERVERIFIKASI BUGHUNTER" width={10} height={10} />}
+                  </div>
               </div>
             </Link>
           ))}
