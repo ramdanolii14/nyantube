@@ -28,12 +28,10 @@ export default function Register() {
     setLoading(true);
     setMessage("");
 
-    const { data, error } = await supabase.auth.signUp({
+    const { error } = await supabase.auth.signUp({
       email,
       password,
-      options: {
-        captchaToken, // <-- token ada bug gak nich? nanti periksa
-      },
+      options: { captchaToken },
     });
 
     if (error) {
@@ -53,56 +51,75 @@ export default function Register() {
   return (
     <form
       onSubmit={handleRegister}
-      className="space-y-4 max-w-md mx-auto p-6 bg-white rounded shadow"
+      className="space-y-6 max-w-md mx-auto p-8 bg-white rounded-2xl shadow-md"
     >
-      <h1 className="text-2xl font-bold text-center text-red-600">
+      <h1 className="text-3xl font-bold text-center text-red-600 mb-4">
         Daftar Nyantube
       </h1>
 
-      <input
-        type="email"
-        placeholder="Email"
-        className="border p-2 rounded-md w-full"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        required
-      />
+      <div className="space-y-2">
+        <label className="block text-sm font-medium text-gray-700">
+          Email
+        </label>
+        <input
+          type="email"
+          placeholder="contoh@email.com"
+          className="border p-3 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-red-400"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+        />
+      </div>
 
-      <input
-        type="password"
-        placeholder="Password"
-        className="border p-2 rounded-md w-full"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        required
-      />
+      <div className="space-y-2">
+        <label className="block text-sm font-medium text-gray-700">
+          Password
+        </label>
+        <input
+          type="password"
+          placeholder="Minimal 6 karakter"
+          className="border p-3 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-red-400"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+        />
+      </div>
 
-      <input
-        type="password"
-        placeholder="Konfirmasi Password"
-        className="border p-2 rounded-md w-full"
-        value={password2}
-        onChange={(e) => setPassword2(e.target.value)}
-        required
-      />
+      <div className="space-y-2">
+        <label className="block text-sm font-medium text-gray-700">
+          Konfirmasi Password
+        </label>
+        <input
+          type="password"
+          placeholder="Ulangi password"
+          className="border p-3 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-red-400"
+          value={password2}
+          onChange={(e) => setPassword2(e.target.value)}
+          required
+        />
+      </div>
 
-      {/* Widget Turnstile Dari Cloudpeler */}
-      <Turnstile
-        siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!}
-        onSuccess={(token) => setCaptchaToken(token)}
-        options={{ theme: "light" }}
-      />
+      {/* Widget turnstile dari cloudpeler beta test wak*/}
+      <div className="flex justify-center">
+        <Turnstile
+          siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!}
+          onSuccess={(token) => setCaptchaToken(token)}
+          options={{ theme: "light" }}
+        />
+      </div>
 
       <button
         type="submit"
         disabled={loading}
-        className="bg-red-600 text-white w-full py-2 rounded-md hover:bg-red-700 transition"
+        className="bg-red-600 text-white w-full py-3 rounded-lg font-medium hover:bg-red-700 transition disabled:opacity-60"
       >
         {loading ? "Mendaftar..." : "Daftar"}
       </button>
 
       {message && (
-        <p className="text-center text-sm text-gray-600">{message}</p>
+        <p className="text-center text-sm font-medium text-gray-700">
+          {message}
+        </p>
       )}
     </form>
   );
