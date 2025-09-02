@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://nyanstream.my.id/sitemap.xml
+Sitemap: https://www.nyanstream.my.id/sitemap.xml
