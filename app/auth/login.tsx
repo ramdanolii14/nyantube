@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { supabase } from "@/supabase/client";
 import { useRouter } from "next/navigation";
+import { Turnstile } from "@marsidev/react-turnstile";
 
 export default function Login() {
   const router = useRouter();
@@ -16,7 +17,7 @@ export default function Login() {
     e.preventDefault();
 
     if (!captchaToken) {
-      setMessage("❌ eitss... CAPTCHA dulu bos.");
+      setMessage("❌ Silakan selesaikan verifikasi CAPTCHA.");
       return;
     }
 
@@ -42,7 +43,7 @@ export default function Login() {
   return (
     <form onSubmit={handleLogin} className="space-y-4 max-w-md mx-auto p-6 bg-white rounded-xl shadow">
       <h1 className="text-2xl font-bold text-center text-red-600">
-        Nyanstream Login
+        Login Ya..
       </h1>
 
       <input
@@ -63,6 +64,14 @@ export default function Login() {
         required
       />
 
+      {/* Turnstile widget males coeg ngebug terus, lu lanjutin ae nanti*/}
+      <div className="flex justify-center">
+        <Turnstile
+          siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!}
+          onSuccess={(token) => setCaptchaToken(token)}
+          options={{ theme: "light" }}
+        />
+      </div>
 
       <button
         type="submit"
