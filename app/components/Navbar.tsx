@@ -5,7 +5,7 @@ import { supabase } from "@/supabase/client";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Search, X, Upload } from "lucide-react";
+import { Search, X, Upload, LogIn } from "lucide-react"; // gw tambahin sedikit bagian login yak :v
 import { motion, AnimatePresence } from "framer-motion";
 
 interface User {
@@ -245,9 +245,9 @@ export default function Navbar() {
           ) : (
             <Link
               href="/auth"
-              className="bg-gray-200 px-3 py-1 rounded hover:bg-gray-300"
+              className="bg-gray-200 p-2 rounded-full hover:bg-gray-300 flex items-center justify-center"
             >
-              Login
+              <LogIn className="w-5 h-5 text-gray-700" />
             </Link>
           )}
         </div>
