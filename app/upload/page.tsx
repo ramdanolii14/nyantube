@@ -18,7 +18,10 @@ export default function UploadPage() {
   const [userId, setUserId] = useState<string | null>(null);
   const [username, setUsername] = useState<string | null>(null);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
-  const [isBanned, setIsBanned] = useState<boolean | null>(null); // 🔴 Tambahan
+  const [isBanned, setIsBanned] = useState<boolean | null>(null);
+
+  // Catatan kasih statemen dulu si turnstile buat masuk
+  const [token, setToken] = useState<string | null>(null);
 
   useEffect(() => {
     const checkUser = async () => {
@@ -45,6 +48,34 @@ export default function UploadPage() {
       }
     };
     checkUser();
+  }, []);
+
+  useEffect(() => {
+    // inject script turnstile kalau belum ada, ehh lynx perbaiki bagian comment
+    if (!document.querySelector("#turnstile-script")) {
+      const script = document.createElement("script");
+      script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js";
+      script.async = true;
+      script.defer = true;
+      script.id = "turnstile-script";
+      document.body.appendChild(script);
+    }
+  }, []);
+
+  useEffect(() => {
+    // render ulang turnstile widget, perbaiki performa
+    const interval = setInterval(() => {
+      if (window.turnstile && document.getElementById("upload-turnstile")) {
+        window.turnstile.render("#upload-turnstile", {
+          sitekey: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!,
+          callback: (tok: string) => setToken(tok),
+          "error-callback": () => setToken(null),
+          "expired-callback": () => setToken(null),
+        });
+        clearInterval(interval);
+      }
+    }, 500);
+    return () => clearInterval(interval);
   }, []);
 
   if (isBanned === null) {
@@ -95,8 +126,14 @@ export default function UploadPage() {
       return;
     }
 
+    //  validasi turnstile
+    if (!token) {
+      setMessage({ type: "error", text: "Harap selesaikan verifikasi anti-bot dulu." });
+      return;
+    }
+
     setUploading(true);
-    setMessage(null); // reset pesan
+    setMessage(null);
 
     try {
       const videoFileName = `${Date.now()}-${videoFile.name}`;
@@ -145,6 +182,7 @@ export default function UploadPage() {
     <div className="max-w-2xl mx-auto p-6 mt-10 bg-white shadow rounded">
       <h1 className="text-2xl font-bold mb-4">Upload Video</h1>
 
+      {/* input title */}
       <div className="mb-3">
         <label className="block font-medium mb-1">Title</label>
         <input
@@ -158,6 +196,7 @@ export default function UploadPage() {
         <div className="text-xs text-gray-500 mt-1">{title.length}/25</div>
       </div>
 
+      {/* input description */}
       <div className="mb-3">
         <label className="block font-medium mb-1">Description</label>
         <textarea
@@ -171,6 +210,7 @@ export default function UploadPage() {
         <div className="text-xs text-gray-500 mt-1">{description.length}/255</div>
       </div>
 
+      {/* upload video */}
       <div
         className="border-2 border-dashed rounded p-4 text-center mb-3 cursor-pointer hover:bg-gray-100"
         onDragOver={(e) => e.preventDefault()}
@@ -197,6 +237,7 @@ export default function UploadPage() {
         />
       </div>
 
+      {/* upload thumbnail */}
       <div
         className="border-2 border-dashed rounded p-4 text-center mb-3 cursor-pointer hover:bg-gray-100"
         onDragOver={(e) => e.preventDefault()}
@@ -222,6 +263,9 @@ export default function UploadPage() {
           onChange={(e) => handleThumbnailChange(e.target.files?.[0] || null)}
         />
       </div>
+
+      {/*  Turnstile */}
+      <div id="upload-turnstile" className="mb-3"></div>
 
       <button
         onClick={handleUpload}
@@ -250,6 +294,3 @@ export default function UploadPage() {
     </div>
   );
 }
-
-
-
