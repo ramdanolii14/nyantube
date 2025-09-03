@@ -4,6 +4,7 @@ import { useState } from "react";
 import { supabase } from "@/supabase/client";
 import { useRouter } from "next/navigation";
 import { Turnstile } from "@marsidev/react-turnstile";
+import Link from "next/link";
 
 export default function Login() {
   const router = useRouter();
@@ -41,7 +42,10 @@ export default function Login() {
   };
 
   return (
-    <form onSubmit={handleLogin} className="space-y-4 max-w-md mx-auto p-6 bg-white rounded-xl shadow">
+    <form
+      onSubmit={handleLogin}
+      className="space-y-4 max-w-md mx-auto p-6 bg-white rounded-xl shadow"
+    >
       <h1 className="text-2xl font-bold text-center text-red-600">
         Login Ya..
       </h1>
@@ -64,7 +68,16 @@ export default function Login() {
         required
       />
 
-      {/* Turnstile widget males coeg ngebug terus, lu lanjutin ae nanti*/}
+      {/* Link ke forgot password */}
+      <div className="text-right">
+        <Link
+          href="/auth/forgotpassword"
+          className="text-sm text-red-600 hover:underline"
+        >
+          Lupa Password?
+        </Link>
+      </div>
+
       <div className="flex justify-center">
         <Turnstile
           siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!}
