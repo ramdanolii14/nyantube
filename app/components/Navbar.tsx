@@ -1,11 +1,23 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState } from "react"; // sorry kebanyakan w edit :v
 import { supabase } from "@/supabase/client";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Search, X, Upload, LogIn } from "lucide-react";
+import {
+  Search,
+  X,
+  Upload,
+  LogIn,
+  User,
+  BadgeCheck,
+  FileText,
+  Shield,
+  Mail,
+  Info,
+  LogOut,
+} from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface User {
@@ -172,7 +184,7 @@ export default function Navbar() {
                 />
               </div>
 
-              {/* Dropdown dengan animasi */}
+              {/* Dropdown dengan animasi + icon */}
               <AnimatePresence>
                 {dropdownOpen && (
                   <motion.div
@@ -181,60 +193,81 @@ export default function Navbar() {
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: -10, scale: 0.95 }}
                     transition={{ duration: 0.2 }}
-                    className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border origin-top-right"
+                    className="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg border origin-top-right"
                   >
                     <ul className="py-2 text-sm text-gray-700">
                       <li>
                         <Link
                           href={`/${profile?.username}`}
-                          className="block px-4 py-2 hover:bg-gray-100"
+                          className="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 group"
                           onClick={() => setDropdownOpen(false)}
                         >
+                          <motion.div
+                            whileHover={{ x: 4 }}
+                            transition={{ type: "spring", stiffness: 300 }}
+                          >
+                            <User className="w-4 h-4 text-gray-600" />
+                          </motion.div>
                           Profile
                         </Link>
                       </li>
                       <li>
                         <Link
                           href="/verified-request"
-                          className="block px-4 py-2 hover:bg-gray-100"
+                          className="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 group"
                           onClick={() => setDropdownOpen(false)}
                         >
+                          <motion.div whileHover={{ x: 4 }}>
+                            <BadgeCheck className="w-4 h-4 text-gray-600" />
+                          </motion.div>
                           Verified Request
                         </Link>
                       </li>
                       <li>
                         <Link
                           href="/terms"
-                          className="block px-4 py-2 hover:bg-gray-100"
+                          className="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 group"
                           onClick={() => setDropdownOpen(false)}
                         >
+                          <motion.div whileHover={{ x: 4 }}>
+                            <FileText className="w-4 h-4 text-gray-600" />
+                          </motion.div>
                           Terms of Service
                         </Link>
                       </li>
                       <li>
                         <Link
                           href="/privacy"
-                          className="block px-4 py-2 hover:bg-gray-100"
+                          className="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 group"
                           onClick={() => setDropdownOpen(false)}
                         >
+                          <motion.div whileHover={{ x: 4 }}>
+                            <Shield className="w-4 h-4 text-gray-600" />
+                          </motion.div>
                           Privacy Policy
                         </Link>
                       </li>
                       <li>
                         <Link
                           href="/contact"
-                          className="block px-4 py-2 hover:bg-gray-100"
+                          className="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 group"
                           onClick={() => setDropdownOpen(false)}
                         >
+                          <motion.div whileHover={{ x: 4 }}>
+                            <Mail className="w-4 h-4 text-gray-600" />
+                          </motion.div>
                           Contact Developer
                         </Link>
                       </li>
                       <li>
                         <Link
                           href="/about"
-                          className="block px-4 py-2 hover:bg-gray-100"
+                          className="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 group"
                           onClick={() => setDropdownOpen(false)}
                         >
+                          <motion.div whileHover={{ x: 4 }}>
+                            <Info className="w-4 h-4 text-gray-600" />
+                          </motion.div>
                           About Us
                         </Link>
                       </li>
@@ -242,8 +275,11 @@ export default function Navbar() {
                     <div className="border-t">
                       <button
                         onClick={handleLogout}
-                        className="w-full text-left px-4 py-2 text-red-600 hover:bg-gray-100"
+                        className="w-full flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-gray-100 group"
                       >
+                        <motion.div whileHover={{ x: 4 }}>
+                          <LogOut className="w-4 h-4" />
+                        </motion.div>
                         Logout
                       </button>
                     </div>
