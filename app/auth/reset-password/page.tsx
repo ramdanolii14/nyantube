@@ -38,7 +38,7 @@ export default function ResetPassword() {
         className="space-y-4 max-w-md w-full mx-auto p-6 bg-white rounded-xl shadow"
       >
         <h1 className="text-2xl font-bold text-center text-red-600">
-          Reset Password 🔑
+          Reset Password
         </h1>
 
         <input
