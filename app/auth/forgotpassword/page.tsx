@@ -22,7 +22,7 @@ export default function ForgotPassword() {
     setMessage("");
 
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      captchaToken, // ⬅️ perbaikan utama
+      captchaToken, // nambah captcha, kelupaan wak aowkaowkokw
       redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/reset-password`,
     });
 
@@ -42,7 +42,7 @@ export default function ForgotPassword() {
         className="space-y-4 w-full max-w-md p-6 bg-white rounded-xl shadow"
       >
         <h1 className="text-2xl font-bold text-center text-red-600">
-          Lupa Password 🔑
+          Lupa Password bang?
         </h1>
 
         <input
