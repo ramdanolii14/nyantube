@@ -6,6 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Search, X, Upload } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface User {
   id: string;
@@ -61,7 +62,7 @@ export default function Navbar() {
     e.preventDefault();
     if (searchQuery.trim() !== "") {
       router.push(`/search?q=${encodeURIComponent(searchQuery)}`);
-      setShowMobileSearch(false); // auto tutup setelah submit di mobile
+      setShowMobileSearch(false);
     }
   };
 
@@ -93,44 +94,54 @@ export default function Navbar() {
           </button>
         </form>
 
-        {/* Search Mobile */}
-        <div className="flex md:hidden">
-          {!showMobileSearch ? (
-            <button onClick={() => setShowMobileSearch(true)}>
-              <Search className="w-6 h-6 text-gray-700" />
-            </button>
-          ) : (
-            <form
-              onSubmit={handleSearch}
-              className="flex items-center w-[200px] sm:w-[250px]"
-            >
-              <input
-                type="text"
-                placeholder="Search"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                autoFocus
-                className="w-full border border-gray-300 rounded-l-full px-3 py-1 focus:outline-none focus:ring-1 focus:ring-red-500"
-              />
-              <button
-                type="submit"
-                className="bg-gray-100 border border-gray-300 border-l-0 px-3 py-1 rounded-r-full hover:bg-gray-200 flex items-center justify-center"
-              >
-                <Search className="w-5 h-5 text-gray-700" />
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowMobileSearch(false)}
-                className="ml-2"
-              >
-                <X className="w-5 h-5 text-gray-600" />
-              </button>
-            </form>
-          )}
-        </div>
-
         {/* Right Menu */}
         <div className="flex items-center gap-4 relative">
+          {/* Mobile Search Trigger */}
+          <div className="md:hidden">
+            {!showMobileSearch ? (
+              <button onClick={() => setShowMobileSearch(true)}>
+                <Search className="w-6 h-6 text-gray-700" />
+              </button>
+            ) : null}
+
+            <AnimatePresence>
+              {showMobileSearch && (
+                <motion.form
+                  key="mobile-search"
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.25 }}
+                  onSubmit={handleSearch}
+                  className="absolute top-14 right-2 flex items-center w-[200px] sm:w-[250px] bg-white shadow-md rounded-full px-2 py-1"
+                >
+                  <input
+                    type="text"
+                    placeholder="Search"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    autoFocus
+                    className="w-full border-0 focus:outline-none px-2"
+                  />
+                  <button
+                    type="submit"
+                    className="p-1 rounded-full hover:bg-gray-100"
+                  >
+                    <Search className="w-5 h-5 text-gray-700" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowMobileSearch(false)}
+                    className="p-1 rounded-full hover:bg-gray-100 ml-1"
+                  >
+                    <X className="w-5 h-5 text-gray-600" />
+                  </button>
+                </motion.form>
+              )}
+            </AnimatePresence>
+          </div>
+
+          {/* Upload Button */}
           <Link
             href="/upload"
             className="bg-red-600 text-white px-3 py-2 rounded hover:bg-red-700 flex items-center justify-center"
@@ -138,9 +149,9 @@ export default function Navbar() {
             <Upload className="w-5 h-5" />
           </Link>
 
+          {/* User Menu */}
           {user ? (
             <div className="relative">
-              {/* Avatar */}
               <div
                 className="w-9 h-9 rounded-full overflow-hidden border cursor-pointer"
                 onClick={() => setDropdownOpen((prev) => !prev)}
@@ -149,7 +160,9 @@ export default function Navbar() {
                   src={
                     profile?.avatar_url
                       ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${profile.avatar_url}`
-                      : `https://ui-avatars.com/api/?name=${profile?.username || "User"}`
+                      : `https://ui-avatars.com/api/?name=${
+                          profile?.username || "User"
+                        }`
                   }
                   alt={profile?.username || "User"}
                   width={36}
