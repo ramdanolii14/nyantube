@@ -5,7 +5,7 @@ import { supabase } from "@/supabase/client";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Search, X } from "lucide-react";
+import { Search, X, Upload } from "lucide-react";
 
 interface User {
   id: string;
@@ -133,9 +133,9 @@ export default function Navbar() {
         <div className="flex items-center gap-4 relative">
           <Link
             href="/upload"
-            className="bg-red-600 text-white px-4 py-1 rounded hover:bg-red-700"
+            className="bg-red-600 text-white px-3 py-2 rounded hover:bg-red-700 flex items-center justify-center"
           >
-            Upload
+            <Upload className="w-5 h-5" />
           </Link>
 
           {user ? (
