@@ -87,9 +87,9 @@ export default function Navbar() {
           />
           <button
             type="submit"
-            className="bg-gray-100 border border-gray-300 border-l-0 rounded-r-full px-4 py-1 hover:bg-gray-200"
+            className="bg-gray-100 border border-gray-300 border-l-0 rounded-r-full px-4 py-1 hover:bg-gray-200 flex items-center justify-center"
           >
-            🔍
+            <Search className="w-5 h-5 text-gray-700" />
           </button>
         </form>
 
@@ -114,9 +114,9 @@ export default function Navbar() {
               />
               <button
                 type="submit"
-                className="bg-gray-100 border border-gray-300 border-l-0 px-3 py-1 rounded-r-full hover:bg-gray-200"
+                className="bg-gray-100 border border-gray-300 border-l-0 px-3 py-1 rounded-r-full hover:bg-gray-200 flex items-center justify-center"
               >
-                🔍
+                <Search className="w-5 h-5 text-gray-700" />
               </button>
               <button
                 type="button"
