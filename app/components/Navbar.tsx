@@ -5,7 +5,7 @@ import { supabase } from "@/supabase/client";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Search, X, Upload, LogIn } from "lucide-react"; // gw tambahin sedikit bagian login yak :v
+import { Search, X, Upload, LogIn } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface User {
@@ -172,75 +172,84 @@ export default function Navbar() {
                 />
               </div>
 
-              {/* Dropdown */}
-              {dropdownOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border">
-                  <ul className="py-2 text-sm text-gray-700">
-                    <li>
-                      <Link
-                        href={`/${profile?.username}`}
-                        className="block px-4 py-2 hover:bg-gray-100"
-                        onClick={() => setDropdownOpen(false)}
+              {/* Dropdown dengan animasi */}
+              <AnimatePresence>
+                {dropdownOpen && (
+                  <motion.div
+                    key="user-dropdown"
+                    initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                    transition={{ duration: 0.2 }}
+                    className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border origin-top-right"
+                  >
+                    <ul className="py-2 text-sm text-gray-700">
+                      <li>
+                        <Link
+                          href={`/${profile?.username}`}
+                          className="block px-4 py-2 hover:bg-gray-100"
+                          onClick={() => setDropdownOpen(false)}
+                        >
+                          Profile
+                        </Link>
+                      </li>
+                      <li>
+                        <Link
+                          href="/verified-request"
+                          className="block px-4 py-2 hover:bg-gray-100"
+                          onClick={() => setDropdownOpen(false)}
+                        >
+                          Verified Request
+                        </Link>
+                      </li>
+                      <li>
+                        <Link
+                          href="/terms"
+                          className="block px-4 py-2 hover:bg-gray-100"
+                          onClick={() => setDropdownOpen(false)}
+                        >
+                          Terms of Service
+                        </Link>
+                      </li>
+                      <li>
+                        <Link
+                          href="/privacy"
+                          className="block px-4 py-2 hover:bg-gray-100"
+                          onClick={() => setDropdownOpen(false)}
+                        >
+                          Privacy Policy
+                        </Link>
+                      </li>
+                      <li>
+                        <Link
+                          href="/contact"
+                          className="block px-4 py-2 hover:bg-gray-100"
+                          onClick={() => setDropdownOpen(false)}
+                        >
+                          Contact Developer
+                        </Link>
+                      </li>
+                      <li>
+                        <Link
+                          href="/about"
+                          className="block px-4 py-2 hover:bg-gray-100"
+                          onClick={() => setDropdownOpen(false)}
+                        >
+                          About Us
+                        </Link>
+                      </li>
+                    </ul>
+                    <div className="border-t">
+                      <button
+                        onClick={handleLogout}
+                        className="w-full text-left px-4 py-2 text-red-600 hover:bg-gray-100"
                       >
-                        Profile
-                      </Link>
-                    </li>
-                    <li>
-                      <Link
-                        href="/verified-request"
-                        className="block px-4 py-2 hover:bg-gray-100"
-                        onClick={() => setDropdownOpen(false)}
-                      >
-                        Verified Request
-                      </Link>
-                    </li>
-                    <li>
-                      <Link
-                        href="/terms"
-                        className="block px-4 py-2 hover:bg-gray-100"
-                        onClick={() => setDropdownOpen(false)}
-                      >
-                        Terms of Service
-                      </Link>
-                    </li>
-                    <li>
-                      <Link
-                        href="/privacy"
-                        className="block px-4 py-2 hover:bg-gray-100"
-                        onClick={() => setDropdownOpen(false)}
-                      >
-                        Privacy Policy
-                      </Link>
-                    </li>
-                    <li>
-                      <Link
-                        href="/contact"
-                        className="block px-4 py-2 hover:bg-gray-100"
-                        onClick={() => setDropdownOpen(false)}
-                      >
-                        Contact Developer
-                      </Link>
-                    </li>
-                    <li>
-                      <Link
-                        href="/about"
-                        className="block px-4 py-2 hover:bg-gray-100"
-                        onClick={() => setDropdownOpen(false)}
-                      >
-                        About Us
-                      </Link>
-                    </li>
-                  </ul>
-                  <div className="border-t">
-                    <button
-                      onClick={handleLogout}
-                      className="w-full text-left px-4 py-2 text-red-600 hover:bg-gray-100"
-                    >
-                      Logout
-                    </button>
-                  </div>
-                </div>
-              )}
+                        Logout
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           ) : (
             <Link
