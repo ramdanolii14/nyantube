@@ -5,6 +5,7 @@ import { supabase } from "@/supabase/client";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Search, X } from "lucide-react";
 
 interface User {
   id: string;
@@ -21,6 +22,7 @@ export default function Navbar() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [showMobileSearch, setShowMobileSearch] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -59,6 +61,7 @@ export default function Navbar() {
     e.preventDefault();
     if (searchQuery.trim() !== "") {
       router.push(`/search?q=${encodeURIComponent(searchQuery)}`);
+      setShowMobileSearch(false); // auto tutup setelah submit di mobile
     }
   };
 
@@ -70,10 +73,10 @@ export default function Navbar() {
           <span className="text-xl font-bold text-red-600">NyanStream</span>
         </Link>
 
-        {/* Search Bar */}
+        {/* Search Desktop */}
         <form
           onSubmit={handleSearch}
-          className="flex items-center w-1/2 max-w-lg"
+          className="hidden md:flex items-center w-1/2 max-w-lg"
         >
           <input
             type="text"
@@ -90,6 +93,42 @@ export default function Navbar() {
           </button>
         </form>
 
+        {/* Search Mobile */}
+        <div className="flex md:hidden">
+          {!showMobileSearch ? (
+            <button onClick={() => setShowMobileSearch(true)}>
+              <Search className="w-6 h-6 text-gray-700" />
+            </button>
+          ) : (
+            <form
+              onSubmit={handleSearch}
+              className="flex items-center w-[200px] sm:w-[250px]"
+            >
+              <input
+                type="text"
+                placeholder="Search"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                autoFocus
+                className="w-full border border-gray-300 rounded-l-full px-3 py-1 focus:outline-none focus:ring-1 focus:ring-red-500"
+              />
+              <button
+                type="submit"
+                className="bg-gray-100 border border-gray-300 border-l-0 px-3 py-1 rounded-r-full hover:bg-gray-200"
+              >
+                🔍
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowMobileSearch(false)}
+                className="ml-2"
+              >
+                <X className="w-5 h-5 text-gray-600" />
+              </button>
+            </form>
+          )}
+        </div>
+
         {/* Right Menu */}
         <div className="flex items-center gap-4 relative">
           <Link
@@ -101,7 +140,7 @@ export default function Navbar() {
 
           {user ? (
             <div className="relative">
-              {/* Avatar - fix landscape */}
+              {/* Avatar */}
               <div
                 className="w-9 h-9 rounded-full overflow-hidden border cursor-pointer"
                 onClick={() => setDropdownOpen((prev) => !prev)}
@@ -133,7 +172,7 @@ export default function Navbar() {
                         Profile
                       </Link>
                     </li>
-                     <li>
+                    <li>
                       <Link
                         href="/verified-request"
                         className="block px-4 py-2 hover:bg-gray-100"
@@ -203,4 +242,3 @@ export default function Navbar() {
     </nav>
   );
 }
-
