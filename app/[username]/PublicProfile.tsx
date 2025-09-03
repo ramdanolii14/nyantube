@@ -23,6 +23,7 @@ interface Video {
   thumbnail_url: string | null;
   views: number;
   created_at: string;
+  is_deleted?: boolean;
 }
 
 export default function PublicProfilePage({ username }: { username: string }) {
@@ -39,6 +40,7 @@ export default function PublicProfilePage({ username }: { username: string }) {
   const [showConfirm, setShowConfirm] = useState(false);
   const [videoToDelete, setVideoToDelete] = useState<Video | null>(null);
 
+  // Auto fade-out popup
   useEffect(() => {
     if (popupMessage) {
       setFadeOut(false);
@@ -51,6 +53,7 @@ export default function PublicProfilePage({ username }: { username: string }) {
     }
   }, [popupMessage]);
 
+  // Fetch profile + user auth
   useEffect(() => {
     const fetchProfile = async () => {
       const { data } = await supabase
@@ -97,11 +100,13 @@ export default function PublicProfilePage({ username }: { username: string }) {
     fetchProfile();
   }, [username]);
 
+  // Fetch videos
   const fetchVideos = async (user_id: string) => {
     const { data } = await supabase
       .from("videos")
-      .select("id, title, video_url, thumbnail_url, views, created_at")
+      .select("id, title, video_url, thumbnail_url, views, created_at, is_deleted")
       .eq("user_id", user_id)
+      .eq("is_deleted", false) // hanya tampilkan yg aktif
       .order("created_at", { ascending: false });
 
     if (data) setVideos(data as Video[]);
@@ -113,35 +118,48 @@ export default function PublicProfilePage({ username }: { username: string }) {
     }
   }, [profile]);
 
+  // Confirm delete popup
   const confirmDeleteVideo = (video: Video) => {
     setVideoToDelete(video);
     setShowConfirm(true);
   };
 
+  // Handle delete video
   const handleDeleteConfirmed = async () => {
     if (!videoToDelete) return;
-
     const video = videoToDelete;
 
-    const { error } = await supabase.from("videos").delete().eq("id", video.id);
-    if (error) {
-      setPopupType("error");
-      setPopupMessage("Gagal menghapus video!");
-      setShowConfirm(false);
-      return;
-    }
-
-    if (video.video_url) {
-      const fileName = video.video_url.split("/").pop();
-      if (fileName) {
-        await supabase.storage.from("videos").remove([fileName]);
+    if (isMod) {
+      // 🔴 admin hapus permanen
+      const { error } = await supabase.from("videos").delete().eq("id", video.id);
+      if (error) {
+        setPopupType("error");
+        setPopupMessage("Gagal menghapus video!");
+        setShowConfirm(false);
+        return;
       }
-    }
 
-    if (video.thumbnail_url) {
-      const fileName = video.thumbnail_url.split("/").pop();
-      if (fileName) {
-        await supabase.storage.from("thumbnails").remove([fileName]);
+      if (video.video_url) {
+        const fileName = video.video_url.split("/").pop();
+        if (fileName) await supabase.storage.from("videos").remove([fileName]);
+      }
+
+      if (video.thumbnail_url) {
+        const fileName = video.thumbnail_url.split("/").pop();
+        if (fileName) await supabase.storage.from("thumbnails").remove([fileName]);
+      }
+    } else {
+      // 🟡 user biasa → soft delete
+      const { error } = await supabase
+        .from("videos")
+        .update({ is_deleted: true })
+        .eq("id", video.id);
+
+      if (error) {
+        setPopupType("error");
+        setPopupMessage("Gagal menghapus video!");
+        setShowConfirm(false);
+        return;
       }
     }
 
@@ -154,162 +172,107 @@ export default function PublicProfilePage({ username }: { username: string }) {
   const totalVideos = videos.length;
   const totalViews = videos.reduce((sum, v) => sum + v.views, 0);
 
-  if (!profile) {
-    return (
-      <div className="max-w-5xl mx-auto mt-20 px-4 animate-pulse">
-        <div className="flex items-center gap-4">
-          <div className="w-20 h-20 rounded-full bg-gray-300" />
-          <div className="flex-1">
-            <div className="h-6 w-40 bg-gray-300 rounded mb-2"></div>
-            <div className="h-4 w-24 bg-gray-300 rounded"></div>
+  return (
+    <div className="max-w-4xl mx-auto p-4">
+      {/* Profile Header */}
+      {profile && (
+        <div className="flex items-center gap-4 mb-6">
+          <Image
+            src={avatarSrc}
+            alt={profile.channel_name}
+            width={80}
+            height={80}
+            className="rounded-full"
+          />
+          <div>
+            <h1 className="text-2xl font-bold flex items-center gap-2">
+              {profile.channel_name}
+              {profile.is_verified && (
+                <span className="text-blue-500">✔</span>
+              )}
+              {profile.is_mod && (
+                <span className="text-green-600">[MOD]</span>
+              )}
+              {profile.is_bughunter && (
+                <span className="text-yellow-600">[BUG]</span>
+              )}
+            </h1>
+            <p className="text-gray-600">@{profile.username}</p>
+            <p className="text-sm text-gray-500">
+              Bergabung: {new Date(profile.created_at).toLocaleDateString()}
+            </p>
+            <p className="text-sm text-gray-500">
+              {totalVideos} video · {totalViews} views
+            </p>
           </div>
         </div>
-        <div className="mt-8 space-y-4">
-          {[...Array(3)].map((_, i) => (
-            <div key={i} className="h-40 bg-gray-300 rounded"></div>
-          ))}
-        </div>
-      </div>
-    );
-  }
+      )}
 
-  return (
-    <div className="max-w-5xl mx-auto mt-20 px-4">
+      {/* Videos */}
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        {videos.map((video) => (
+          <div key={video.id} className="relative border rounded-md overflow-hidden">
+            <Link href={`/watch/${video.id}`}>
+              <Image
+                src={video.thumbnail_url || "/default-thumbnail.jpg"}
+                alt={video.title}
+                width={400}
+                height={225}
+                className="w-full h-40 object-cover"
+              />
+              <div className="p-2">
+                <h2 className="text-sm font-semibold line-clamp-2">{video.title}</h2>
+                <p className="text-xs text-gray-500">{video.views} views</p>
+              </div>
+            </Link>
+            {(userId === profile?.id || isMod) && (
+              <button
+                onClick={() => confirmDeleteVideo(video)}
+                className="absolute top-2 right-2 bg-red-600 text-white px-2 py-1 text-xs rounded"
+              >
+                Hapus
+              </button>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Popup Message */}
       {popupMessage && (
         <div
-          className={`fixed top-20 left-1/2 transform -translate-x-1/2 ${
-            popupType === "success"
-              ? "bg-green-100 border border-green-400 text-green-700"
-              : "bg-red-100 border border-red-400 text-red-700"
-          } px-4 py-2 rounded shadow-lg transition-all duration-500 ${
-            fadeOut ? "opacity-0 -translate-y-1" : "opacity-100 translate-y-0"
-          }`}
+          className={`fixed bottom-4 right-4 px-4 py-2 rounded shadow-lg text-white transition-opacity duration-500 ${
+            popupType === "success" ? "bg-green-600" : "bg-red-600"
+          } ${fadeOut ? "opacity-0" : "opacity-100"}`}
         >
           {popupMessage}
         </div>
       )}
 
+      {/* Confirm Modal */}
       {showConfirm && videoToDelete && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-sm text-center">
-            <h2 className="text-lg font-semibold mb-2">Are you sure?</h2>
-            <p className="text-sm text-gray-600 mb-4">
-              Are you sure you want to delete this video? We can't restore your video if you confirm the deletion.
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+          <div className="bg-white p-6 rounded-lg shadow-md max-w-sm w-full">
+            <h2 className="text-lg font-semibold mb-4">Konfirmasi Hapus</h2>
+            <p className="text-sm mb-4">
+              {isMod
+                ? "Apakah Anda yakin ingin menghapus permanen video ini?"
+                : "Apakah Anda yakin ingin menghapus video ini? (dapat dipulihkan oleh admin)"}
             </p>
-            <div className="flex justify-center gap-4">
-              <button
-                onClick={handleDeleteConfirmed}
-                className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
-              >
-                Yes, Delete
-              </button>
+            <div className="flex justify-end gap-2">
               <button
                 onClick={() => setShowConfirm(false)}
-                className="bg-gray-300 px-4 py-2 rounded hover:bg-gray-400"
+                className="px-3 py-1 rounded bg-gray-300"
               >
-                Cancel
+                Batal
+              </button>
+              <button
+                onClick={handleDeleteConfirmed}
+                className="px-3 py-1 rounded bg-red-600 text-white"
+              >
+                Hapus
               </button>
             </div>
           </div>
-        </div>
-      )}
-
-      <div className="flex items-center gap-4">
-        <div className="w-20 h-20 rounded-full overflow-hidden border">
-          <Image
-            src={avatarSrc}
-            alt={profile.username}
-            width={80}
-            height={80}
-            className="object-cover w-full h-full"
-            unoptimized
-            onError={() => {
-              const bgColor = Math.floor(Math.random() * 16777215).toString(16);
-              setAvatarSrc(
-                `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                  profile.channel_name
-                )}&background=${bgColor}&color=fff`
-              );
-            }}
-          />
-        </div>
-
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-1">
-            {profile.channel_name}
-            {profile.is_verified && (
-              <Image src="/verified.svg" alt="verified" width={16} height={16} title="AKUN TERVERIFIKASI" />
-            )}
-            {profile.is_mod && (
-              <Image src="/mod.svg" alt="moderator" width={16} height={16} title="TERVERIFIKASI ADMIN" />
-            )}
-            {profile.is_bughunter && (
-              <Image src="/bughunter.svg" alt="bughunter" width={16} height={16} title="TERVERIFIKASI BUGHUNTER" />
-            )}
-          </h1>
-          <p className="text-gray-500">@{profile.username}</p>
-          <div className="text-sm text-gray-600 mt-1 flex flex-col">
-            <span>Video: {totalVideos}</span>
-            <span>Views: {totalViews}</span>
-          </div>
-        </div>
-
-        {userId === profile.id && (
-          <Link
-            href={`/profile/${profile.id}/edit`}
-            className="ml-auto bg-blue-600 text-white px-4 py-1 rounded hover:bg-blue-700"
-          >
-            Edit Profile
-          </Link>
-        )}
-      </div>
-
-      <hr className="my-5" />
-
-      <h2 className="text-xl font-bold mb-3">Video dari {profile.channel_name}</h2>
-
-      {videos.length === 0 ? (
-        <p className="text-gray-500">Belum ada video diunggah.</p>
-      ) : (
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-          {videos.map((v) => {
-            const canDelete = userId === profile.id || isMod;
-            return (
-              <div
-                key={v.id}
-                className="border rounded-md overflow-hidden hover:shadow-md transition relative group"
-              >
-                <Link href={`/watch/${v.id}`}>
-                  <Image
-                    src={
-                      v.thumbnail_url
-                        ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/thumbnails/${v.thumbnail_url}`
-                        : "/default-thumbnail.jpg"
-                    }
-                    alt={v.title}
-                    width={400}
-                    height={225}
-                    className="w-full h-40 object-cover"
-                    unoptimized
-                  />
-                  <div className="p-2">
-                    <h3 className="font-semibold text-sm line-clamp-2">{v.title}</h3>
-                    <p className="text-xs text-gray-500">{v.views} views</p>
-                  </div>
-                </Link>
-
-                {canDelete && (
-                  <button
-                    onClick={() => confirmDeleteVideo(v)}
-                    className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded hover:bg-red-600 opacity-0 group-hover:opacity-100 transition"
-                    title="Hapus Video"
-                  >
-                    🗑
-                  </button>
-                )}
-              </div>
-            );
-          })}
         </div>
       )}
     </div>
