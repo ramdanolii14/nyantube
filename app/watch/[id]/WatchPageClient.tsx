@@ -337,86 +337,128 @@ export default function WatchPageClient({ id }: { id: string }) {
             </div>
 
             {/* Comment List */}
-            <div className="flex flex-col gap-3">
-              {comments.map((c) => {
-                const isOwner = c.user_id === currentUserId;
-                const canDelete = isOwner || video?.profiles?.id === currentUserId || currentUserProfile?.is_mod;
+              <div className="flex flex-col gap-3">
+                {comments.map((c) => {
+                  const isOwner = c.user_id === currentUserId;
+                  const canDelete =
+                    isOwner || video?.profiles?.id === currentUserId || currentUserProfile?.is_mod;
               
-                return (
-                  <div key={c.id} className="mb-3">
-                    <div className="flex gap-2 p-3 border rounded-lg bg-white shadow-sm">
-                      {c.profiles ? (
-                        <>
-                          <Link href={`/${c.profiles?.username ?? "#"}`}>
-                            <Image
-                              src={getAvatarUrl(
-                                c.profiles?.avatar_url,
-                                c.profiles?.channel_name || c.profiles?.username || "Unknown"
-                              )}
-                              alt="avatar"
-                              width={40}
-                              height={40}
-                              className="rounded-full w-10 h-10 object-cover"
-                            />
-                          </Link>
-                          <div className="flex-1">
-                            <Link
-                              href={`/${c.profiles?.username ?? "#"}`}
-                              className="font-semibold hover:underline flex items-center gap-1"
-                            >
-                              {c.profiles?.channel_name || c.profiles?.username || "Unknown User"}
-                              {c.profiles?.is_verified && (
-                                <Image src="/verified.svg" alt="verified" width={12} height={12} title="AKUN TERVERIVIKASI"/>
-                              )}
-                              {c.profiles?.is_mod && (
-                                <Image src="/mod.svg" alt="mod" width={12} height={12} title="TERVERIFIKASI MOD"/>
-                              )}
-                              {c.profiles?.is_bughunter && (
-                                <Image src="/bughunter.svg" alt="bughunter" width={12} height={12} title="TERVERIFIKASI BUGHUNTER"/>
-                              )}
-                              <span className="text-gray-500">· {timeAgo(c.created_at)}</span>
+                  return (
+                    <div key={c.id} className="mb-3">
+                      <div className="flex gap-2 p-3 border rounded-lg bg-white shadow-sm">
+                        {c.profiles ? (
+                          <>
+                            <Link href={`/${c.profiles?.username ?? "#"}`}>
+                              <Image
+                                src={getAvatarUrl(
+                                  c.profiles?.avatar_url,
+                                  c.profiles?.channel_name ||
+                                    c.profiles?.username ||
+                                    "Unknown"
+                                )}
+                                alt="avatar"
+                                width={40}
+                                height={40}
+                                className="rounded-full w-10 h-10 object-cover"
+                              />
                             </Link>
+                            <div className="flex-1">
+                              <Link
+                                href={`/${c.profiles?.username ?? "#"}`}
+                                className="font-semibold hover:underline flex items-center gap-1"
+                              >
+                                {c.profiles?.channel_name ||
+                                  c.profiles?.username ||
+                                  "Unknown User"}
+                                {c.profiles?.is_verified && (
+                                  <Image
+                                    src="/verified.svg"
+                                    alt="verified"
+                                    width={12}
+                                    height={12}
+                                    title="AKUN TERVERIVIKASI"
+                                  />
+                                )}
+                                {c.profiles?.is_mod && (
+                                  <Image
+                                    src="/mod.svg"
+                                    alt="mod"
+                                    width={12}
+                                    height={12}
+                                    title="TERVERIFIKASI MOD"
+                                  />
+                                )}
+                                {c.profiles?.is_bughunter && (
+                                  <Image
+                                    src="/bughunter.svg"
+                                    alt="bughunter"
+                                    width={12}
+                                    height={12}
+                                    title="TERVERIFIKASI BUGHUNTER"
+                                  />
+                                )}
+                                <span className="text-gray-500">
+                                  · {timeAgo(c.created_at)}
+                                </span>
+                              </Link>
               
-                            {c.edited && <span className="text-xs text-gray-500 ml-1">[edited]</span>}
+                              {c.edited && (
+                                <span className="text-xs text-gray-500 ml-1">[edited]</span>
+                              )}
               
-                            {editComment?.id === c.id ? (
-                              <div className="flex gap-2 mt-1">
-                                <input
-                                  type="text"
-                                  value={editComment.content}
-                                  onChange={(e) => setEditComment({ ...editComment, content: e.target.value })}
-                                  className="border px-2 py-1 rounded text-sm w-full"
-                                />
-                                <button onClick={handleEditComment} className="text-blue-500 text-sm">
-                                  Save
-                                </button>
-                                <button onClick={() => setEditComment(null)} className="text-gray-500 text-sm">
-                                  Cancel
-                                </button>
-                              </div>
-                            ) : (
-                              <p className="mt-1 text-sm break-words whitespace-pre-line">{c.content}</p>
-                            )}
+                              {editComment?.id === c.id ? (
+                                <div className="flex gap-2 mt-1">
+                                  <input
+                                    type="text"
+                                    value={editComment.content}
+                                    onChange={(e) =>
+                                      setEditComment({
+                                        ...editComment,
+                                        content: e.target.value,
+                                      })
+                                    }
+                                    className="border px-2 py-1 rounded text-sm w-full"
+                                  />
+                                  <button
+                                    onClick={handleEditComment}
+                                    className="text-blue-500 text-sm"
+                                  >
+                                    Save
+                                  </button>
+                                  <button
+                                    onClick={() => setEditComment(null)}
+                                    className="text-gray-500 text-sm"
+                                  >
+                                    Cancel
+                                  </button>
+                                </div>
+                              ) : (
+                                <p className="mt-1 text-sm break-words whitespace-pre-line">
+                                  {c.content}
+                                </p>
+                              )}
               
-                            {canDelete && (
-                              <div className="flex gap-3 text-xs text-gray-500 mt-2">
-                                <button
-                                  onClick={() => setConfirmDeleteId(c.id)}
-                                  className="bg-red-500 text-white px-3 py-1 rounded w-20 text-center"
-                                >
-                                  Delete
-                                </button>
-                              </div>
-                            )}
-                          </div>
-                        </>
-                      ) : (
-                        <div className="text-sm text-gray-500">[Deleted User]</div>
-                      )}
+                              {canDelete && (
+                                <div className="flex gap-3 text-xs text-gray-500 mt-2">
+                                  <button
+                                    onClick={() => setConfirmDeleteId(c.id)}
+                                    className="bg-red-500 text-white px-3 py-1 rounded w-20 text-center"
+                                  >
+                                    Delete
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          </>
+                        ) : (
+                          <div className="text-sm text-gray-500">[Deleted User]</div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
+
 
 
         {/* Related Videos */}
