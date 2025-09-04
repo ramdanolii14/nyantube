@@ -256,6 +256,30 @@ export default function WatchPageClient({ id }: { id: string }) {
           {/* Description */}
           <p className="mb-6 text-sm text-gray-800 break-words whitespace-pre-line">{video.description}</p>
 
+          {/*Form Komentar*/}
+          <div className="mt-6">
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleAddComment();
+              }}
+              className="mb-4 flex gap-3"
+            >
+              <input
+                type="text"
+                placeholder="Tulis komentar..."
+                className="flex-1 px-3 py-2 border rounded-xl text-sm focus:outline-none focus:ring focus:ring-blue-300"
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+              />
+              <button
+                type="submit"
+                className="px-4 py-2 bg-blue-600 text-white rounded-xl text-sm hover:bg-blue-700"
+              >
+                Kirim
+              </button>
+            </form>
+
           {/* Comments */}
           <div className="mt-6">
             <h3 className="text-lg font-semibold mb-4">Komentar</h3>
