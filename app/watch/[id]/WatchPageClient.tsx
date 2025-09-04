@@ -337,6 +337,7 @@ export default function WatchPageClient({ id }: { id: string }) {
             </div>
 
             {/* Comment List */}
+            <div className="flex flex-col gap-3">
               {comments.map((c) => {
                 const isOwner = c.user_id === currentUserId;
                 const canDelete = isOwner || video?.profiles?.id === currentUserId || currentUserProfile?.is_mod;
@@ -416,6 +417,7 @@ export default function WatchPageClient({ id }: { id: string }) {
                   </div>
                 );
               })}
+              </div>
 
 
         {/* Related Videos */}
