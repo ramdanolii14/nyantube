@@ -196,6 +196,41 @@ export default function WatchPageClient({ id }: { id: string }) {
     }
   };
 
+  const handleAddComment = async () => {
+  if (!currentUserId || !newComment.trim()) return;
+
+  if (newComment.length > 110) {
+    setCommentError("Komentar tidak boleh lebih dari 110 karakter.");
+    return;
+  }
+
+    // Batasan komentar per jam
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    const { data: recentComments } = await supabase
+      .from("comments")
+      .select("id")
+      .eq("user_id", currentUserId)
+      .gte("created_at", oneHourAgo);
+  
+    let limit = 2; // default untuk non verified
+    if (currentUserProfile?.is_verified) limit = 20;
+    if (currentUserProfile?.is_mod) limit = Infinity; // unlimited
+  
+    if ((recentComments?.length || 0) >= limit) {
+      setCommentError(`Batas komentar per jam tercapai (${limit} komentar).`);
+      return;
+    }
+  
+    await supabase.from("comments").insert({
+      video_id: id,
+      content: newComment,
+      user_id: currentUserId,
+    });
+    setNewComment("");
+    refreshComments();
+  };
+
+
   if (!video) {
     return <p className="text-center mt-10">Loading... Jika stuck langsung refresh aja.</p>;
   }
