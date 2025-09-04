@@ -273,6 +273,7 @@ export default function WatchPageClient({ id }: { id: string }) {
                 className="flex-1 px-3 py-2 border rounded-xl text-sm focus:outline-none focus:ring focus:ring-blue-300"
                 value={newComment}
                 onChange={(e) => setNewComment(e.target.value)}
+                maxLength={110}
               />
               <button
                 type="submit"
@@ -280,6 +281,7 @@ export default function WatchPageClient({ id }: { id: string }) {
               >
                 Kirim
               </button>
+              <p className="text-xs text-gray-500 text-right">{newComment.length}/110</p>
             </form>
 
             {/* Daftar komentar */}
@@ -351,6 +353,7 @@ export default function WatchPageClient({ id }: { id: string }) {
                                 className="flex-1 px-3 py-2 border rounded-xl text-sm focus:outline-none focus:ring focus:ring-red-300"
                                 value={replyContent}
                                 onChange={(e) => setReplyContent(e.target.value)}
+                                maxLength={110}
                               />
                               <button
                                 type="submit"
@@ -358,6 +361,7 @@ export default function WatchPageClient({ id }: { id: string }) {
                               >
                                 Kirim
                               </button>
+                              <p className="text-xs text-gray-500 text-right">{newComment.length}/110</p>
                             </form>
                           )}
 
