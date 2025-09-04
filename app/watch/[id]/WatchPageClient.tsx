@@ -360,135 +360,157 @@ export default function WatchPageClient({ id }: { id: string }) {
               )}
             </div>
 
-          {/* Comments Section */}
-          <div className="mt-8">
-            <h3 className="font-semibold text-lg mb-4">
-              {comments.length} Comments
-            </h3>
-          
-            {/* Input komentar baru */}
-            {session ? (
-              <div className="flex items-start gap-3 mb-6">
-                <Image
-                  src={profile?.avatar_url || "/default-avatar.png"}
-                  alt={profile?.username || "User"}
-                  width={36}
-                  height={36}
-                  className="rounded-full"
-                />
-                <div className="flex-1">
-                  <textarea
-                    value={newComment}
-                    onChange={(e) => setNewComment(e.target.value)}
-                    placeholder="Add a comment..."
-                    className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring focus:ring-blue-300 focus:outline-none"
+            {/* Comment Section */}
+            <div className="mt-8">
+              <h2 className="text-lg font-semibold mb-4">
+                {comments.length} Komentar
+              </h2>
+            
+              {/* Input komentar utama */}
+              {currentUserId && (
+                <form onSubmit={handleAddComment} className="flex items-start gap-3 mb-6">
+                  <img
+                    src={currentUserProfile?.avatar_url || "/default-avatar.png"}
+                    alt="avatar"
+                    className="w-10 h-10 rounded-full object-cover"
                   />
-                  <div className="flex justify-end mt-2">
+                  <div className="flex-1">
+                    <textarea
+                      value={newComment}
+                      onChange={(e) => setNewComment(e.target.value)}
+                      placeholder="Tulis komentar..."
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring focus:ring-blue-400"
+                    />
                     <button
-                      onClick={handleAddComment}
-                      disabled={!newComment.trim()}
-                      className="px-4 py-1 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600 disabled:bg-gray-300"
+                      type="submit"
+                      className="mt-2 px-4 py-1 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700"
                     >
-                      Comment
+                      Kirim
                     </button>
                   </div>
-                </div>
-              </div>
-            ) : (
-              <p className="text-gray-500 mb-6">Login to add a comment.</p>
-            )}
-
-            {/* Daftar komentar */}
-            <div className="space-y-5">
-              {comments
-                .filter((c) => !c.parent_id) // hanya komentar utama
-                .map((comment) => (
-                  <div key={comment.id} className="mb-4">
-                    <div className="flex items-start gap-3">
-                      <Image
-                        src={comment.profiles?.avatar_url || "/default-avatar.png"}
-                        alt={comment.profiles?.username || "User"}
-                        width={36}
-                        height={36}
-                        className="rounded-full"
-                      />
-                      <div className="bg-white p-3 rounded-lg shadow-sm flex-1">
-                        <div className="flex items-center gap-2">
-                          <p className="font-semibold text-sm">
-                            {comment.profiles?.username}
-                          </p>
-                          <span className="text-xs text-gray-500">
-                            {timeAgo(comment.created_at)}
-                          </span>
-                        </div>
-                        <p className="text-sm mt-1">{comment.content}</p>
-                        <button
-                          className="text-xs text-blue-500 mt-2 hover:underline"
-                          onClick={() => setReplyingTo(comment.id)}
-                        >
-                          Reply
-                        </button>
-          
-                        {/* Form reply */}
-                        {replyingTo === comment.id && (
-                          <div className="mt-3 ml-2">
-                            <textarea
-                              value={replyContent}
-                              onChange={(e) => setReplyContent(e.target.value)}
-                              placeholder="Write a reply..."
-                              className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring focus:ring-blue-300 focus:outline-none"
-                            />
-                            <div className="flex justify-end mt-2 gap-2">
-                              <button
-                                onClick={() => setReplyingTo(null)}
-                                className="px-3 py-1 text-sm rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-100"
-                              >
-                                Cancel
-                              </button>
-                              <button
-                                onClick={() => handleReply(comment.id)}
-                                disabled={!replyContent.trim()}
-                                className="px-3 py-1 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600 disabled:bg-gray-300"
-                              >
-                                Reply
-                              </button>
-                            </div>
+                </form>
+              )}
+            
+              {/* List komentar */}
+              <div className="flex flex-col gap-3">
+                {comments.map((c) => {
+                  const isOwner = c.user_id === currentUserId;
+                  const canDelete =
+                    isOwner || video?.profiles?.id === currentUserId || currentUserProfile?.is_mod;
+            
+                  return (
+                    <div key={c.id} className="border-b pb-3">
+                      {/* Komentar utama */}
+                      <div className="flex items-start gap-3">
+                        <img
+                          src={c.profiles?.avatar_url || "/default-avatar.png"}
+                          alt="avatar"
+                          className="w-10 h-10 rounded-full object-cover"
+                        />
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-sm">
+                              {c.profiles?.username || "Anonim"}
+                            </span>
+                            <span className="text-xs text-gray-500">
+                              {timeAgo(c.created_at)}
+                            </span>
                           </div>
-                        )}
-          
-                        {/* Replies */}
-                        <div className="ml-8 mt-3 space-y-3">
-                          {comments
-                            .filter((r) => r.parent_id === comment.id)
-                            .map((reply) => (
-                              <div key={reply.id} className="flex items-start gap-2">
-                                <Image
-                                  src={reply.profiles?.avatar_url || "/default-avatar.png"}
-                                  alt={reply.profiles?.username || "User"}
-                                  width={28}
-                                  height={28}
-                                  className="rounded-full"
+                          <p className="text-sm mt-1">{c.content}</p>
+                          <div className="flex gap-3 mt-2 text-xs text-gray-500">
+                            <button
+                              onClick={() => setReplyingTo(c.id)}
+                              className="hover:text-blue-600"
+                            >
+                              Reply
+                            </button>
+                            {canDelete && (
+                              <button
+                                onClick={() => handleDeleteComment(c.id)}
+                                className="hover:text-red-600"
+                              >
+                                Hapus
+                              </button>
+                            )}
+                          </div>
+            
+                          {/* Form reply */}
+                          {replyingTo === c.id && (
+                            <form
+                              onSubmit={(e) => handleReplyComment(e, c.id)}
+                              className="flex items-start gap-2 mt-3"
+                            >
+                              <img
+                                src={currentUserProfile?.avatar_url || "/default-avatar.png"}
+                                alt="avatar"
+                                className="w-8 h-8 rounded-full object-cover"
+                              />
+                              <div className="flex-1">
+                                <textarea
+                                  value={replyContent}
+                                  onChange={(e) => setReplyContent(e.target.value)}
+                                  placeholder="Tulis balasan..."
+                                  className="w-full border border-gray-300 rounded-lg px-3 py-1 text-sm focus:outline-none focus:ring focus:ring-blue-400"
                                 />
-                                <div className="bg-gray-50 p-2 rounded-lg flex-1 shadow-sm">
-                                  <div className="flex items-center gap-2">
-                                    <p className="font-semibold text-sm">
-                                      {reply.profiles?.username}
-                                    </p>
-                                    <span className="text-xs text-gray-500">
-                                      {timeAgo(reply.created_at)}
-                                    </span>
-                                  </div>
-                                  <p className="text-sm mt-1">{reply.content}</p>
-                                </div>
+                                <button
+                                  type="submit"
+                                  className="mt-2 px-3 py-1 bg-blue-500 text-white rounded-lg text-xs hover:bg-blue-600"
+                                >
+                                  Balas
+                                </button>
                               </div>
-                            ))}
+                            </form>
+                          )}
+            
+                          {/* Balasan */}
+                          <div className="mt-3 ml-8 space-y-2">
+                            {comments
+                              .filter((r) => r.parent_id === c.id)
+                              .map((reply) => {
+                                const isReplyOwner = reply.user_id === currentUserId;
+                                const canDeleteReply =
+                                  isReplyOwner ||
+                                  video?.profiles?.id === currentUserId ||
+                                  currentUserProfile?.is_mod;
+            
+                                return (
+                                  <div key={reply.id} className="flex items-start gap-2">
+                                    <img
+                                      src={reply.profiles?.avatar_url || "/default-avatar.png"}
+                                      alt="avatar"
+                                      className="w-8 h-8 rounded-full object-cover"
+                                    />
+                                    <div className="flex-1">
+                                      <div className="flex items-center gap-2">
+                                        <span className="font-semibold text-sm">
+                                          {reply.profiles?.username || "Anonim"}
+                                        </span>
+                                        <span className="text-xs text-gray-500">
+                                          {timeAgo(reply.created_at)}
+                                        </span>
+                                      </div>
+                                      <p className="text-sm">{reply.content}</p>
+                                      {canDeleteReply && (
+                                        <button
+                                          onClick={() => handleDeleteComment(reply.id)}
+                                          className="text-xs text-red-500 hover:underline"
+                                        >
+                                          Hapus
+                                        </button>
+                                      )}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
+              </div>
             </div>
-          </div>
+
 
 
 
