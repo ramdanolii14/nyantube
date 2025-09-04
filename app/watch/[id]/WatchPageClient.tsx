@@ -321,16 +321,20 @@ export default function WatchPageClient({ id }: { id: string }) {
                     <div key={c.id} className="bg-white shadow-md rounded-2xl p-4 flex flex-col gap-3">
                       {/* Header komentar */}
                       <div className="flex items-start gap-3">
-                        <Image
-                          src={getAvatarUrl(c.profiles?.avatar_url, c.profiles?.channel_name || "User")}
-                          alt={c.profiles?.channel_name || "User"}
-                          width={42}
-                          height={42}
-                          className="object-round w-10 h-10 rounded-full"
-                        />
+                        <Link href={`/${c.profiles?.username ?? "#"}`} className="flex-shrink-0">
+                          <Image
+                            src={getAvatarUrl(c.profiles?.avatar_url, c.profiles?.channel_name || "User")}
+                            alt={c.profiles?.channel_name || "User"}
+                            width={42}
+                            height={42}
+                            className="object-cover w-10 h-10 rounded-full"
+                          />
+                        </Link>
                         <div className="flex-1">
                           <div className="flex items-center gap-2">
-                            <span className="font-semibold">{c.profiles?.channel_name || "User"}</span>
+                            <Link href={`/${c.profiles?.username ?? "#"}`} className="font-semibold hover:underline">
+                              {c.profiles?.channel_name || "User"}
+                            </Link>
                             <span className="text-xs text-gray-500">{timeAgo(c.created_at)}</span>
                           </div>
                           <p className="text-sm text-gray-800">{c.content}</p>
@@ -396,16 +400,20 @@ export default function WatchPageClient({ id }: { id: string }) {
                                     key={r.id}
                                     className="ml-8 bg-gray-50 border border-gray-200 shadow-sm rounded-xl p-3 flex gap-3"
                                   >
-                                    <Image
-                                      src={getAvatarUrl(r.profiles?.avatar_url, r.profiles?.channel_name || "User")}
-                                      alt={r.profiles?.channel_name || "User"}
-                                      width={32}
-                                      height={32}
-                                      className="object-cover w-8 h-8 rounded-full"
-                                    />
+                                      <Link href={`/${r.profiles?.username ?? "#"}`} className="flex-shrink-0">
+                                        <Image
+                                          src={getAvatarUrl(r.profiles?.avatar_url, r.profiles?.channel_name || "User")}
+                                          alt={r.profiles?.channel_name || "User"}
+                                          width={32}
+                                          height={32}
+                                          className="object-cover w-8 h-8 rounded-full"
+                                        />
+                                      </Link>
                                     <div className="flex-1">
                                       <div className="flex items-center gap-2">
-                                        <span className="font-semibold">{r.profiles?.channel_name || "User"}</span>
+                                        <Link href={`/${c.profiles?.username ?? "#"}`} className="font-semibold hover:underline">
+                                          {c.profiles?.channel_name || "User"}
+                                        </Link>
                                         <span className="text-xs text-gray-500">{timeAgo(r.created_at)}</span>
                                       </div>
                                       <p className="text-sm text-gray-700">{r.content}</p>
