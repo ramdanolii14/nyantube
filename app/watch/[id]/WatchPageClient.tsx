@@ -437,7 +437,7 @@ export default function WatchPageClient({ id }: { id: string }) {
                           {/* Form reply */}
                           {replyingTo === c.id && (
                             <form
-                              onSubmit={(e) => handleReplyComment(e, c.id)}
+                              onSubmit={(e) => handleReplySubmit(e, c.id)}
                               className="flex items-start gap-2 mt-3"
                             >
                               <img
