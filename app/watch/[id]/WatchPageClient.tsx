@@ -360,44 +360,53 @@ export default function WatchPageClient({ id }: { id: string }) {
               )}
             </div>
 
-            {/* Comment Section */}
-            <div className="mt-8">
-              <h2 className="text-lg font-semibold mb-4">
-                {comments.length} Komentar
-              </h2>
-            
-              {/* Input komentar utama */}
-              {currentUserId && (
-                <form onSubmit={handleAddComment} className="flex items-start gap-3 mb-6">
-                  <img
-                    src={currentUserProfile?.avatar_url || "/default-avatar.png"}
-                    alt="avatar"
-                    className="w-10 h-10 rounded-full object-cover"
+          {/* Comments */}
+          <div className="mt-6 break-words">
+            <h2 className="font-semibold mb-3">Comments ({comments.length})</h2>
+          
+            {/* Form komentar utama */}
+            {currentUserId && (
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleAddComment();
+                }}
+                className="flex items-start gap-3 mb-6"
+              >
+                <img
+                  src={currentUserProfile?.avatar_url || "/default-avatar.png"}
+                  alt="avatar"
+                  className="w-10 h-10 rounded-full object-cover"
+                />
+                <div className="flex-1">
+                  <textarea
+                    value={newComment}
+                    onChange={(e) => setNewComment(e.target.value)}
+                    placeholder="Tulis komentar..."
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring focus:ring-blue-400"
                   />
-                  <div className="flex-1">
-                    <textarea
-                      value={newComment}
-                      onChange={(e) => setNewComment(e.target.value)}
-                      placeholder="Tulis komentar..."
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring focus:ring-blue-400"
-                    />
+                  <div className="flex justify-between items-center mt-2">
+                    <span className="text-xs text-gray-500">{newComment.length}/110</span>
                     <button
                       type="submit"
-                      className="mt-2 px-4 py-1 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700"
+                      className="px-4 py-1 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700"
                     >
                       Kirim
                     </button>
                   </div>
-                </form>
-              )}
-            
-              {/* List komentar */}
-              <div className="flex flex-col gap-3">
-                {comments.map((c) => {
+                </div>
+              </form>
+            )}
+          
+            {/* List komentar */}
+            <div className="flex flex-col gap-4">
+              {comments
+                .filter((c) => !c.parent_id) // hanya komentar utama
+                .map((c) => {
                   const isOwner = c.user_id === currentUserId;
                   const canDelete =
                     isOwner || video?.profiles?.id === currentUserId || currentUserProfile?.is_mod;
-            
+          
                   return (
                     <div key={c.id} className="border-b pb-3">
                       {/* Komentar utama */}
@@ -412,9 +421,7 @@ export default function WatchPageClient({ id }: { id: string }) {
                             <span className="font-semibold text-sm">
                               {c.profiles?.username || "Anonim"}
                             </span>
-                            <span className="text-xs text-gray-500">
-                              {timeAgo(c.created_at)}
-                            </span>
+                            <span className="text-xs text-gray-500">{timeAgo(c.created_at)}</span>
                           </div>
                           <p className="text-sm mt-1">{c.content}</p>
                           <div className="flex gap-3 mt-2 text-xs text-gray-500">
@@ -433,7 +440,7 @@ export default function WatchPageClient({ id }: { id: string }) {
                               </button>
                             )}
                           </div>
-            
+          
                           {/* Form reply */}
                           {replyingTo === c.id && (
                             <form
@@ -452,18 +459,20 @@ export default function WatchPageClient({ id }: { id: string }) {
                                   placeholder="Tulis balasan..."
                                   className="w-full border border-gray-300 rounded-lg px-3 py-1 text-sm focus:outline-none focus:ring focus:ring-blue-400"
                                 />
-                                <button
-                                  type="submit"
-                                  className="mt-2 px-3 py-1 bg-blue-500 text-white rounded-lg text-xs hover:bg-blue-600"
-                                >
-                                  Balas
-                                </button>
+                                <div className="flex justify-end mt-2">
+                                  <button
+                                    type="submit"
+                                    className="px-3 py-1 bg-blue-500 text-white rounded-lg text-xs hover:bg-blue-600"
+                                  >
+                                    Balas
+                                  </button>
+                                </div>
                               </div>
                             </form>
                           )}
-            
-                          {/* Balasan */}
-                          <div className="mt-3 ml-8 space-y-2">
+          
+                          {/* Balasan (1 level) */}
+                          <div className="mt-3 ml-8 space-y-3">
                             {comments
                               .filter((r) => r.parent_id === c.id)
                               .map((reply) => {
@@ -472,7 +481,7 @@ export default function WatchPageClient({ id }: { id: string }) {
                                   isReplyOwner ||
                                   video?.profiles?.id === currentUserId ||
                                   currentUserProfile?.is_mod;
-            
+          
                                 return (
                                   <div key={reply.id} className="flex items-start gap-2">
                                     <img
@@ -508,10 +517,8 @@ export default function WatchPageClient({ id }: { id: string }) {
                     </div>
                   );
                 })}
-              </div>
             </div>
-
-
+          </div>
 
 
         {/* Related Videos */}
