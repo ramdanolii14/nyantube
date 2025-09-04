@@ -58,7 +58,7 @@ export default function Register() {
       }
 
       if (count !== null && count >= 2) {
-        setMessage("❌ IP ini sudah mencapai batas 2 akun dalam bulan ini.");
+        setMessage("❌ Terjadi Kesalahan, IP Kamu telah dibatasi. Jangan coba-coba bikin akun baru atau nanti ku ban permanent. -Admin alycia");
         setLoading(false);
         return;
       }
