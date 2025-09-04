@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/supabase/client";
 import { timeAgo } from "@/lib/timeAgo";
 import Image from "next/image";
@@ -32,6 +32,7 @@ interface Comment {
   content: string;
   created_at: string;
   user_id: string;
+  parent_id?: string | null;
   edited?: boolean;
   profiles: Profile;
 }
@@ -41,7 +42,6 @@ export default function WatchPageClient({ id }: { id: string }) {
   const [relatedVideos, setRelatedVideos] = useState<Video[]>([]);
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState("");
-  const [editComment, setEditComment] = useState<{ id: string; content: string } | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const [likes, setLikes] = useState(0);
@@ -55,27 +55,6 @@ export default function WatchPageClient({ id }: { id: string }) {
 
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [replyContent, setReplyContent] = useState("");
-  
-  const handleReplySubmit = async (e: React.FormEvent, parentId: string) => {
-    e.preventDefault();
-    if (!session?.user) return;
-  
-    const { error } = await supabase.from("comments").insert([
-      {
-        video_id: video.id,
-        user_id: session.user.id,
-        content: replyContent,
-        parent_id: parentId,
-      },
-    ]);
-  
-    if (!error) {
-      setReplyContent("");
-      setReplyingTo(null);
-      fetchComments();
-    }
-  };
-
 
   const getAvatarUrl = (avatar_url: string | null, name: string) => {
     return avatar_url
@@ -134,8 +113,7 @@ export default function WatchPageClient({ id }: { id: string }) {
         .from("comments")
         .select("*, profiles(id, username, avatar_url, channel_name, created_at, is_verified, is_mod, is_bughunter)")
         .eq("video_id", id)
-        .order("created_at", { ascending: false })
-        .limit(50);
+        .order("created_at", { ascending: true });
       setComments(commentData || []);
 
       const { data: likesData } = await supabase
@@ -156,7 +134,7 @@ export default function WatchPageClient({ id }: { id: string }) {
       .from("comments")
       .select("*, profiles(id, username, avatar_url, channel_name, is_verified, is_mod, is_bughunter)")
       .eq("video_id", id)
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: true });
     setComments(data || []);
   };
 
@@ -168,26 +146,6 @@ export default function WatchPageClient({ id }: { id: string }) {
       return;
     }
 
-    // Tentukan limit berdasarkan role
-    let maxComments: number | null = 2; // default user biasa
-    if (currentUserProfile?.is_verified) maxComments = 20;
-    if (currentUserProfile?.is_mod) maxComments = null; // unlimited
-
-    if (maxComments !== null) {
-      const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
-      const { count } = await supabase
-        .from("comments")
-        .select("id", { count: "exact", head: true })
-        .eq("user_id", currentUserId)
-        .gte("created_at", oneHourAgo);
-
-      if ((count ?? 0) >= maxComments) {
-        setCommentError(`You can only post ${maxComments} comments per hour.`);
-        return;
-      }
-    }
-
-    setCommentError(null);
     await supabase.from("comments").insert({
       video_id: id,
       content: newComment,
@@ -197,37 +155,37 @@ export default function WatchPageClient({ id }: { id: string }) {
     refreshComments();
   };
 
+  const handleReplySubmit = async (e: React.FormEvent, parentId: string) => {
+    e.preventDefault();
+    if (!currentUserId || !replyContent.trim()) return;
+
+    await supabase.from("comments").insert({
+      video_id: id,
+      content: replyContent,
+      user_id: currentUserId,
+      parent_id: parentId,
+    });
+
+    setReplyContent("");
+    setReplyingTo(null);
+    refreshComments();
+  };
+
   const handleDeleteComment = async (commentId: string) => {
     await supabase.from("comments").delete().eq("id", commentId);
     setConfirmDeleteId(null);
     refreshComments();
   };
 
-  const handleEditComment = async () => {
-    if (!editComment || !editComment.content.trim()) return;
-    await supabase
-      .from("comments")
-      .update({ content: editComment.content, edited: true })
-      .eq("id", editComment.id);
-    setEditComment(null);
-    refreshComments();
-  };
-
   const handleVote = async (type: "like" | "dislike") => {
     if (!currentUserId) return;
     if (userVote === type) {
-      await supabase
-        .from("video_likes")
-        .delete()
-        .eq("video_id", id)
-        .eq("user_id", currentUserId);
+      await supabase.from("video_likes").delete().eq("video_id", id).eq("user_id", currentUserId);
       if (type === "like") setLikes((p) => p - 1);
       else setDislikes((p) => p - 1);
       setUserVote(null);
     } else {
-      await supabase
-        .from("video_likes")
-        .upsert({ video_id: id, user_id: currentUserId, type });
+      await supabase.from("video_likes").upsert({ video_id: id, user_id: currentUserId, type });
       if (type === "like") {
         if (userVote === "dislike") setDislikes((p) => p - 1);
         setLikes((p) => p + 1);
@@ -260,111 +218,50 @@ export default function WatchPageClient({ id }: { id: string }) {
 
           {/* Channel Info */}
           <div className="flex items-center gap-3 mb-4">
-            {video.profiles ? (
-              <>
-                <Link href={`/${video.profiles?.username ?? "#"}`}>
-                  <Image
-                    src={getAvatarUrl(
-                      video.profiles?.avatar_url,
-                      video.profiles?.channel_name || video.profiles?.username || "Unknown"
-                    )}
-                    alt="avatar"
-                    width={40}
-                    height={40}
-                    className="rounded-full w-10 h-10 object-cover"
-                  />
-                </Link>
-                <div className="flex-1">
-                  <Link
-                    href={`/${video.profiles?.username ?? "#"}`}
-                    className="font-semibold hover:underline flex items-center gap-1"
-                  >
-                    {video.profiles?.channel_name || video.profiles?.username || "Unknown Channel"}
-                    {video.profiles?.is_verified && <Image src="/verified.svg" alt="verified" width={14} height={14} />}
-                    {video.profiles?.is_mod && <Image src="/mod.svg" alt="mod" width={14} height={14} />}
-                    {video.profiles?.is_bughunter && <Image src="/bughunter.svg" alt="bughunter" width={14} height={14} />}
-                  </Link>
-                  <p className="text-sm text-gray-500">
-                    {video.views} views • {timeAgo(video.created_at)}
-                  </p>
-                </div>
-              </>
-            ) : (
-              <div className="text-sm text-gray-500">[Unknown Channel]</div>
-            )}
+            <Link href={`/${video.profiles?.username ?? "#"}`}>
+              <Image
+                src={getAvatarUrl(video.profiles?.avatar_url, video.profiles?.channel_name || video.profiles?.username || "Unknown")}
+                alt="avatar"
+                width={40}
+                height={40}
+                className="rounded-full w-10 h-10 object-cover"
+              />
+            </Link>
+            <div className="flex-1">
+              <Link href={`/${video.profiles?.username ?? "#"}`} className="font-semibold hover:underline flex items-center gap-1">
+                {video.profiles?.channel_name || video.profiles?.username || "Unknown Channel"}
+                {video.profiles?.is_verified && <Image src="/verified.svg" alt="verified" width={14} height={14} />}
+                {video.profiles?.is_mod && <Image src="/mod.svg" alt="mod" width={14} height={14} />}
+                {video.profiles?.is_bughunter && <Image src="/bughunter.svg" alt="bughunter" width={14} height={14} />}
+              </Link>
+              <p className="text-sm text-gray-500">{video.views} views • {timeAgo(video.created_at)}</p>
+            </div>
 
             {/* Like/Dislike */}
             <div className="flex items-center gap-3">
               <button
                 onClick={() => handleVote("like")}
-                className={`flex items-center gap-1 px-2 py-1 rounded ${
-                  userVote === "like" ? "bg-blue-100 text-blue-600" : "bg-gray-100 text-gray-600"
-                }`}
+                className={`flex items-center gap-1 px-2 py-1 rounded ${userVote === "like" ? "bg-blue-100 text-blue-600" : "bg-gray-100 text-gray-600"}`}
               >
                 👍 {likes}
               </button>
               <button
                 onClick={() => handleVote("dislike")}
-                className={`flex items-center gap-1 px-2 py-1 rounded ${
-                  userVote === "dislike" ? "bg-red-100 text-red-600" : "bg-gray-100 text-gray-600"
-                }`}
+                className={`flex items-center gap-1 px-2 py-1 rounded ${userVote === "dislike" ? "bg-red-100 text-red-600" : "bg-gray-100 text-gray-600"}`}
               >
                 👎 {dislikes}
               </button>
             </div>
           </div>
 
-          {/* Video Description */}
+          {/* Description */}
           <p className="mb-6 text-sm text-gray-800 break-words whitespace-pre-line">{video.description}</p>
 
           {/* Comments */}
           <div className="mt-6 break-words">
-            <h2 className="font-semibold mb-3 break-words">Comments ({comments.length})</h2>
-
-            <div className="flex flex-col gap-1 mb-4">
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={newComment}
-                  onChange={(e) => {
-                    if (e.target.value.length <= 110) {
-                      setNewComment(e.target.value);
-                    }
-                  }}
-                  placeholder="Add a comment..."
-                  className="flex-1 border rounded px-3 py-2"
-                />
-                <button onClick={handleAddComment} className="bg-red-500 text-white px-4 py-2 rounded">
-                  Post
-                </button>
-              </div>
-
-              {/* Counter & Role Info */}
-              <div className="text-sm text-gray-500 text-right mt-1">{newComment.length}/110</div>
-              {currentUserProfile?.is_mod ? (
-                <div className="text-xs text-purple-600">🛡 Moderator — tidak ada batas komentar per jam.</div>
-              ) : currentUserProfile?.is_verified ? (
-                <div className="text-xs text-green-600">✔ Akun terverifikasi — batas 20 komentar per jam.</div>
-              ) : (
-                <div className="text-xs text-green-600">Bukan Akun Verified - dibatasi 2 komentar per jam.</div>
-              )}
-
-              {commentError && (
-                <div
-                  className={`flex items-center gap-2 bg-red-100 border border-red-400 text-red-700 px-3 py-2 rounded transition-all duration-500 ${
-                    fadeOut ? "opacity-0 -translate-y-1" : "opacity-100 translate-y-0"
-                  }`}
-                >
-                  <span className="text-sm">{commentError}</span>
-                </div>
-              )}
-            </div>
-
-          {/* Comments */}
-          <div className="mt-6 break-words">
             <h2 className="font-semibold mb-3">Comments ({comments.length})</h2>
-          
-            {/* Form komentar utama */}
+
+            {/* Add comment */}
             {currentUserId && (
               <form
                 onSubmit={(e) => {
@@ -373,10 +270,12 @@ export default function WatchPageClient({ id }: { id: string }) {
                 }}
                 className="flex items-start gap-3 mb-6"
               >
-                <img
-                  src={currentUserProfile?.avatar_url || "/default-avatar.png"}
+                <Image
+                  src={getAvatarUrl(currentUserProfile?.avatar_url || null, currentUserProfile?.username || "Anon")}
                   alt="avatar"
-                  className="w-10 h-10 rounded-full object-cover"
+                  width={40}
+                  height={40}
+                  className="rounded-full w-10 h-10 object-cover"
                 />
                 <div className="flex-1">
                   <textarea
@@ -387,139 +286,100 @@ export default function WatchPageClient({ id }: { id: string }) {
                   />
                   <div className="flex justify-between items-center mt-2">
                     <span className="text-xs text-gray-500">{newComment.length}/110</span>
-                    <button
-                      type="submit"
-                      className="px-4 py-1 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700"
-                    >
+                    <button type="submit" className="px-4 py-1 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">
                       Kirim
                     </button>
                   </div>
                 </div>
               </form>
             )}
-          
-            {/* List komentar */}
+
+            {/* List comments */}
             <div className="flex flex-col gap-4">
-              {comments
-                .filter((c) => !c.parent_id) // hanya komentar utama
-                .map((c) => {
-                  const isOwner = c.user_id === currentUserId;
-                  const canDelete =
-                    isOwner || video?.profiles?.id === currentUserId || currentUserProfile?.is_mod;
-          
-                  return (
-                    <div key={c.id} className="border-b pb-3">
-                      {/* Komentar utama */}
-                      <div className="flex items-start gap-3">
-                        <img
-                          src={c.profiles?.avatar_url || "/default-avatar.png"}
-                          alt="avatar"
-                          className="w-10 h-10 rounded-full object-cover"
-                        />
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <span className="font-semibold text-sm">
-                              {c.profiles?.username || "Anonim"}
-                            </span>
-                            <span className="text-xs text-gray-500">{timeAgo(c.created_at)}</span>
-                          </div>
-                          <p className="text-sm mt-1">{c.content}</p>
-                          <div className="flex gap-3 mt-2 text-xs text-gray-500">
-                            <button
-                              onClick={() => setReplyingTo(c.id)}
-                              className="hover:text-blue-600"
-                            >
-                              Reply
-                            </button>
-                            {canDelete && (
-                              <button
-                                onClick={() => handleDeleteComment(c.id)}
-                                className="hover:text-red-600"
-                              >
-                                Hapus
-                              </button>
-                            )}
-                          </div>
-          
-                          {/* Form reply */}
-                          {replyingTo === c.id && (
-                            <form
-                              onSubmit={(e) => handleReplySubmit(e, c.id)}
-                              className="flex items-start gap-2 mt-3"
-                            >
-                              <img
-                                src={currentUserProfile?.avatar_url || "/default-avatar.png"}
-                                alt="avatar"
-                                className="w-8 h-8 rounded-full object-cover"
+              {comments.filter((c) => !c.parent_id).map((c) => {
+                const canDelete = c.user_id === currentUserId || video?.profiles?.id === currentUserId || currentUserProfile?.is_mod;
+                return (
+                  <div key={c.id} className="border-b pb-3">
+                    <div className="flex items-start gap-3">
+                      <Image
+                        src={getAvatarUrl(c.profiles?.avatar_url, c.profiles?.username || "Anon")}
+                        alt="avatar"
+                        width={40}
+                        height={40}
+                        className="rounded-full w-10 h-10 object-cover"
+                      />
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-sm">{c.profiles?.username || "Anonim"}</span>
+                          <span className="text-xs text-gray-500">{timeAgo(c.created_at)}</span>
+                        </div>
+                        <p className="text-sm mt-1">{c.content}</p>
+                        <div className="flex gap-3 mt-2 text-xs text-gray-500">
+                          <button onClick={() => setReplyingTo(c.id)} className="hover:text-blue-600">Reply</button>
+                          {canDelete && <button onClick={() => handleDeleteComment(c.id)} className="hover:text-red-600">Hapus</button>}
+                        </div>
+
+                        {/* Reply form */}
+                        {replyingTo === c.id && (
+                          <form onSubmit={(e) => handleReplySubmit(e, c.id)} className="flex items-start gap-2 mt-3">
+                            <Image
+                              src={getAvatarUrl(currentUserProfile?.avatar_url || null, currentUserProfile?.username || "Anon")}
+                              alt="avatar"
+                              width={32}
+                              height={32}
+                              className="rounded-full w-8 h-8 object-cover"
+                            />
+                            <div className="flex-1">
+                              <textarea
+                                value={replyContent}
+                                onChange={(e) => setReplyContent(e.target.value)}
+                                placeholder="Tulis balasan..."
+                                className="w-full border border-gray-300 rounded-lg px-3 py-1 text-sm focus:outline-none focus:ring focus:ring-blue-400"
                               />
-                              <div className="flex-1">
-                                <textarea
-                                  value={replyContent}
-                                  onChange={(e) => setReplyContent(e.target.value)}
-                                  placeholder="Tulis balasan..."
-                                  className="w-full border border-gray-300 rounded-lg px-3 py-1 text-sm focus:outline-none focus:ring focus:ring-blue-400"
+                              <div className="flex justify-end mt-2">
+                                <button type="submit" className="px-3 py-1 bg-blue-500 text-white rounded-lg text-xs hover:bg-blue-600">Balas</button>
+                              </div>
+                            </div>
+                          </form>
+                        )}
+
+                        {/* Replies */}
+                        <div className="mt-3 ml-8 space-y-3">
+                          {comments.filter((r) => r.parent_id === c.id).map((reply) => {
+                            const canDeleteReply = reply.user_id === currentUserId || video?.profiles?.id === currentUserId || currentUserProfile?.is_mod;
+                            return (
+                              <div key={reply.id} className="flex items-start gap-2">
+                                <Image
+                                  src={getAvatarUrl(reply.profiles?.avatar_url, reply.profiles?.username || "Anon")}
+                                  alt="avatar"
+                                  width={32}
+                                  height={32}
+                                  className="rounded-full w-8 h-8 object-cover"
                                 />
-                                <div className="flex justify-end mt-2">
-                                  <button
-                                    type="submit"
-                                    className="px-3 py-1 bg-blue-500 text-white rounded-lg text-xs hover:bg-blue-600"
-                                  >
-                                    Balas
-                                  </button>
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-semibold text-sm">{reply.profiles?.username || "Anonim"}</span>
+                                    <span className="text-xs text-gray-500">{timeAgo(reply.created_at)}</span>
+                                  </div>
+                                  <p className="text-sm">{reply.content}</p>
+                                  {canDeleteReply && (
+                                    <button onClick={() => handleDeleteComment(reply.id)} className="text-xs text-red-500 hover:underline">
+                                      Hapus
+                                    </button>
+                                  )}
                                 </div>
                               </div>
-                            </form>
-                          )}
-          
-                          {/* Balasan (1 level) */}
-                          <div className="mt-3 ml-8 space-y-3">
-                            {comments
-                              .filter((r) => r.parent_id === c.id)
-                              .map((reply) => {
-                                const isReplyOwner = reply.user_id === currentUserId;
-                                const canDeleteReply =
-                                  isReplyOwner ||
-                                  video?.profiles?.id === currentUserId ||
-                                  currentUserProfile?.is_mod;
-          
-                                return (
-                                  <div key={reply.id} className="flex items-start gap-2">
-                                    <img
-                                      src={reply.profiles?.avatar_url || "/default-avatar.png"}
-                                      alt="avatar"
-                                      className="w-8 h-8 rounded-full object-cover"
-                                    />
-                                    <div className="flex-1">
-                                      <div className="flex items-center gap-2">
-                                        <span className="font-semibold text-sm">
-                                          {reply.profiles?.username || "Anonim"}
-                                        </span>
-                                        <span className="text-xs text-gray-500">
-                                          {timeAgo(reply.created_at)}
-                                        </span>
-                                      </div>
-                                      <p className="text-sm">{reply.content}</p>
-                                      {canDeleteReply && (
-                                        <button
-                                          onClick={() => handleDeleteComment(reply.id)}
-                                          className="text-xs text-red-500 hover:underline"
-                                        >
-                                          Hapus
-                                        </button>
-                                      )}
-                                    </div>
-                                  </div>
-                                );
-                              })}
-                          </div>
+                            );
+                          })}
                         </div>
                       </div>
                     </div>
-                  );
-                })}
+                  </div>
+                );
+              })}
             </div>
           </div>
-
+        </div>
 
         {/* Related Videos */}
         <div className="w-full md:w-72">
@@ -536,12 +396,12 @@ export default function WatchPageClient({ id }: { id: string }) {
               </div>
               <div className="flex-1">
                 <p className="text-sm font-semibold line-clamp-2">{v.title}</p>
-                  <div className="flex items-center gap-1 text-xs text-gray-500">
-                    {v.profiles?.channel_name || v.profiles?.username || "[Unknown Channel]"}
-                    {v.profiles?.is_verified && <Image src="/verified.svg" alt="verified" title="AKUN TERVERIFIKASI" width={10} height={10} />}
-                    {v.profiles?.is_mod && <Image src="/mod.svg" alt="mod" title="TERVERIFIKASI ADMIN" width={10} height={10} />}
-                    {v.profiles?.is_bughunter && <Image src="/bughunter.svg" alt="bughunter" title="TERVERIFIKASI BUGHUNTER" width={10} height={10} />}
-                  </div>
+                <div className="flex items-center gap-1 text-xs text-gray-500">
+                  {v.profiles?.channel_name || v.profiles?.username || "[Unknown Channel]"}
+                  {v.profiles?.is_verified && <Image src="/verified.svg" alt="verified" title="AKUN TERVERIFIKASI" width={10} height={10} />}
+                  {v.profiles?.is_mod && <Image src="/mod.svg" alt="mod" title="TERVERIFIKASI ADMIN" width={10} height={10} />}
+                  {v.profiles?.is_bughunter && <Image src="/bughunter.svg" alt="bughunter" title="TERVERIFIKASI BUGHUNTER" width={10} height={10} />}
+                </div>
               </div>
             </Link>
           ))}
