@@ -276,7 +276,7 @@ export default function WatchPageClient({ id }: { id: string }) {
               />
               <button
                 type="submit"
-                className="px-4 py-2 bg-blue-600 text-white rounded-xl text-sm hover:bg-red-700"
+                className="px-4 py-2 bg-red-600 text-white rounded-xl text-sm hover:bg-red-700"
               >
                 Kirim
               </button>
@@ -348,13 +348,13 @@ export default function WatchPageClient({ id }: { id: string }) {
                               <input
                                 type="text"
                                 placeholder="Tulis balasan..."
-                                className="flex-1 px-3 py-2 border rounded-xl text-sm focus:outline-none focus:ring focus:ring-blue-300"
+                                className="flex-1 px-3 py-2 border rounded-xl text-sm focus:outline-none focus:ring focus:ring-red-300"
                                 value={replyContent}
                                 onChange={(e) => setReplyContent(e.target.value)}
                               />
                               <button
                                 type="submit"
-                                className="px-4 py-2 bg-blue-600 text-white rounded-xl text-sm hover:bg-blue-700"
+                                className="px-4 py-2 bg-red-600 text-white rounded-xl text-sm hover:bg-red-700"
                               >
                                 Kirim
                               </button>
