@@ -258,128 +258,157 @@ export default function WatchPageClient({ id }: { id: string }) {
           <p className="mb-6 text-sm text-gray-800 break-words whitespace-pre-line">{video.description}</p>
 
           {/* Comments */}
-          <div className="mt-6 break-words">
-            <h2 className="font-semibold mb-3">Comments ({comments.length})</h2>
-
-            {/* Add comment */}
-            {currentUserId && (
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  handleAddComment();
-                }}
-                className="flex items-start gap-3 mb-6"
-              >
-                <Image
-                  src={getAvatarUrl(currentUserProfile?.avatar_url || null, currentUserProfile?.username || "Anon")}
-                  alt="avatar"
-                  width={40}
-                  height={40}
-                  className="rounded-full w-10 h-10 object-cover"
-                />
-                <div className="flex-1">
-                  <textarea
-                    value={newComment}
-                    onChange={(e) => setNewComment(e.target.value)}
-                    placeholder="Tulis komentar..."
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring focus:ring-blue-400"
-                  />
-                  <div className="flex justify-between items-center mt-2">
-                    <span className="text-xs text-gray-500">{newComment.length}/110</span>
-                    <button type="submit" className="px-4 py-1 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">
-                      Kirim
-                    </button>
-                  </div>
-                </div>
-              </form>
-            )}
-
-            {/* List comments */}
+          <div className="mt-6">
+            <h3 className="text-lg font-semibold mb-4">Komentar</h3>
+          
             <div className="flex flex-col gap-4">
-              {comments.filter((c) => !c.parent_id).map((c) => {
-                const canDelete = c.user_id === currentUserId || video?.profiles?.id === currentUserId || currentUserProfile?.is_mod;
+              {comments.map((c) => {
+                const isOwner = c.user_id === currentUserId;
+                const canDelete =
+                  isOwner || video?.profiles?.id === currentUserId || currentUserProfile?.is_mod;
+          
                 return (
-                  <div key={c.id} className="border-b pb-3">
+                  <div
+                    key={c.id}
+                    className="bg-white shadow-md rounded-2xl p-4 flex flex-col gap-3"
+                  >
+                    {/* Header komentar */}
                     <div className="flex items-start gap-3">
                       <Image
-                        src={getAvatarUrl(c.profiles?.avatar_url, c.profiles?.username || "Anon")}
-                        alt="avatar"
-                        width={40}
-                        height={40}
-                        className="rounded-full w-10 h-10 object-cover"
+                        src={
+                          c.profiles?.avatar_url ||
+                          `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                            c.profiles?.username || "User"
+                          )}&background=random&color=fff`
+                        }
+                        alt={c.profiles?.username || "User"}
+                        width={42}
+                        height={42}
+                        className="rounded-full"
                       />
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
-                          <span className="font-semibold text-sm">{c.profiles?.username || "Anonim"}</span>
+                          <span className="font-semibold">{c.profiles?.username || "User"}</span>
                           <span className="text-xs text-gray-500">{timeAgo(c.created_at)}</span>
                         </div>
-                        <p className="text-sm mt-1">{c.content}</p>
-                        <div className="flex gap-3 mt-2 text-xs text-gray-500">
-                          <button onClick={() => setReplyingTo(c.id)} className="hover:text-blue-600">Reply</button>
-                          {canDelete && <button onClick={() => handleDeleteComment(c.id)} className="hover:text-red-600">Hapus</button>}
+                        <p className="text-sm text-gray-800">{c.content}</p>
+          
+                        {/* Tombol aksi */}
+                        <div className="flex items-center gap-4 mt-2">
+                          <button
+                            onClick={() => setReplyTo(c.id)}
+                            className="text-xs font-medium text-blue-600 hover:underline"
+                          >
+                            Reply
+                          </button>
+                          {canDelete && (
+                            <button
+                              onClick={() => handleDeleteComment(c.id)}
+                              className="text-xs font-medium text-red-500 hover:underline"
+                            >
+                              Hapus
+                            </button>
+                          )}
                         </div>
-
-                        {/* Reply form */}
-                        {replyingTo === c.id && (
-                          <form onSubmit={(e) => handleReplySubmit(e, c.id)} className="flex items-start gap-2 mt-3">
-                            <Image
-                              src={getAvatarUrl(currentUserProfile?.avatar_url || null, currentUserProfile?.username || "Anon")}
-                              alt="avatar"
-                              width={32}
-                              height={32}
-                              className="rounded-full w-8 h-8 object-cover"
+          
+                        {/* Form reply */}
+                        {replyTo === c.id && (
+                          <form
+                            onSubmit={(e) => handleReplySubmit(e, c.id)}
+                            className="mt-3 flex gap-2"
+                          >
+                            <input
+                              type="text"
+                              placeholder="Tulis balasan..."
+                              className="flex-1 px-3 py-2 border rounded-xl text-sm focus:outline-none focus:ring focus:ring-blue-300"
+                              value={replyContent}
+                              onChange={(e) => setReplyContent(e.target.value)}
                             />
-                            <div className="flex-1">
-                              <textarea
-                                value={replyContent}
-                                onChange={(e) => setReplyContent(e.target.value)}
-                                placeholder="Tulis balasan..."
-                                className="w-full border border-gray-300 rounded-lg px-3 py-1 text-sm focus:outline-none focus:ring focus:ring-blue-400"
-                              />
-                              <div className="flex justify-end mt-2">
-                                <button type="submit" className="px-3 py-1 bg-blue-500 text-white rounded-lg text-xs hover:bg-blue-600">Balas</button>
-                              </div>
-                            </div>
+                            <button
+                              type="submit"
+                              className="px-4 py-2 bg-blue-600 text-white rounded-xl text-sm hover:bg-blue-700"
+                            >
+                              Kirim
+                            </button>
                           </form>
                         )}
-
-                        {/* Replies */}
-                        <div className="mt-3 ml-8 space-y-3">
-                          {comments.filter((r) => r.parent_id === c.id).map((reply) => {
-                            const canDeleteReply = reply.user_id === currentUserId || video?.profiles?.id === currentUserId || currentUserProfile?.is_mod;
-                            return (
-                              <div key={reply.id} className="flex items-start gap-2">
-                                <Image
-                                  src={getAvatarUrl(reply.profiles?.avatar_url, reply.profiles?.username || "Anon")}
-                                  alt="avatar"
-                                  width={32}
-                                  height={32}
-                                  className="rounded-full w-8 h-8 object-cover"
-                                />
-                                <div className="flex-1">
-                                  <div className="flex items-center gap-2">
-                                    <span className="font-semibold text-sm">{reply.profiles?.username || "Anonim"}</span>
-                                    <span className="text-xs text-gray-500">{timeAgo(reply.created_at)}</span>
+          
+                        {/* Reply list */}
+                        {c.replies?.length > 0 && (
+                          <div className="mt-4 flex flex-col gap-3">
+                            {c.replies.map((r) => {
+                              const isReplyOwner = r.user_id === currentUserId;
+                              const canDeleteReply =
+                                isReplyOwner ||
+                                video?.profiles?.id === currentUserId ||
+                                currentUserProfile?.is_mod;
+          
+                              return (
+                                <div
+                                  key={r.id}
+                                  className="ml-8 bg-gray-50 border border-gray-200 shadow-sm rounded-xl p-3 flex gap-3"
+                                >
+                                  <Image
+                                    src={
+                                      r.profiles?.avatar_url ||
+                                      `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                                        r.profiles?.username || "User"
+                                      )}&background=random&color=fff`
+                                    }
+                                    alt={r.profiles?.username || "User"}
+                                    width={32}
+                                    height={32}
+                                    className="rounded-full"
+                                  />
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-semibold">
+                                        {r.profiles?.username || "User"}
+                                      </span>
+                                      <span className="text-xs text-gray-500">
+                                        {timeAgo(r.created_at)}
+                                      </span>
+                                    </div>
+                                    <p className="text-sm text-gray-700">{r.content}</p>
+                                    {canDeleteReply && (
+                                      <button
+                                        onClick={() => handleDeleteComment(r.id)}
+                                        className="text-xs text-red-500 hover:underline mt-1"
+                                      >
+                                        Hapus
+                                      </button>
+                                    )}
                                   </div>
-                                  <p className="text-sm">{reply.content}</p>
-                                  {canDeleteReply && (
-                                    <button onClick={() => handleDeleteComment(reply.id)} className="text-xs text-red-500 hover:underline">
-                                      Hapus
-                                    </button>
-                                  )}
                                 </div>
-                              </div>
-                            );
-                          })}
-                        </div>
+                              );
+                            })}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
                 );
               })}
             </div>
+          
+            {/* Form komentar utama */}
+            <form onSubmit={handleCommentSubmit} className="mt-6 flex gap-3">
+              <input
+                type="text"
+                placeholder="Tulis komentar..."
+                className="flex-1 px-3 py-2 border rounded-xl text-sm focus:outline-none focus:ring focus:ring-blue-300"
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+              />
+              <button
+                type="submit"
+                className="px-4 py-2 bg-blue-600 text-white rounded-xl text-sm hover:bg-blue-700"
+              >
+                Kirim
+              </button>
+            </form>
           </div>
-        </div>
+
 
         {/* Related Videos */}
         <div className="w-full md:w-72">
