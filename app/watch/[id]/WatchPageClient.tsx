@@ -276,7 +276,7 @@ export default function WatchPageClient({ id }: { id: string }) {
               />
               <button
                 type="submit"
-                className="px-4 py-2 bg-blue-600 text-white rounded-xl text-sm hover:bg-blue-700"
+                className="px-4 py-2 bg-blue-600 text-white rounded-xl text-sm hover:bg-red-700"
               >
                 Kirim
               </button>
@@ -306,7 +306,7 @@ export default function WatchPageClient({ id }: { id: string }) {
                           alt={c.profiles?.channel_name || "User"}
                           width={42}
                           height={42}
-                          className="object-cover w-10 h-10"
+                          className="object-round w-10 h-10"
                         />
                         <div className="flex-1">
                           <div className="flex items-center gap-2">
@@ -379,7 +379,7 @@ export default function WatchPageClient({ id }: { id: string }) {
                                       alt={r.profiles?.channel_name || "User"}
                                       width={32}
                                       height={32}
-                                      className="object-cover w-8 h-8"
+                                      className="object-round w-8 h-8"
                                     />
                                     <div className="flex-1">
                                       <div className="flex items-center gap-2">
