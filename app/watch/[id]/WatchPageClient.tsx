@@ -417,7 +417,6 @@ export default function WatchPageClient({ id }: { id: string }) {
                   </div>
                 );
               })}
-              </div>
 
 
         {/* Related Videos */}
