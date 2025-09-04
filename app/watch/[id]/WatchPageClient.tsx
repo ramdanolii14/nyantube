@@ -256,8 +256,11 @@ export default function WatchPageClient({ id }: { id: string }) {
           {/* Description */}
           <p className="mb-6 text-sm text-gray-800 break-words whitespace-pre-line">{video.description}</p>
 
-          {/*Form Komentar*/}
+          {/* Comments */}
           <div className="mt-6">
+            <h3 className="text-lg font-semibold mb-4">Komentar</h3>
+          
+            {/* Form komentar utama dipindahkan ke atas */}
             <form
               onSubmit={(e) => {
                 e.preventDefault();
@@ -279,18 +282,20 @@ export default function WatchPageClient({ id }: { id: string }) {
                 Kirim
               </button>
             </form>
-
-          {/* Comments */}
-          <div className="mt-6">
-            <h3 className="text-lg font-semibold mb-4">Komentar</h3>
+          
             <div className="flex flex-col gap-4">
               {comments
                 .filter((c) => !c.parent_id)
+                .slice() // agar tidak mengubah array asli
+                .reverse() // komentar terbaru di atas
                 .map((c) => {
                   const isOwner = c.user_id === currentUserId;
-                  const canDelete = isOwner || video?.profiles?.id === currentUserId || currentUserProfile?.is_mod;
-                  const replies = comments.filter((r) => r.parent_id === c.id);
-
+                  const canDelete =
+                    isOwner || video?.profiles?.id === currentUserId || currentUserProfile?.is_mod;
+                  const replies = comments
+                    .filter((r) => r.parent_id === c.id)
+                    .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()); // replies tetap ascending
+          
                   return (
                     <div key={c.id} className="bg-white shadow-md rounded-2xl p-4 flex flex-col gap-3">
                       {/* Header komentar */}
