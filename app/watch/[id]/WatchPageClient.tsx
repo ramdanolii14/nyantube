@@ -272,15 +272,15 @@ export default function WatchPageClient({ id }: { id: string }) {
                       {/* Header komentar */}
                       <div className="flex items-start gap-3">
                         <Image
-                          src={getAvatarUrl(c.profiles?.avatar_url, c.profiles?.username || "User")}
-                          alt={c.profiles?.username || "User"}
+                          src={getAvatarUrl(c.profiles?.avatar_url, c.profiles?.channel_name || "User")}
+                          alt={c.profiles?.channel_name || "User"}
                           width={42}
                           height={42}
                           className="object-cover w-10 h-10"
                         />
                         <div className="flex-1">
                           <div className="flex items-center gap-2">
-                            <span className="font-semibold">{c.profiles?.username || "User"}</span>
+                            <span className="font-semibold">{c.profiles?.channel_name || "User"}</span>
                             <span className="text-xs text-gray-500">{timeAgo(c.created_at)}</span>
                           </div>
                           <p className="text-sm text-gray-800">{c.content}</p>
@@ -317,15 +317,15 @@ export default function WatchPageClient({ id }: { id: string }) {
                                 return (
                                   <div key={r.id} className="ml-8 bg-gray-50 border border-gray-200 shadow-sm rounded-xl p-3 flex gap-3">
                                     <Image
-                                      src={getAvatarUrl(r.profiles?.avatar_url, r.profiles?.username || "User")}
-                                      alt={r.profiles?.username || "User"}
+                                      src={getAvatarUrl(r.profiles?.avatar_url, r.profiles?.channel_name || "User")}
+                                      alt={r.profiles?.channel_name || "User"}
                                       width={32}
                                       height={32}
                                       className="object-cover w-8 h-8"
                                     />
                                     <div className="flex-1">
                                       <div className="flex items-center gap-2">
-                                        <span className="font-semibold">{r.profiles?.username || "User"}</span>
+                                        <span className="font-semibold">{r.profiles?.channel_name || "User"}</span>
                                         <span className="text-xs text-gray-500">{timeAgo(r.created_at)}</span>
                                       </div>
                                       <p className="text-sm text-gray-700">{r.content}</p>
@@ -375,7 +375,7 @@ export default function WatchPageClient({ id }: { id: string }) {
               <div className="flex-1">
                 <p className="text-sm font-semibold line-clamp-2">{v.title}</p>
                 <div className="flex items-center gap-1 text-xs text-gray-500">
-                  {v.profiles?.channel_name || v.profiles?.username || "[Unknown Channel]"}
+                  {v.profiles?.channel_name || v.profiles?.channel_name || "[Unknown Channel]"}
                   {v.profiles?.is_verified && <Image src="/verified.svg" alt="verified" title="AKUN TERVERIFIKASI" width={10} height={10} />}
                   {v.profiles?.is_mod && <Image src="/mod.svg" alt="mod" title="TERVERIFIKASI ADMIN" width={10} height={10} />}
                   {v.profiles?.is_bughunter && <Image src="/bughunter.svg" alt="bughunter" title="TERVERIFIKASI BUGHUNTER" width={10} height={10} />}
