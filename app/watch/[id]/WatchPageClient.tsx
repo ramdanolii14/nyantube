@@ -204,8 +204,8 @@ export default function WatchPageClient({ id }: { id: string }) {
   return (
     <div className="w-full bg-white-50 mt-24 pb-10">
       <div className="max-w-6xl mx-auto px-4 md:px-6 flex flex-col md:flex-row gap-6">
+        {/* Video Section */}
         <div className="flex-1 max-w-3xl">
-          {/* Video Player */}
           <div className="relative w-full bg-black rounded-lg overflow-hidden aspect-video">
             <video
               src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/videos/${video.video_url}`}
@@ -216,7 +216,7 @@ export default function WatchPageClient({ id }: { id: string }) {
 
           <h1 className="text-xl font-bold mt-4 mb-2">{video.title}</h1>
 
-          {/* Channel Info */}
+          {/* Channel Info + Like/Dislike */}
           <div className="flex items-center gap-3 mb-4">
             <Link href={`/${video.profiles?.username ?? "#"}`}>
               <Image
@@ -237,7 +237,6 @@ export default function WatchPageClient({ id }: { id: string }) {
               <p className="text-sm text-gray-500">{video.views} views • {timeAgo(video.created_at)}</p>
             </div>
 
-            {/* Like/Dislike */}
             <div className="flex items-center gap-3">
               <button
                 onClick={() => handleVote("like")}
@@ -260,23 +259,16 @@ export default function WatchPageClient({ id }: { id: string }) {
           {/* Comments */}
           <div className="mt-6">
             <h3 className="text-lg font-semibold mb-4">Komentar</h3>
-          
             <div className="flex flex-col gap-4">
               {comments
-                .filter((c) => !c.parent_id) // hanya komentar utama
+                .filter((c) => !c.parent_id)
                 .map((c) => {
                   const isOwner = c.user_id === currentUserId;
-                  const canDelete =
-                    isOwner || video?.profiles?.id === currentUserId || currentUserProfile?.is_mod;
-          
-                  // cari replies
+                  const canDelete = isOwner || video?.profiles?.id === currentUserId || currentUserProfile?.is_mod;
                   const replies = comments.filter((r) => r.parent_id === c.id);
-          
+
                   return (
-                    <div
-                      key={c.id}
-                      className="bg-white shadow-md rounded-2xl p-4 flex flex-col gap-3"
-                    >
+                    <div key={c.id} className="bg-white shadow-md rounded-2xl p-4 flex flex-col gap-3">
                       {/* Header komentar */}
                       <div className="flex items-start gap-3">
                         <Image
@@ -292,31 +284,18 @@ export default function WatchPageClient({ id }: { id: string }) {
                             <span className="text-xs text-gray-500">{timeAgo(c.created_at)}</span>
                           </div>
                           <p className="text-sm text-gray-800">{c.content}</p>
-          
-                          {/* Tombol aksi */}
+
+                          {/* Aksi */}
                           <div className="flex items-center gap-4 mt-2">
-                            <button
-                              onClick={() => setReplyingTo(c.id)}
-                              className="text-xs font-medium text-blue-600 hover:underline"
-                            >
-                              Reply
-                            </button>
+                            <button onClick={() => setReplyingTo(c.id)} className="text-xs font-medium text-blue-600 hover:underline">Reply</button>
                             {canDelete && (
-                              <button
-                                onClick={() => setConfirmDeleteId(c.id)}
-                                className="text-xs font-medium text-red-500 hover:underline"
-                              >
-                                Hapus
-                              </button>
+                              <button onClick={() => setConfirmDeleteId(c.id)} className="text-xs font-medium text-red-500 hover:underline">Hapus</button>
                             )}
                           </div>
-          
+
                           {/* Form reply */}
                           {replyingTo === c.id && (
-                            <form
-                              onSubmit={(e) => handleReplySubmit(e, c.id)}
-                              className="mt-3 flex gap-2"
-                            >
+                            <form onSubmit={(e) => handleReplySubmit(e, c.id)} className="mt-3 flex gap-2">
                               <input
                                 type="text"
                                 placeholder="Tulis balasan..."
@@ -324,30 +303,19 @@ export default function WatchPageClient({ id }: { id: string }) {
                                 value={replyContent}
                                 onChange={(e) => setReplyContent(e.target.value)}
                               />
-                              <button
-                                type="submit"
-                                className="px-4 py-2 bg-blue-600 text-white rounded-xl text-sm hover:bg-blue-700"
-                              >
-                                Kirim
-                              </button>
+                              <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-xl text-sm hover:bg-blue-700">Kirim</button>
                             </form>
                           )}
-          
+
                           {/* Reply list */}
                           {replies.length > 0 && (
                             <div className="mt-4 flex flex-col gap-3">
                               {replies.map((r) => {
                                 const isReplyOwner = r.user_id === currentUserId;
-                                const canDeleteReply =
-                                  isReplyOwner ||
-                                  video?.profiles?.id === currentUserId ||
-                                  currentUserProfile?.is_mod;
-          
+                                const canDeleteReply = isReplyOwner || video?.profiles?.id === currentUserId || currentUserProfile?.is_mod;
+
                                 return (
-                                  <div
-                                    key={r.id}
-                                    className="ml-8 bg-gray-50 border border-gray-200 shadow-sm rounded-xl p-3 flex gap-3"
-                                  >
+                                  <div key={r.id} className="ml-8 bg-gray-50 border border-gray-200 shadow-sm rounded-xl p-3 flex gap-3">
                                     <Image
                                       src={getAvatarUrl(r.profiles?.avatar_url, r.profiles?.username || "User")}
                                       alt={r.profiles?.username || "User"}
@@ -357,21 +325,12 @@ export default function WatchPageClient({ id }: { id: string }) {
                                     />
                                     <div className="flex-1">
                                       <div className="flex items-center gap-2">
-                                        <span className="font-semibold">
-                                          {r.profiles?.username || "User"}
-                                        </span>
-                                        <span className="text-xs text-gray-500">
-                                          {timeAgo(r.created_at)}
-                                        </span>
+                                        <span className="font-semibold">{r.profiles?.username || "User"}</span>
+                                        <span className="text-xs text-gray-500">{timeAgo(r.created_at)}</span>
                                       </div>
                                       <p className="text-sm text-gray-700">{r.content}</p>
                                       {canDeleteReply && (
-                                        <button
-                                          onClick={() => setConfirmDeleteId(r.id)}
-                                          className="text-xs text-red-500 hover:underline mt-1"
-                                        >
-                                          Hapus
-                                        </button>
+                                        <button onClick={() => setConfirmDeleteId(r.id)} className="text-xs text-red-500 hover:underline mt-1">Hapus</button>
                                       )}
                                     </div>
                                   </div>
@@ -385,15 +344,9 @@ export default function WatchPageClient({ id }: { id: string }) {
                   );
                 })}
             </div>
-          
+
             {/* Form komentar utama */}
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                handleAddComment();
-              }}
-              className="mt-6 flex gap-3"
-            >
+            <form onSubmit={(e) => { e.preventDefault(); handleAddComment(); }} className="mt-6 flex gap-3">
               <input
                 type="text"
                 placeholder="Tulis komentar..."
@@ -401,17 +354,10 @@ export default function WatchPageClient({ id }: { id: string }) {
                 value={newComment}
                 onChange={(e) => setNewComment(e.target.value)}
               />
-              <button
-                type="submit"
-                className="px-4 py-2 bg-blue-600 text-white rounded-xl text-sm hover:bg-blue-700"
-              >
-                Kirim
-              </button>
+              <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-xl text-sm hover:bg-blue-700">Kirim</button>
             </form>
           </div>
         </div>
-          
-
 
         {/* Related Videos */}
         <div className="w-full md:w-72">
@@ -439,3 +385,6 @@ export default function WatchPageClient({ id }: { id: string }) {
           ))}
         </div>
       </div>
+    </div>
+  );
+}
