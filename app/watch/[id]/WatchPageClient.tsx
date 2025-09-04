@@ -56,11 +56,10 @@ export default function WatchPageClient({ id }: { id: string }) {
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [replyContent, setReplyContent] = useState("");
 
-  const getAvatarUrl = (avatar_url: string | null, name: string) => {
-    return avatar_url
+  const getAvatarUrl = (avatar_url: string | null, name: string) =>
+    avatar_url
       ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${avatar_url}`
       : `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random&color=fff`;
-  };
 
   useEffect(() => {
     if (commentError) {
@@ -259,8 +258,8 @@ export default function WatchPageClient({ id }: { id: string }) {
           {/* Comments Section */}
           <div className="mt-6">
             <h3 className="text-lg font-semibold mb-4">Komentar</h3>
-          
-            {/* Form komentar utama di atas */}
+
+            {/* Form komentar utama */}
             <form
               onSubmit={(e) => {
                 e.preventDefault();
@@ -282,23 +281,22 @@ export default function WatchPageClient({ id }: { id: string }) {
                 Kirim
               </button>
             </form>
-          
+
             {/* Daftar komentar */}
             <div className="flex flex-col gap-4">
               {comments
                 .filter((c) => !c.parent_id)
                 .slice()
-                .reverse() // komentar terbaru di atas
+                .reverse()
                 .map((c) => {
                   const isOwner = c.user_id === currentUserId;
                   const canDelete =
                     isOwner || video?.profiles?.id === currentUserId || currentUserProfile?.is_mod;
-          
-                  // Ambil balasan komentar, tetap ascending
+
                   const replies = comments
                     .filter((r) => r.parent_id === c.id)
                     .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
-          
+
                   return (
                     <div key={c.id} className="bg-white shadow-md rounded-2xl p-4 flex flex-col gap-3">
                       {/* Header komentar */}
@@ -316,7 +314,7 @@ export default function WatchPageClient({ id }: { id: string }) {
                             <span className="text-xs text-gray-500">{timeAgo(c.created_at)}</span>
                           </div>
                           <p className="text-sm text-gray-800">{c.content}</p>
-          
+
                           {/* Aksi komentar */}
                           <div className="flex items-center gap-4 mt-2">
                             <button
@@ -325,16 +323,14 @@ export default function WatchPageClient({ id }: { id: string }) {
                             >
                               Reply
                             </button>
-          
+
                             {canDelete && (
                               <button
                                 onClick={async () => {
                                   const confirmed = window.confirm(
                                     "Apakah kamu yakin ingin menghapus komentar ini?"
                                   );
-                                  if (confirmed) {
-                                    await handleDeleteComment(c.id);
-                                  }
+                                  if (confirmed) await handleDeleteComment(c.id);
                                 }}
                                 className="text-xs font-medium text-red-500 hover:underline"
                               >
@@ -342,7 +338,7 @@ export default function WatchPageClient({ id }: { id: string }) {
                               </button>
                             )}
                           </div>
-          
+
                           {/* Form reply */}
                           {replyingTo === c.id && (
                             <form
@@ -364,7 +360,7 @@ export default function WatchPageClient({ id }: { id: string }) {
                               </button>
                             </form>
                           )}
-          
+
                           {/* Daftar reply */}
                           {replies.length > 0 && (
                             <div className="mt-4 flex flex-col gap-3">
@@ -372,7 +368,7 @@ export default function WatchPageClient({ id }: { id: string }) {
                                 const isReplyOwner = r.user_id === currentUserId;
                                 const canDeleteReply =
                                   isReplyOwner || video?.profiles?.id === currentUserId || currentUserProfile?.is_mod;
-          
+
                                 return (
                                   <div
                                     key={r.id}
@@ -397,9 +393,7 @@ export default function WatchPageClient({ id }: { id: string }) {
                                             const confirmed = window.confirm(
                                               "Apakah kamu yakin ingin menghapus balasan ini?"
                                             );
-                                            if (confirmed) {
-                                              await handleDeleteComment(r.id);
-                                            }
+                                            if (confirmed) await handleDeleteComment(r.id);
                                           }}
                                           className="text-xs text-red-500 hover:underline mt-1"
                                         >
@@ -419,7 +413,7 @@ export default function WatchPageClient({ id }: { id: string }) {
                 })}
             </div>
           </div>
-
+        </div>
 
         {/* Related Videos */}
         <div className="w-full md:w-72">
@@ -437,7 +431,7 @@ export default function WatchPageClient({ id }: { id: string }) {
               <div className="flex-1">
                 <p className="text-sm font-semibold line-clamp-2">{v.title}</p>
                 <div className="flex items-center gap-1 text-xs text-gray-500">
-                  {v.profiles?.channel_name || v.profiles?.channel_name || "[Unknown Channel]"}
+                  {v.profiles?.channel_name || "[Unknown Channel]"}
                   {v.profiles?.is_verified && <Image src="/verified.svg" alt="verified" title="AKUN TERVERIFIKASI" width={10} height={10} />}
                   {v.profiles?.is_mod && <Image src="/mod.svg" alt="mod" title="TERVERIFIKASI ADMIN" width={10} height={10} />}
                   {v.profiles?.is_bughunter && <Image src="/bughunter.svg" alt="bughunter" title="TERVERIFIKASI BUGHUNTER" width={10} height={10} />}
