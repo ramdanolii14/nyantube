@@ -226,7 +226,7 @@ export default function WatchPageClient({ id }: { id: string }) {
           {/* Video Player */}
           <div className="relative w-full bg-black rounded-lg overflow-hidden aspect-video">
             <video
-              src={`${video.video_url}`}
+              src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/videos/${video.video_url}`}
               controls
               className="w-full h-full object-contain"
             />
