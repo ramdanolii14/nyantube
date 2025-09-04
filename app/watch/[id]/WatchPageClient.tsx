@@ -256,11 +256,11 @@ export default function WatchPageClient({ id }: { id: string }) {
           {/* Description */}
           <p className="mb-6 text-sm text-gray-800 break-words whitespace-pre-line">{video.description}</p>
 
-          {/* Comments */}
+          {/* Comments Section */}
           <div className="mt-6">
             <h3 className="text-lg font-semibold mb-4">Komentar</h3>
           
-            {/* Form komentar utama dipindahkan ke atas */}
+            {/* Form komentar utama di atas */}
             <form
               onSubmit={(e) => {
                 e.preventDefault();
@@ -283,18 +283,21 @@ export default function WatchPageClient({ id }: { id: string }) {
               </button>
             </form>
           
+            {/* Daftar komentar */}
             <div className="flex flex-col gap-4">
               {comments
                 .filter((c) => !c.parent_id)
-                .slice() // agar tidak mengubah array asli
+                .slice()
                 .reverse() // komentar terbaru di atas
                 .map((c) => {
                   const isOwner = c.user_id === currentUserId;
                   const canDelete =
                     isOwner || video?.profiles?.id === currentUserId || currentUserProfile?.is_mod;
+          
+                  // Ambil balasan komentar, tetap ascending
                   const replies = comments
                     .filter((r) => r.parent_id === c.id)
-                    .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()); // replies tetap ascending
+                    .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
           
                   return (
                     <div key={c.id} className="bg-white shadow-md rounded-2xl p-4 flex flex-col gap-3">
@@ -313,18 +316,39 @@ export default function WatchPageClient({ id }: { id: string }) {
                             <span className="text-xs text-gray-500">{timeAgo(c.created_at)}</span>
                           </div>
                           <p className="text-sm text-gray-800">{c.content}</p>
-
-                          {/* Aksi */}
+          
+                          {/* Aksi komentar */}
                           <div className="flex items-center gap-4 mt-2">
-                            <button onClick={() => setReplyingTo(c.id)} className="text-xs font-medium text-blue-600 hover:underline">Reply</button>
+                            <button
+                              onClick={() => setReplyingTo(c.id)}
+                              className="text-xs font-medium text-blue-600 hover:underline"
+                            >
+                              Reply
+                            </button>
+          
                             {canDelete && (
-                              <button onClick={() => setConfirmDeleteId(c.id)} className="text-xs font-medium text-red-500 hover:underline">Hapus</button>
+                              <button
+                                onClick={async () => {
+                                  const confirmed = window.confirm(
+                                    "Apakah kamu yakin ingin menghapus komentar ini?"
+                                  );
+                                  if (confirmed) {
+                                    await handleDeleteComment(c.id);
+                                  }
+                                }}
+                                className="text-xs font-medium text-red-500 hover:underline"
+                              >
+                                Hapus
+                              </button>
                             )}
                           </div>
-
+          
                           {/* Form reply */}
                           {replyingTo === c.id && (
-                            <form onSubmit={(e) => handleReplySubmit(e, c.id)} className="mt-3 flex gap-2">
+                            <form
+                              onSubmit={(e) => handleReplySubmit(e, c.id)}
+                              className="mt-3 flex gap-2"
+                            >
                               <input
                                 type="text"
                                 placeholder="Tulis balasan..."
@@ -332,19 +356,28 @@ export default function WatchPageClient({ id }: { id: string }) {
                                 value={replyContent}
                                 onChange={(e) => setReplyContent(e.target.value)}
                               />
-                              <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-xl text-sm hover:bg-blue-700">Kirim</button>
+                              <button
+                                type="submit"
+                                className="px-4 py-2 bg-blue-600 text-white rounded-xl text-sm hover:bg-blue-700"
+                              >
+                                Kirim
+                              </button>
                             </form>
                           )}
-
-                          {/* Reply list */}
+          
+                          {/* Daftar reply */}
                           {replies.length > 0 && (
                             <div className="mt-4 flex flex-col gap-3">
                               {replies.map((r) => {
                                 const isReplyOwner = r.user_id === currentUserId;
-                                const canDeleteReply = isReplyOwner || video?.profiles?.id === currentUserId || currentUserProfile?.is_mod;
-
+                                const canDeleteReply =
+                                  isReplyOwner || video?.profiles?.id === currentUserId || currentUserProfile?.is_mod;
+          
                                 return (
-                                  <div key={r.id} className="ml-8 bg-gray-50 border border-gray-200 shadow-sm rounded-xl p-3 flex gap-3">
+                                  <div
+                                    key={r.id}
+                                    className="ml-8 bg-gray-50 border border-gray-200 shadow-sm rounded-xl p-3 flex gap-3"
+                                  >
                                     <Image
                                       src={getAvatarUrl(r.profiles?.avatar_url, r.profiles?.channel_name || "User")}
                                       alt={r.profiles?.channel_name || "User"}
@@ -359,7 +392,19 @@ export default function WatchPageClient({ id }: { id: string }) {
                                       </div>
                                       <p className="text-sm text-gray-700">{r.content}</p>
                                       {canDeleteReply && (
-                                        <button onClick={() => setConfirmDeleteId(r.id)} className="text-xs text-red-500 hover:underline mt-1">Hapus</button>
+                                        <button
+                                          onClick={async () => {
+                                            const confirmed = window.confirm(
+                                              "Apakah kamu yakin ingin menghapus balasan ini?"
+                                            );
+                                            if (confirmed) {
+                                              await handleDeleteComment(r.id);
+                                            }
+                                          }}
+                                          className="text-xs text-red-500 hover:underline mt-1"
+                                        >
+                                          Hapus
+                                        </button>
                                       )}
                                     </div>
                                   </div>
@@ -373,6 +418,8 @@ export default function WatchPageClient({ id }: { id: string }) {
                   );
                 })}
             </div>
+          </div>
+
 
         {/* Related Videos */}
         <div className="w-full md:w-72">
