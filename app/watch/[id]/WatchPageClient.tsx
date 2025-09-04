@@ -374,20 +374,6 @@ export default function WatchPageClient({ id }: { id: string }) {
                 })}
             </div>
 
-            {/* Form komentar utama */}
-            <form onSubmit={(e) => { e.preventDefault(); handleAddComment(); }} className="mt-6 flex gap-3">
-              <input
-                type="text"
-                placeholder="Tulis komentar..."
-                className="flex-1 px-3 py-2 border rounded-xl text-sm focus:outline-none focus:ring focus:ring-blue-300"
-                value={newComment}
-                onChange={(e) => setNewComment(e.target.value)}
-              />
-              <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-xl text-sm hover:bg-blue-700">Kirim</button>
-            </form>
-          </div>
-        </div>
-
         {/* Related Videos */}
         <div className="w-full md:w-72">
           <h2 className="font-semibold mb-3">Related Videos</h2>
