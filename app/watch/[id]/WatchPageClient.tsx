@@ -262,137 +262,138 @@ export default function WatchPageClient({ id }: { id: string }) {
             <h3 className="text-lg font-semibold mb-4">Komentar</h3>
           
             <div className="flex flex-col gap-4">
-              {comments.map((c) => {
-                const isOwner = c.user_id === currentUserId;
-                const canDelete =
-                  isOwner || video?.profiles?.id === currentUserId || currentUserProfile?.is_mod;
+              {comments
+                .filter((c) => !c.parent_id) // hanya komentar utama
+                .map((c) => {
+                  const isOwner = c.user_id === currentUserId;
+                  const canDelete =
+                    isOwner || video?.profiles?.id === currentUserId || currentUserProfile?.is_mod;
           
-                return (
-                  <div
-                    key={c.id}
-                    className="bg-white shadow-md rounded-2xl p-4 flex flex-col gap-3"
-                  >
-                    {/* Header komentar */}
-                    <div className="flex items-start gap-3">
-                      <Image
-                        src={
-                          c.profiles?.avatar_url ||
-                          `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                            c.profiles?.username || "User"
-                          )}&background=random&color=fff`
-                        }
-                        alt={c.profiles?.username || "User"}
-                        width={42}
-                        height={42}
-                        className="rounded-full"
-                      />
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="font-semibold">{c.profiles?.username || "User"}</span>
-                          <span className="text-xs text-gray-500">{timeAgo(c.created_at)}</span>
-                        </div>
-                        <p className="text-sm text-gray-800">{c.content}</p>
+                  // cari replies
+                  const replies = comments.filter((r) => r.parent_id === c.id);
           
-                        {/* Tombol aksi */}
-                        <div className="flex items-center gap-4 mt-2">
-                          <button
-                            onClick={() => setReplyTo(c.id)}
-                            className="text-xs font-medium text-blue-600 hover:underline"
-                          >
-                            Reply
-                          </button>
-                          {canDelete && (
+                  return (
+                    <div
+                      key={c.id}
+                      className="bg-white shadow-md rounded-2xl p-4 flex flex-col gap-3"
+                    >
+                      {/* Header komentar */}
+                      <div className="flex items-start gap-3">
+                        <Image
+                          src={getAvatarUrl(c.profiles?.avatar_url, c.profiles?.username || "User")}
+                          alt={c.profiles?.username || "User"}
+                          width={42}
+                          height={42}
+                          className="rounded-full"
+                        />
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold">{c.profiles?.username || "User"}</span>
+                            <span className="text-xs text-gray-500">{timeAgo(c.created_at)}</span>
+                          </div>
+                          <p className="text-sm text-gray-800">{c.content}</p>
+          
+                          {/* Tombol aksi */}
+                          <div className="flex items-center gap-4 mt-2">
                             <button
-                              onClick={() => handleDeleteComment(c.id)}
-                              className="text-xs font-medium text-red-500 hover:underline"
+                              onClick={() => setReplyingTo(c.id)}
+                              className="text-xs font-medium text-blue-600 hover:underline"
                             >
-                              Hapus
+                              Reply
                             </button>
+                            {canDelete && (
+                              <button
+                                onClick={() => setConfirmDeleteId(c.id)}
+                                className="text-xs font-medium text-red-500 hover:underline"
+                              >
+                                Hapus
+                              </button>
+                            )}
+                          </div>
+          
+                          {/* Form reply */}
+                          {replyingTo === c.id && (
+                            <form
+                              onSubmit={(e) => handleReplySubmit(e, c.id)}
+                              className="mt-3 flex gap-2"
+                            >
+                              <input
+                                type="text"
+                                placeholder="Tulis balasan..."
+                                className="flex-1 px-3 py-2 border rounded-xl text-sm focus:outline-none focus:ring focus:ring-blue-300"
+                                value={replyContent}
+                                onChange={(e) => setReplyContent(e.target.value)}
+                              />
+                              <button
+                                type="submit"
+                                className="px-4 py-2 bg-blue-600 text-white rounded-xl text-sm hover:bg-blue-700"
+                              >
+                                Kirim
+                              </button>
+                            </form>
+                          )}
+          
+                          {/* Reply list */}
+                          {replies.length > 0 && (
+                            <div className="mt-4 flex flex-col gap-3">
+                              {replies.map((r) => {
+                                const isReplyOwner = r.user_id === currentUserId;
+                                const canDeleteReply =
+                                  isReplyOwner ||
+                                  video?.profiles?.id === currentUserId ||
+                                  currentUserProfile?.is_mod;
+          
+                                return (
+                                  <div
+                                    key={r.id}
+                                    className="ml-8 bg-gray-50 border border-gray-200 shadow-sm rounded-xl p-3 flex gap-3"
+                                  >
+                                    <Image
+                                      src={getAvatarUrl(r.profiles?.avatar_url, r.profiles?.username || "User")}
+                                      alt={r.profiles?.username || "User"}
+                                      width={32}
+                                      height={32}
+                                      className="rounded-full"
+                                    />
+                                    <div className="flex-1">
+                                      <div className="flex items-center gap-2">
+                                        <span className="font-semibold">
+                                          {r.profiles?.username || "User"}
+                                        </span>
+                                        <span className="text-xs text-gray-500">
+                                          {timeAgo(r.created_at)}
+                                        </span>
+                                      </div>
+                                      <p className="text-sm text-gray-700">{r.content}</p>
+                                      {canDeleteReply && (
+                                        <button
+                                          onClick={() => setConfirmDeleteId(r.id)}
+                                          className="text-xs text-red-500 hover:underline mt-1"
+                                        >
+                                          Hapus
+                                        </button>
+                                      )}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
                           )}
                         </div>
-          
-                        {/* Form reply */}
-                        {replyTo === c.id && (
-                          <form
-                            onSubmit={(e) => handleReplySubmit(e, c.id)}
-                            className="mt-3 flex gap-2"
-                          >
-                            <input
-                              type="text"
-                              placeholder="Tulis balasan..."
-                              className="flex-1 px-3 py-2 border rounded-xl text-sm focus:outline-none focus:ring focus:ring-blue-300"
-                              value={replyContent}
-                              onChange={(e) => setReplyContent(e.target.value)}
-                            />
-                            <button
-                              type="submit"
-                              className="px-4 py-2 bg-blue-600 text-white rounded-xl text-sm hover:bg-blue-700"
-                            >
-                              Kirim
-                            </button>
-                          </form>
-                        )}
-          
-                        {/* Reply list */}
-                        {c.replies?.length > 0 && (
-                          <div className="mt-4 flex flex-col gap-3">
-                            {c.replies.map((r) => {
-                              const isReplyOwner = r.user_id === currentUserId;
-                              const canDeleteReply =
-                                isReplyOwner ||
-                                video?.profiles?.id === currentUserId ||
-                                currentUserProfile?.is_mod;
-          
-                              return (
-                                <div
-                                  key={r.id}
-                                  className="ml-8 bg-gray-50 border border-gray-200 shadow-sm rounded-xl p-3 flex gap-3"
-                                >
-                                  <Image
-                                    src={
-                                      r.profiles?.avatar_url ||
-                                      `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                                        r.profiles?.username || "User"
-                                      )}&background=random&color=fff`
-                                    }
-                                    alt={r.profiles?.username || "User"}
-                                    width={32}
-                                    height={32}
-                                    className="rounded-full"
-                                  />
-                                  <div className="flex-1">
-                                    <div className="flex items-center gap-2">
-                                      <span className="font-semibold">
-                                        {r.profiles?.username || "User"}
-                                      </span>
-                                      <span className="text-xs text-gray-500">
-                                        {timeAgo(r.created_at)}
-                                      </span>
-                                    </div>
-                                    <p className="text-sm text-gray-700">{r.content}</p>
-                                    {canDeleteReply && (
-                                      <button
-                                        onClick={() => handleDeleteComment(r.id)}
-                                        className="text-xs text-red-500 hover:underline mt-1"
-                                      >
-                                        Hapus
-                                      </button>
-                                    )}
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        )}
                       </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
             </div>
           
             {/* Form komentar utama */}
-            <form onSubmit={handleCommentSubmit} className="mt-6 flex gap-3">
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleAddComment();
+              }}
+              className="mt-6 flex gap-3"
+            >
               <input
                 type="text"
                 placeholder="Tulis komentar..."
@@ -408,6 +409,7 @@ export default function WatchPageClient({ id }: { id: string }) {
               </button>
             </form>
           </div>
+          
 
 
         {/* Related Videos */}
@@ -436,23 +438,3 @@ export default function WatchPageClient({ id }: { id: string }) {
           ))}
         </div>
       </div>
-
-      {confirmDeleteId && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-          <div className="bg-white rounded-lg p-6 shadow-lg w-80">
-            <h3 className="text-lg font-semibold mb-4">Confirm Deletion</h3>
-            <p className="text-sm text-gray-600 mb-6">Are you sure you want to delete this comment?</p>
-            <div className="flex justify-end gap-3">
-              <button onClick={() => setConfirmDeleteId(null)} className="bg-gray-300 text-gray-800 px-4 py-2 rounded w-20 text-center">
-                Cancel
-              </button>
-              <button onClick={() => handleDeleteComment(confirmDeleteId)} className="bg-red-500 text-white px-4 py-2 rounded w-20 text-center">
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
