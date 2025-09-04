@@ -308,7 +308,7 @@ export default function WatchPageClient({ id }: { id: string }) {
                           alt={c.profiles?.channel_name || "User"}
                           width={42}
                           height={42}
-                          className="object-round w-10 h-10"
+                          className="object-round w-10 h-10 rounded-full"
                         />
                         <div className="flex-1">
                           <div className="flex items-center gap-2">
@@ -383,7 +383,7 @@ export default function WatchPageClient({ id }: { id: string }) {
                                       alt={r.profiles?.channel_name || "User"}
                                       width={32}
                                       height={32}
-                                      className="object-round w-8 h-8"
+                                      className="object-cover w-8 h-8 rounded-full"
                                     />
                                     <div className="flex-1">
                                       <div className="flex items-center gap-2">
