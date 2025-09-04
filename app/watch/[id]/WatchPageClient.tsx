@@ -340,9 +340,8 @@ export default function WatchPageClient({ id }: { id: string }) {
               <div className="flex flex-col gap-3">
                 {comments.map((c) => {
                   const isOwner = c.user_id === currentUserId;
-                  const canDelete =
-                    isOwner || video?.profiles?.id === currentUserId || currentUserProfile?.is_mod;
-              
+                  const canDelete = isOwner || video?.profiles?.id === currentUserId || currentUserProfile?.is_mod;
+  
                   return (
                     <div key={c.id} className="mb-3">
                       <div className="flex gap-2 p-3 border rounded-lg bg-white shadow-sm">
@@ -352,9 +351,7 @@ export default function WatchPageClient({ id }: { id: string }) {
                               <Image
                                 src={getAvatarUrl(
                                   c.profiles?.avatar_url,
-                                  c.profiles?.channel_name ||
-                                    c.profiles?.username ||
-                                    "Unknown"
+                                  c.profiles?.channel_name || c.profiles?.username || "Unknown"
                                 )}
                                 alt="avatar"
                                 width={40}
@@ -367,45 +364,21 @@ export default function WatchPageClient({ id }: { id: string }) {
                                 href={`/${c.profiles?.username ?? "#"}`}
                                 className="font-semibold hover:underline flex items-center gap-1"
                               >
-                                {c.profiles?.channel_name ||
-                                  c.profiles?.username ||
-                                  "Unknown User"}
+                                {c.profiles?.channel_name || c.profiles?.username || "Unknown User"}
                                 {c.profiles?.is_verified && (
-                                  <Image
-                                    src="/verified.svg"
-                                    alt="verified"
-                                    width={12}
-                                    height={12}
-                                    title="AKUN TERVERIVIKASI"
-                                  />
+                                  <Image src="/verified.svg" alt="verified" width={12} height={12} title="AKUN TERVERIFIKASI" />
                                 )}
                                 {c.profiles?.is_mod && (
-                                  <Image
-                                    src="/mod.svg"
-                                    alt="mod"
-                                    width={12}
-                                    height={12}
-                                    title="TERVERIFIKASI MOD"
-                                  />
+                                  <Image src="/mod.svg" alt="mod" width={12} height={12} title="TERVERIFIKASI MOD" />
                                 )}
                                 {c.profiles?.is_bughunter && (
-                                  <Image
-                                    src="/bughunter.svg"
-                                    alt="bughunter"
-                                    width={12}
-                                    height={12}
-                                    title="TERVERIFIKASI BUGHUNTER"
-                                  />
+                                  <Image src="/bughunter.svg" alt="bughunter" width={12} height={12} title="TERVERIFIKASI BUGHUNTER" />
                                 )}
-                                <span className="text-gray-500">
-                                  · {timeAgo(c.created_at)}
-                                </span>
+                                <span className="text-gray-500"> · {timeAgo(c.created_at)}</span>
                               </Link>
-              
-                              {c.edited && (
-                                <span className="text-xs text-gray-500 ml-1">[edited]</span>
-                              )}
-              
+  
+                              {c.edited && <span className="text-xs text-gray-500 ml-1">[edited]</span>}
+  
                               {editComment?.id === c.id ? (
                                 <div className="flex gap-2 mt-1">
                                   <input
@@ -419,25 +392,17 @@ export default function WatchPageClient({ id }: { id: string }) {
                                     }
                                     className="border px-2 py-1 rounded text-sm w-full"
                                   />
-                                  <button
-                                    onClick={handleEditComment}
-                                    className="text-blue-500 text-sm"
-                                  >
+                                  <button onClick={handleEditComment} className="text-blue-500 text-sm">
                                     Save
                                   </button>
-                                  <button
-                                    onClick={() => setEditComment(null)}
-                                    className="text-gray-500 text-sm"
-                                  >
+                                  <button onClick={() => setEditComment(null)} className="text-gray-500 text-sm">
                                     Cancel
                                   </button>
                                 </div>
                               ) : (
-                                <p className="mt-1 text-sm break-words whitespace-pre-line">
-                                  {c.content}
-                                </p>
+                                <p className="mt-1 text-sm break-words whitespace-pre-line">{c.content}</p>
                               )}
-              
+  
                               {canDelete && (
                                 <div className="flex gap-3 text-xs text-gray-500 mt-2">
                                   <button
@@ -458,6 +423,8 @@ export default function WatchPageClient({ id }: { id: string }) {
                   );
                 })}
               </div>
+            </div>
+          </div>
 
 
 
