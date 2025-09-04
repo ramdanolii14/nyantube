@@ -411,8 +411,8 @@ export default function WatchPageClient({ id }: { id: string }) {
                                       </Link>
                                     <div className="flex-1">
                                       <div className="flex items-center gap-2">
-                                        <Link href={`/${c.profiles?.username ?? "#"}`} className="font-semibold hover:underline">
-                                          {c.profiles?.channel_name || "User"}
+                                        <Link href={`/${r.profiles?.username ?? "#"}`} className="font-semibold hover:underline">
+                                          {r.profiles?.channel_name || "User"}
                                         </Link>
                                         <span className="text-xs text-gray-500">{timeAgo(r.created_at)}</span>
                                       </div>
