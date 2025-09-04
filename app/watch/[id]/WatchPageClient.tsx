@@ -53,6 +53,30 @@ export default function WatchPageClient({ id }: { id: string }) {
   const [commentError, setCommentError] = useState<string | null>(null);
   const [fadeOut, setFadeOut] = useState(false);
 
+  const [replyingTo, setReplyingTo] = useState<string | null>(null);
+  const [replyContent, setReplyContent] = useState("");
+  
+  const handleReplySubmit = async (e: React.FormEvent, parentId: string) => {
+    e.preventDefault();
+    if (!session?.user) return;
+  
+    const { error } = await supabase.from("comments").insert([
+      {
+        video_id: video.id,
+        user_id: session.user.id,
+        content: replyContent,
+        parent_id: parentId,
+      },
+    ]);
+  
+    if (!error) {
+      setReplyContent("");
+      setReplyingTo(null);
+      fetchComments();
+    }
+  };
+
+
   const getAvatarUrl = (avatar_url: string | null, name: string) => {
     return avatar_url
       ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${avatar_url}`
@@ -336,93 +360,133 @@ export default function WatchPageClient({ id }: { id: string }) {
               )}
             </div>
 
-            {/* Comment List */}
-              <div className="flex flex-col gap-3">
-                {comments.map((c) => {
-                  const isOwner = c.user_id === currentUserId;
-                  const canDelete = isOwner || video?.profiles?.id === currentUserId || currentUserProfile?.is_mod;
-  
-                  return (
-                    <div key={c.id} className="mb-3">
-                      <div className="flex gap-2 p-3 border rounded-lg bg-white shadow-sm">
-                        {c.profiles ? (
-                          <>
-                            <Link href={`/${c.profiles?.username ?? "#"}`}>
-                              <Image
-                                src={getAvatarUrl(
-                                  c.profiles?.avatar_url,
-                                  c.profiles?.channel_name || c.profiles?.username || "Unknown"
-                                )}
-                                alt="avatar"
-                                width={40}
-                                height={40}
-                                className="rounded-full w-10 h-10 object-cover"
-                              />
-                            </Link>
-                            <div className="flex-1">
-                              <Link
-                                href={`/${c.profiles?.username ?? "#"}`}
-                                className="font-semibold hover:underline flex items-center gap-1"
+          {/* Comments Section */}
+          <div className="mt-8">
+            <h3 className="font-semibold text-lg mb-4">
+              {comments.length} Comments
+            </h3>
+          
+            {/* Input komentar baru */}
+            {session ? (
+              <div className="flex items-start gap-3 mb-6">
+                <Image
+                  src={profile?.avatar_url || "/default-avatar.png"}
+                  alt={profile?.username || "User"}
+                  width={36}
+                  height={36}
+                  className="rounded-full"
+                />
+                <div className="flex-1">
+                  <textarea
+                    value={newComment}
+                    onChange={(e) => setNewComment(e.target.value)}
+                    placeholder="Add a comment..."
+                    className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring focus:ring-blue-300 focus:outline-none"
+                  />
+                  <div className="flex justify-end mt-2">
+                    <button
+                      onClick={handleAddComment}
+                      disabled={!newComment.trim()}
+                      className="px-4 py-1 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600 disabled:bg-gray-300"
+                    >
+                      Comment
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <p className="text-gray-500 mb-6">Login to add a comment.</p>
+            )}
+
+            {/* Daftar komentar */}
+            <div className="space-y-5">
+              {comments
+                .filter((c) => !c.parent_id) // hanya komentar utama
+                .map((comment) => (
+                  <div key={comment.id} className="mb-4">
+                    <div className="flex items-start gap-3">
+                      <Image
+                        src={comment.profiles?.avatar_url || "/default-avatar.png"}
+                        alt={comment.profiles?.username || "User"}
+                        width={36}
+                        height={36}
+                        className="rounded-full"
+                      />
+                      <div className="bg-white p-3 rounded-lg shadow-sm flex-1">
+                        <div className="flex items-center gap-2">
+                          <p className="font-semibold text-sm">
+                            {comment.profiles?.username}
+                          </p>
+                          <span className="text-xs text-gray-500">
+                            {timeAgo(comment.created_at)}
+                          </span>
+                        </div>
+                        <p className="text-sm mt-1">{comment.content}</p>
+                        <button
+                          className="text-xs text-blue-500 mt-2 hover:underline"
+                          onClick={() => setReplyingTo(comment.id)}
+                        >
+                          Reply
+                        </button>
+          
+                        {/* Form reply */}
+                        {replyingTo === comment.id && (
+                          <div className="mt-3 ml-2">
+                            <textarea
+                              value={replyContent}
+                              onChange={(e) => setReplyContent(e.target.value)}
+                              placeholder="Write a reply..."
+                              className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring focus:ring-blue-300 focus:outline-none"
+                            />
+                            <div className="flex justify-end mt-2 gap-2">
+                              <button
+                                onClick={() => setReplyingTo(null)}
+                                className="px-3 py-1 text-sm rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-100"
                               >
-                                {c.profiles?.channel_name || c.profiles?.username || "Unknown User"}
-                                {c.profiles?.is_verified && (
-                                  <Image src="/verified.svg" alt="verified" width={12} height={12} title="AKUN TERVERIFIKASI" />
-                                )}
-                                {c.profiles?.is_mod && (
-                                  <Image src="/mod.svg" alt="mod" width={12} height={12} title="TERVERIFIKASI MOD" />
-                                )}
-                                {c.profiles?.is_bughunter && (
-                                  <Image src="/bughunter.svg" alt="bughunter" width={12} height={12} title="TERVERIFIKASI BUGHUNTER" />
-                                )}
-                                <span className="text-gray-500"> · {timeAgo(c.created_at)}</span>
-                              </Link>
-  
-                              {c.edited && <span className="text-xs text-gray-500 ml-1">[edited]</span>}
-  
-                              {editComment?.id === c.id ? (
-                                <div className="flex gap-2 mt-1">
-                                  <input
-                                    type="text"
-                                    value={editComment.content}
-                                    onChange={(e) =>
-                                      setEditComment({
-                                        ...editComment,
-                                        content: e.target.value,
-                                      })
-                                    }
-                                    className="border px-2 py-1 rounded text-sm w-full"
-                                  />
-                                  <button onClick={handleEditComment} className="text-blue-500 text-sm">
-                                    Save
-                                  </button>
-                                  <button onClick={() => setEditComment(null)} className="text-gray-500 text-sm">
-                                    Cancel
-                                  </button>
-                                </div>
-                              ) : (
-                                <p className="mt-1 text-sm break-words whitespace-pre-line">{c.content}</p>
-                              )}
-  
-                              {canDelete && (
-                                <div className="flex gap-3 text-xs text-gray-500 mt-2">
-                                  <button
-                                    onClick={() => setConfirmDeleteId(c.id)}
-                                    className="bg-red-500 text-white px-3 py-1 rounded w-20 text-center"
-                                  >
-                                    Delete
-                                  </button>
-                                </div>
-                              )}
+                                Cancel
+                              </button>
+                              <button
+                                onClick={() => handleReply(comment.id)}
+                                disabled={!replyContent.trim()}
+                                className="px-3 py-1 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600 disabled:bg-gray-300"
+                              >
+                                Reply
+                              </button>
                             </div>
-                          </>
-                        ) : (
-                          <div className="text-sm text-gray-500">[Deleted User]</div>
+                          </div>
                         )}
+          
+                        {/* Replies */}
+                        <div className="ml-8 mt-3 space-y-3">
+                          {comments
+                            .filter((r) => r.parent_id === comment.id)
+                            .map((reply) => (
+                              <div key={reply.id} className="flex items-start gap-2">
+                                <Image
+                                  src={reply.profiles?.avatar_url || "/default-avatar.png"}
+                                  alt={reply.profiles?.username || "User"}
+                                  width={28}
+                                  height={28}
+                                  className="rounded-full"
+                                />
+                                <div className="bg-gray-50 p-2 rounded-lg flex-1 shadow-sm">
+                                  <div className="flex items-center gap-2">
+                                    <p className="font-semibold text-sm">
+                                      {reply.profiles?.username}
+                                    </p>
+                                    <span className="text-xs text-gray-500">
+                                      {timeAgo(reply.created_at)}
+                                    </span>
+                                  </div>
+                                  <p className="text-sm mt-1">{reply.content}</p>
+                                </div>
+                              </div>
+                            ))}
+                        </div>
                       </div>
                     </div>
-                  );
-                })}
-              </div>
+                  </div>
+                ))}
             </div>
           </div>
 
