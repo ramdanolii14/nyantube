@@ -227,6 +227,7 @@ export default function WatchPageClient({ id }: { id: string }) {
             <video
               src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/videos/${video.video_url}`}
               controls
+              playsInline
               className="w-full h-full object-contain"
             />
           </div>
