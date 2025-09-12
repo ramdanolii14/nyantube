@@ -13,27 +13,27 @@ const team: TeamMember[] = [
   {
     name: "Ramdan Olii",
     role: "Pengembang Frontend, backend dan integrasi data.",
-    image: "/img/ramdan.jpg",
+    image: "/ramdan.jpg",
   },
   {
     name: "Israwaty Husain",
     role: "Yang ngejaga supaya Ramdan tetap waras.",
-    image: "/img/israwaty.jpg",
+    image: "/israwaty.jpg",
   },
   {
     name: "Outpoot",
     role: "Pengembangan lebih lanjut.",
-    image: "/img/outpoot.jpg",
+    image: "/outpoot.jpg",
   },
   {
     name: "Rizky Ibrahim",
     role: "UI Designer",
-    image: "/img/rzycrimson.jpg",
+    image: "/rzycrimson.jpg",
   },
   {
     name: "Farel Rasjid",
     role: "Komunitas Manager, User Experience",
-    image: "/img/farelkucing.jpg",
+    image: "/farelkucing.jpg",
   },
   {
     name: "Top",
@@ -43,17 +43,17 @@ const team: TeamMember[] = [
   {
     name: "Atma",
     role: "Beta Tester",
-    image: "/img/atma.jpg",
+    image: "/atma.jpg",
   },
   {
     name: "Marcello Raffael Repi",
     role: "Beta Tester",
-    image: "/img/marcello.jpg",
+    image: "/marcello.jpg",
   },
   {
     name: "Moh. Ofikurrahman",
     role: "Beta Tester",
-    image: "/img/ofikur.jpg",
+    image: "/ofikur.jpg",
   },
 ];
 
@@ -63,7 +63,7 @@ export default function AboutPage() {
       {/* Navbar bawaan */}
       <Navbar />
 
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12 mt-30">
         <section className="bg-gray-50 rounded-2xl shadow-md p-6 sm:p-10">
           <h1 className="text-3xl sm:text-4xl font-bold mb-4">Tentang Kami</h1>
           <p className="text-gray-600 mb-10">Hanya sebuah tim kecil.</p>
