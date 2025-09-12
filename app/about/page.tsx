@@ -1,35 +1,99 @@
-export default function AboutPage() {
+"use client";
+
+import React from "react";
+import Navbar from "@/components/Navbar";
+import Head from "next/head";
+
+export default function KontributorPage() {
+  const contributors = [
+    {
+      name: "Ramdan Olii",
+      role: "Founder & Developer",
+      img: "/images/profiles/ramdan.png",
+    },
+    {
+      name: "Icha",
+      role: "UI/UX Designer",
+      img: "/images/profiles/icha.png",
+    },
+    {
+      name: "Naufal",
+      role: "Backend Engineer",
+      img: "/images/profiles/naufal.png",
+    },
+    {
+      name: "Raisa",
+      role: "Frontend Engineer",
+      img: "/images/profiles/raisa.png",
+    },
+    {
+      name: "Dika",
+      role: "DevOps & Cloud",
+      img: "/images/profiles/dika.png",
+    },
+    {
+      name: "Fina",
+      role: "Content Manager",
+      img: "/images/profiles/fina.png",
+    },
+    {
+      name: "Rudi",
+      role: "QA & Testing",
+      img: "/images/profiles/rudi.png",
+    },
+    {
+      name: "Sinta",
+      role: "Community Manager",
+      img: "/images/profiles/sinta.png",
+    },
+    {
+      name: "Budi",
+      role: "Security Engineer",
+      img: "/images/profiles/budi.png",
+    },
+  ];
+
   return (
-    <div className="max-w-3xl mx-auto mt-20 p-5 bg-white shadow-md rounded-md">
-      <h1 className="text-2xl font-bold mb-4">Tentang Nyantube</h1>
-      <p className="text-sm text-gray-600 mb-4">
-        <strong>Nyantube</strong> adalah platform berbagi video yang dibuat untuk kreator lokal dan penikmat konten kreatif.
-        Kami berkomitmen untuk menyediakan ruang yang aman, adil, dan menyenangkan untuk semua orang.
-      </p>
+    <>
+      <Head>
+        <title>Tentang Kami — NyanStream</title>
+        <meta
+          name="description"
+          content="Kenali tim di balik NyanStream: kreator, developer, dan komunitas yang bersemangat membangun platform streaming lokal."
+        />
+      </Head>
 
-      <h2 className="text-lg font-semibold mt-4">Misi Kami</h2>
-      <p className="text-sm text-gray-700">
-        Membangun komunitas kreator yang positif, mendukung karya orisinal, dan mengutamakan kebebasan berekspresi
-        tanpa melanggar hukum yang berlaku.
-      </p>
+      <Navbar />
+      <main className="max-w-6xl mx-auto mt-20 p-5">
+        <h1 className="text-3xl font-bold mb-8 text-center">Tim Kontributor</h1>
+        <p className="text-center text-gray-600 max-w-2xl mx-auto mb-12">
+          Kami adalah tim kecil namun penuh semangat yang membangun{" "}
+          <strong>NyanStream</strong>. Dari developer hingga content manager,
+          setiap kontributor berperan penting dalam menjaga platform tetap hidup
+          dan bermanfaat.
+        </p>
 
-      <h2 className="text-lg font-semibold mt-4">Siapa Kami?</h2>
-      <p className="text-sm text-gray-700">
-        Platform ini dikembangkan oleh tim kecil yang peduli pada dunia kreatif digital. Kami menghargai setiap
-        kreator dan berusaha terus mengembangkan fitur yang berguna bagi Anda.
-      </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
+          {contributors.map((c, idx) => (
+            <div
+              key={idx}
+              className="p-6 bg-white shadow-md rounded-xl text-center hover:shadow-lg transition-shadow"
+            >
+              <img
+                src={c.img}
+                alt={c.name}
+                className="w-28 h-28 rounded-full mx-auto mb-4 object-cover"
+              />
+              <h2 className="text-lg font-semibold">{c.name}</h2>
+              <p className="text-sm text-gray-600">{c.role}</p>
+            </div>
+          ))}
+        </div>
 
-      <h2 className="text-lg font-semibold mt-4">Legalitas</h2>
-      <p className="text-sm text-gray-700">
-        Nyantube beroperasi sesuai hukum yang berlaku dan mematuhi ketentuan hak cipta, privasi, serta perlindungan konsumen.
-      </p>
-
-      <h2 className="text-lg font-semibold mt-4">Verified Badge</h2>
-      <p className="text-sm text-gray-700">
-        Untuk Request Verified badge bisa chat +62 857-9618-2078. Dan Lampirkan informasi seperti username dan email kamu. Setelah dikonfirmasi, maka kamu akan langsung mendapatkan verified badge.
-      </p>
-
-      <p className="text-xs text-gray-500 mt-6">Terakhir diperbarui: {new Date().toLocaleDateString()}</p>
-    </div>
+        <p className="text-xs text-gray-500 mt-12 text-center">
+          Terakhir diperbarui: {new Date().toLocaleDateString()}
+        </p>
+      </main>
+    </>
   );
 }
