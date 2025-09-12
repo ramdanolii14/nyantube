@@ -1,4 +1,5 @@
 import React from "react";
+import Navbar from "@/components/Navbar";
 
 const TentangKami: React.FC = () => {
   return (
@@ -20,14 +21,6 @@ const TentangKami: React.FC = () => {
           *{box-sizing:border-box}
           html,body{height:100%;margin:0;font-family:Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; background:#ffffff; color:#1a1a1a}
           .wrap{max-width:var(--max-width);margin:40px auto;padding:24px}
-
-          /* header */
-          header{display:flex;gap:16px;align-items:center;justify-content:space-between}
-          .brand{display:flex;gap:12px;align-items:center}
-          .logo img{width:52px;height:52px;border-radius:12px;object-fit:cover}
-          nav{display:flex;gap:14px;align-items:center}
-          a.btn{background:linear-gradient(90deg,var(--accent),#ff7f7f);padding:10px 14px;border-radius:10px;color:#fff;text-decoration:none;font-weight:600}
-          a.ghost{padding:8px 12px;border-radius:10px;color:var(--muted);text-decoration:none}
 
           /* card */
           .card{margin-top:50px;background:var(--card);border-radius:16px;padding:26px;box-shadow:0 6px 24px rgba(0,0,0,0.1)}
@@ -75,7 +68,6 @@ const TentangKami: React.FC = () => {
           }
           @media (max-width:560px){
             .team-grid{grid-template-columns:1fr}
-            .brand span{display:none}
             .wrap{margin:20px 16px}
             h1{font-size:28px}
           }
@@ -85,22 +77,8 @@ const TentangKami: React.FC = () => {
       </head>
       <body>
         <div className="wrap">
-          <header>
-            <div className="brand">
-              <div className="logo">
-                <img src="img/logo.png" alt="NyanStream Logo" />
-              </div>
-              <div>
-                <strong>NyanStream</strong>
-                <div className="small muted">Komunitas</div>
-              </div>
-            </div>
-            <nav>
-              <a className="ghost" href="./">Beranda</a>
-              <a className="ghost" href="./team.html">Tentang Kami</a>
-              <a className="btn" href="https://www.nyanstream.my.id">Daftar</a>
-            </nav>
-          </header>
+          {/* Ganti header lama dengan Navbar */}
+          <Navbar />
 
           <main>
             <section className="card">
@@ -114,42 +92,42 @@ const TentangKami: React.FC = () => {
                   <div className="muted">Pengembang Frontend, backend dan integrasi data.</div>
                 </div>
                 <div className="profile-card">
-                  <img src="img/israwaty.jpg" alt="Israwaty Husain" />
+                  <img src="/img/israwaty.jpg" alt="Israwaty Husain" />
                   <strong>Israwaty Husain</strong>
                   <div className="muted">Yang ngejaga supaya Ramdan tetap waras.</div>
                 </div>
                 <div className="profile-card">
-                  <img src="img/outpoot.jpg" alt="Outpoot" />
+                  <img src="/img/outpoot.jpg" alt="Outpoot" />
                   <strong>outpoot</strong>
                   <div className="muted">Pengembangan lebih lanjut.</div>
                 </div>
                 <div className="profile-card">
-                  <img src="img/rzycrimson.jpg" alt="Rizky Ibrahim" />
+                  <img src="/img/rzycrimson.jpg" alt="Rizky Ibrahim" />
                   <strong>Rizky Ibrahim</strong>
                   <div className="muted">UI Designer</div>
                 </div>
                 <div className="profile-card">
-                  <img src="img/farelkucing.jpg" alt="Farel Rasjid" />
+                  <img src="/img/farelkucing.jpg" alt="Farel Rasjid" />
                   <strong>Farel Rasjid</strong>
                   <div className="muted">Komunitas Manager, User Experience</div>
                 </div>
                 <div className="profile-card">
-                  <img src="img/top.png" alt="top" />
+                  <img src="/img/top.png" alt="top" />
                   <strong>top</strong>
                   <div className="muted">User Experience</div>
                 </div>
                 <div className="profile-card">
-                  <img src="img/atma.jpg" alt="ATMA" />
+                  <img src="/img/atma.jpg" alt="ATMA" />
                   <strong>Atma</strong>
                   <div className="muted">Beta Tester</div>
                 </div>
                 <div className="profile-card">
-                  <img src="img/marcello.jpg" alt="Profil 8" />
+                  <img src="/img/marcello.jpg" alt="Profil 8" />
                   <strong>Marcello Raffael Repi</strong>
                   <div className="muted">Beta Tester</div>
                 </div>
                 <div className="profile-card">
-                  <img src="img/ofikur.jpg" alt="Profil 9" />
+                  <img src="/img/ofikur.jpg" alt="Profil 9" />
                   <strong>Moh. Ofikurrahman</strong>
                   <div className="muted">Beta Tester</div>
                 </div>
