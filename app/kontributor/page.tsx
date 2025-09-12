@@ -63,8 +63,8 @@ export default function AboutPage() {
       {/* Navbar bawaan */}
       <Navbar />
 
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12 mt-30">
-        <section className="bg-gray-50 rounded-2xl shadow-md p-6 sm:p-10">
+      <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <section className="bg-gray-50 rounded-2xl shadow-md p-6 sm:p-10 mt-12">
           <h1 className="text-3xl sm:text-4xl font-bold mb-4">Tentang Kami</h1>
           <p className="text-gray-600 mb-10">Hanya sebuah tim kecil.</p>
 
