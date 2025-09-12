@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import Navbar from "@/components/Navbar";
+import Navbar from "../components/Navbar";
 import Head from "next/head";
 
 export default function KontributorPage() {
@@ -97,3 +97,4 @@ export default function KontributorPage() {
     </>
   );
 }
+
