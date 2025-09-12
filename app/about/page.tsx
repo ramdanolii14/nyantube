@@ -1,100 +1,112 @@
 "use client";
 
-import React from "react";
+import Image from "next/image";
 import Navbar from "../components/Navbar";
-import Head from "next/head";
 
-export default function KontributorPage() {
-  const contributors = [
-    {
-      name: "Ramdan Olii",
-      role: "Founder & Developer",
-      img: "/images/profiles/ramdan.png",
-    },
-    {
-      name: "Icha",
-      role: "UI/UX Designer",
-      img: "/images/profiles/icha.png",
-    },
-    {
-      name: "Naufal",
-      role: "Backend Engineer",
-      img: "/images/profiles/naufal.png",
-    },
-    {
-      name: "Raisa",
-      role: "Frontend Engineer",
-      img: "/images/profiles/raisa.png",
-    },
-    {
-      name: "Dika",
-      role: "DevOps & Cloud",
-      img: "/images/profiles/dika.png",
-    },
-    {
-      name: "Fina",
-      role: "Content Manager",
-      img: "/images/profiles/fina.png",
-    },
-    {
-      name: "Rudi",
-      role: "QA & Testing",
-      img: "/images/profiles/rudi.png",
-    },
-    {
-      name: "Sinta",
-      role: "Community Manager",
-      img: "/images/profiles/sinta.png",
-    },
-    {
-      name: "Budi",
-      role: "Security Engineer",
-      img: "/images/profiles/budi.png",
-    },
-  ];
+interface TeamMember {
+  name: string;
+  role: string;
+  image: string;
+}
 
+const team: TeamMember[] = [
+  {
+    name: "Ramdan Olii",
+    role: "Pengembang Frontend, backend dan integrasi data.",
+    image: "/img/ramdan.jpg",
+  },
+  {
+    name: "Israwaty Husain",
+    role: "Yang ngejaga supaya Ramdan tetap waras.",
+    image: "/img/israwaty.jpg",
+  },
+  {
+    name: "Outpoot",
+    role: "Pengembangan lebih lanjut.",
+    image: "/img/outpoot.jpg",
+  },
+  {
+    name: "Rizky Ibrahim",
+    role: "UI Designer",
+    image: "/img/rzycrimson.jpg",
+  },
+  {
+    name: "Farel Rasjid",
+    role: "Komunitas Manager, User Experience",
+    image: "/img/farelkucing.jpg",
+  },
+  {
+    name: "Top",
+    role: "User Experience",
+    image: "/img/top.png",
+  },
+  {
+    name: "Atma",
+    role: "Beta Tester",
+    image: "/img/atma.jpg",
+  },
+  {
+    name: "Marcello Raffael Repi",
+    role: "Beta Tester",
+    image: "/img/marcello.jpg",
+  },
+  {
+    name: "Moh. Ofikurrahman",
+    role: "Beta Tester",
+    image: "/img/ofikur.jpg",
+  },
+];
+
+export default function AboutPage() {
   return (
     <>
-      <Head>
-        <title>Tentang Kami — NyanStream</title>
-        <meta
-          name="description"
-          content="Kenali tim di balik NyanStream: kreator, developer, dan komunitas yang bersemangat membangun platform streaming lokal."
-        />
-      </Head>
-
+      {/* Navbar bawaan */}
       <Navbar />
-      <main className="max-w-6xl mx-auto mt-20 p-5">
-        <h1 className="text-3xl font-bold mb-8 text-center">Tim Kontributor</h1>
-        <p className="text-center text-gray-600 max-w-2xl mx-auto mb-12">
-          Kami adalah tim kecil namun penuh semangat yang membangun{" "}
-          <strong>NyanStream</strong>. Dari developer hingga content manager,
-          setiap kontributor berperan penting dalam menjaga platform tetap hidup
-          dan bermanfaat.
-        </p>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
-          {contributors.map((c, idx) => (
-            <div
-              key={idx}
-              className="p-6 bg-white shadow-md rounded-xl text-center hover:shadow-lg transition-shadow"
-            >
-              <img
-                src={c.img}
-                alt={c.name}
-                className="w-28 h-28 rounded-full mx-auto mb-4 object-cover"
-              />
-              <h2 className="text-lg font-semibold">{c.name}</h2>
-              <p className="text-sm text-gray-600">{c.role}</p>
-            </div>
-          ))}
-        </div>
+      <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <section className="bg-gray-50 rounded-2xl shadow-md p-6 sm:p-10">
+          <h1 className="text-3xl sm:text-4xl font-bold mb-4">Tentang Kami</h1>
+          <p className="text-gray-600 mb-10">Hanya sebuah tim kecil.</p>
 
-        <p className="text-xs text-gray-500 mt-12 text-center">
-          Terakhir diperbarui: {new Date().toLocaleDateString()}
-        </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+            {team.map((member) => (
+              <div
+                key={member.name}
+                className="bg-white rounded-xl p-6 text-center shadow hover:shadow-lg transition"
+              >
+                <div className="w-24 h-24 mx-auto mb-4 relative">
+                  <Image
+                    src={member.image}
+                    alt={member.name}
+                    fill
+                    className="rounded-full object-cover"
+                  />
+                </div>
+                <strong className="block text-lg font-semibold mb-1">
+                  {member.name}
+                </strong>
+                <p className="text-gray-500 text-sm">{member.role}</p>
+              </div>
+            ))}
+          </div>
+        </section>
       </main>
+
+      <footer className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 border-t border-gray-200 flex flex-col sm:flex-row justify-between items-center text-gray-500 text-sm">
+        <div>
+          <div className="font-bold">NyanStream</div>
+          <div>© 2025 NyanStream. All rights reserved.</div>
+        </div>
+        <div>
+          Kontak Developer?{" "}
+          <a
+            href="mailto:ramdanolii1410@gmail.com"
+            className="text-red-500 hover:underline"
+          >
+            Ramdan
+          </a>
+        </div>
+      </footer>
     </>
   );
 }
-
