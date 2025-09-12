@@ -262,7 +262,7 @@ export default function Navbar() {
                       </li>
                       <li>
                         <Link
-                          href="/contributors"
+                          href="/kontributor"
                           className="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 group"
                           onClick={() => setDropdownOpen(false)}
                         >
@@ -313,3 +313,4 @@ export default function Navbar() {
     </nav>
   );
 }
+
