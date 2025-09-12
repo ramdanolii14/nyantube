@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react"; // sorry kebanyakan w edit :v
+import { useEffect, useState } from "react";
 import { supabase } from "@/supabase/client";
 import Image from "next/image";
 import Link from "next/link";
@@ -15,7 +15,8 @@ import {
   FileText,
   Shield,
   Mail,
-  Info,
+  Users,
+  Server,
   LogOut,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -261,14 +262,26 @@ export default function Navbar() {
                       </li>
                       <li>
                         <Link
-                          href="/about"
+                          href="/contributors"
                           className="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 group"
                           onClick={() => setDropdownOpen(false)}
                         >
                           <motion.div whileHover={{ x: 4 }}>
-                            <Info className="w-4 h-4 text-gray-600" />
+                            <Users className="w-4 h-4 text-gray-600" />
                           </motion.div>
-                          About Us
+                          Contributors
+                        </Link>
+                      </li>
+                      <li>
+                        <Link
+                          href="/status"
+                          className="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 group"
+                          onClick={() => setDropdownOpen(false)}
+                        >
+                          <motion.div whileHover={{ x: 4 }}>
+                            <Server className="w-4 h-4 text-gray-600" />
+                          </motion.div>
+                          Server Status
                         </Link>
                       </li>
                     </ul>
