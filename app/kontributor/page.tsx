@@ -38,7 +38,7 @@ const team: TeamMember[] = [
   {
     name: "Top",
     role: "User Experience",
-    image: "/img/top.png",
+    image: "/top.png",
   },
   {
     name: "Atma",
