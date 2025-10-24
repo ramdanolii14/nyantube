@@ -18,6 +18,7 @@ import {
   Users,
   Server,
   LogOut,
+  Coins,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -203,10 +204,7 @@ export default function Navbar() {
                           className="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 group"
                           onClick={() => setDropdownOpen(false)}
                         >
-                          <motion.div
-                            whileHover={{ x: 4 }}
-                            transition={{ type: "spring", stiffness: 300 }}
-                          >
+                          <motion.div whileHover={{ x: 4 }}>
                             <User className="w-4 h-4 text-gray-600" />
                           </motion.div>
                           Profile
@@ -284,7 +282,21 @@ export default function Navbar() {
                           Server Status
                         </Link>
                       </li>
+                      
+                      <li>
+                        <Link
+                          href="https://rugplay.com/coin/MHC"
+                          className="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 group"
+                          onClick={() => setDropdownOpen(false)}
+                        >
+                          <motion.div whileHover={{ rotate: 15 }}>
+                            <Coins className="w-4 h-4 text-yellow-500" />
+                          </motion.div>
+                          MahiruCoin Project
+                        </Link>
+                      </li>
                     </ul>
+
                     <div className="border-t">
                       <button
                         onClick={handleLogout}
@@ -313,4 +325,3 @@ export default function Navbar() {
     </nav>
   );
 }
-
