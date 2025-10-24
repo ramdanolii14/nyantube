@@ -3,8 +3,8 @@ export default function TermsPage() {
     <div className="max-w-4xl mx-auto mt-20 p-6 bg-white shadow-lg rounded-lg">
       <h1 className="text-3xl font-bold mb-6">Terms of Service / Syarat dan Ketentuan</h1>
       <p className="mb-6 text-sm text-gray-600">
-        Welcome to <strong>Nyantube</strong>. By accessing and using our services, you agree to comply with the terms and conditions outlined below.  
-        Selamat datang di <strong>Nyantube</strong>. Dengan mengakses dan menggunakan layanan kami, Anda setuju untuk mematuhi syarat dan ketentuan yang tercantum di bawah ini.
+        Welcome to <strong>Nyanstream</strong>. By accessing and using our services, you agree to comply with the terms and conditions outlined below.  
+        Selamat datang di <strong>Nyanstream</strong>. Dengan mengakses dan menggunakan layanan kami, Anda setuju untuk mematuhi syarat dan ketentuan yang tercantum di bawah ini.
       </p>
 
       {/* Section 1 */}
@@ -37,8 +37,8 @@ export default function TermsPage() {
       {/* Section 4 */}
       <h2 className="text-xl font-semibold mt-6 mb-2">4. Intellectual Property / Hak Kekayaan Intelektual</h2>
       <p className="text-sm text-gray-700 mb-4">
-        EN: All trademarks, service marks, and logos displayed on Nyantube are the property of their respective owners.  
-        ID: Semua merek dagang, merek layanan, dan logo yang ditampilkan di Nyantube adalah milik pemiliknya masing-masing.
+        EN: All trademarks, service marks, and logos displayed on Nyanstream are the property of their respective owners.  
+        ID: Semua merek dagang, merek layanan, dan logo yang ditampilkan di Nyanstream adalah milik pemiliknya masing-masing.
       </p>
 
       {/* Section 5 */}
@@ -51,8 +51,8 @@ export default function TermsPage() {
       {/* Section 6 */}
       <h2 className="text-xl font-semibold mt-6 mb-2">6. Limitation of Liability / Batasan Tanggung Jawab</h2>
       <p className="text-sm text-gray-700 mb-4">
-        EN: Nyantube is not responsible for damages arising from the use or inability to use the service.  
-        ID: Nyantube tidak bertanggung jawab atas kerugian yang timbul dari penggunaan atau ketidakmampuan menggunakan layanan.
+        EN: Nyanstream is not responsible for damages arising from the use or inability to use the service.  
+        ID: Nyanstream tidak bertanggung jawab atas kerugian yang timbul dari penggunaan atau ketidakmampuan menggunakan layanan.
       </p>
 
       {/* Section 7 */}
@@ -72,8 +72,8 @@ export default function TermsPage() {
       {/* Section 9 */}
       <h2 className="text-xl font-semibold mt-6 mb-2">9. Governing Law / Hukum yang Berlaku</h2>
       <p className="text-sm text-gray-700 mb-4">
-        EN: These Terms of Service are governed by the laws of the country in which Nyantube operates.  
-        ID: Syarat dan Ketentuan ini diatur oleh hukum negara tempat Nyantube beroperasi.
+        EN: These Terms of Service are governed by the laws of the country in which Nyanstream operates.  
+        ID: Syarat dan Ketentuan ini diatur oleh hukum negara tempat Nyanstream beroperasi.
       </p>
 
       {/* Section 10 */}
@@ -90,3 +90,4 @@ export default function TermsPage() {
     </div>
   );
 }
+
