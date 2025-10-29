@@ -46,4 +46,4 @@ While building this project, the lesson I learned was that I had to get out and 
 ## Authors
 
 - [@nyantadev](https://github.com/ramdanolii14)
-also if you are listed in to the [Contributor page](https://www.nyanstream.my.id/kontributor) contact me on my [Discord Server](https://discord.com/invite/7N84wD6WrX) or just text me on [Whatsapp](https://wa.me/6285796182078).
+also if you are listed in to the [Contributor page](https://www.nyanstream.my.id/kontributor)   contact me on my [Discord Server](https://discord.com/invite/7N84wD6WrX)   or just text me on [Whatsapp](https://wa.me/6285796182078).
