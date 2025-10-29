@@ -7,7 +7,7 @@ Streaming Online Tanpa Batas Bersama NyanTube. Powerfull video platform, only fo
 
 Shiina Mahiru my internet waifu.
 
-![Logo](https://cdn.discordapp.com/attachments/1431837941424062544/1431838040543985727/MkwemjYUi1kOnbcgIH7yuILlabLghDrO.jpg?ex=68fede97&is=68fd8d17&hm=35db823f1f60076b644c2f4ef12080c18afbd7b1fa3bbc17a69359f73dcaae28)
+![Logo](https://cdn.discordapp.com/attachments/1431837941424062544/1432938749951606784/1759278456183.jpg?ex=6902dfb4&is=69018e34&hm=65da98aa9f0bc9130ca60667ec3fcb0a7da38fd44d65b07f0ac8f338151619ce&)
 
 
 ## Screenshots
