@@ -45,5 +45,7 @@ your Environment Variables that are you are gonna used on your vercel app.
 While building this project, the lesson I learned was that I had to get out and touch the grass. Because of this project, I forgot everything. I forgot to eat, I forgot to shower, I forgot to sleep, I forgot everything. I even forgot that I had a sulking girlfriend who was sulking because I was just coding.
 ## Authors
 
-- [@nyantadev](https://github.com/ramdanolii14)
-also if you are listed in to the [Contributor page](https://www.nyanstream.my.id/kontributor)   contact me on my [Discord Server](https://discord.com/invite/7N84wD6WrX)   or just text me on [Whatsapp](https://wa.me/6285796182078).
+- [@nyantadev](https://github.com/ramdanolii14)  
+also if you are listed in to the [Contributor page](https://www.nyanstream.my.id/kontributor)  
+contact me on my [Discord Server](https://discord.com/invite/7N84wD6WrX)  
+or just text me on [Whatsapp](https://wa.me/6285796182078).  
