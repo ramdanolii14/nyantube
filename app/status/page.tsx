@@ -21,7 +21,7 @@ export default function StatusPage() {
       {/* Iframe Hetrix */}
       <iframe
         className="htframe"
-        src="https://wl.hetrixtools.com/report/uptime/517d4466a9f65703fc2dbb649c10d7e5/"
+        src="https://wl.hetrixtools.com/r/253233d8a86a70d0d1c61532d0b21e75/"
         width="100%"
         scrolling="no"
         style={{ border: "none" }}
