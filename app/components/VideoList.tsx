@@ -1,3 +1,8 @@
+/**
+ * File: src/components/VideoList.tsx
+ * Update: Grid 3x3 Large & YouTube Style UI
+ */
+
 "use client";
 
 import { useEffect, useState, Fragment } from "react";
@@ -25,7 +30,6 @@ interface Video {
   };
 }
 
-// Menambahkan opsi "Random" ke dalam tipe dan daftar opsi
 type SortOption = "views" | "latest" | "likes" | "oldest" | "random";
 
 const sortOptions: {
@@ -42,7 +46,6 @@ const sortOptions: {
 
 export default function VideoList() {
   const [videos, setVideos] = useState<Video[]>([]);
-  // Default set ke "random" agar saat pertama buka, urutannya acak
   const [sortBy, setSortBy] = useState<SortOption>("random");
 
   useEffect(() => {
@@ -63,7 +66,6 @@ export default function VideoList() {
           },
         })) as Video[];
 
-        // Terapkan pengurutan awal (Random)
         setVideos(sortVideos(withDefaults, "random"));
       }
     };
@@ -80,7 +82,6 @@ export default function VideoList() {
     const clonedData = [...data];
     switch (option) {
       case "random":
-        // Algoritma Fisher-Yates Shuffle untuk hasil acak yang sempurna
         for (let i = clonedData.length - 1; i > 0; i--) {
           const j = Math.floor(Math.random() * (i + 1));
           [clonedData[i], clonedData[j]] = [clonedData[j], clonedData[i]];
@@ -105,19 +106,20 @@ export default function VideoList() {
   const selectedOption = sortOptions.find((opt) => opt.value === sortBy)!;
 
   return (
-    <div>
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-bold">Explore Videos</h2>
-        <div className="w-48">
+    <div className="w-full max-w-[1400px] mx-auto px-4 py-6">
+      {/* Header & Dropdown Section */}
+      <div className="flex justify-between items-center mb-10">
+        <h2 className="text-2xl font-black text-gray-900">Explore Videos</h2>
+        <div className="w-56">
           <Listbox value={sortBy} onChange={handleSortChange}>
             <div className="relative">
-              <Listbox.Button className="relative w-full cursor-pointer rounded-xl border border-gray-200 py-2 pl-3 pr-8 text-left shadow-sm text-sm bg-white hover:bg-gray-50 transition">
+              <Listbox.Button className="relative w-full cursor-pointer rounded-xl border border-gray-200 py-3 pl-4 pr-10 text-left shadow-sm text-sm bg-white hover:bg-gray-50 transition-all font-semibold">
                 <span className="flex items-center gap-2">
                   {selectedOption.icon}
                   {selectedOption.label}
                 </span>
-                <span className="pointer-events-none absolute inset-y-0 right-2 flex items-center text-gray-400">
-                  <ChevronsUpDown size={16} />
+                <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-gray-400">
+                  <ChevronsUpDown size={18} />
                 </span>
               </Listbox.Button>
 
@@ -127,12 +129,12 @@ export default function VideoList() {
                 leaveFrom="opacity-100"
                 leaveTo="opacity-0"
               >
-                <Listbox.Options className="absolute z-50 mt-2 w-full rounded-xl bg-white shadow-xl border border-gray-100 p-1 text-sm focus:outline-none">
+                <Listbox.Options className="absolute z-50 mt-2 w-full rounded-2xl bg-white shadow-2xl border border-gray-100 p-2 text-sm focus:outline-none">
                   {sortOptions.map((option) => (
                     <Listbox.Option
                       key={option.value}
                       className={({ active }) =>
-                        `cursor-pointer select-none px-3 py-2.5 rounded-lg flex items-center gap-2 transition ${
+                        `cursor-pointer select-none px-4 py-3 rounded-xl flex items-center gap-3 transition-colors ${
                           active ? "bg-gray-100 text-black" : "text-gray-600"
                         }`
                       }
@@ -149,61 +151,60 @@ export default function VideoList() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-6">
+      {/* Video Grid 3 Kolom Besar */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-12">
         {videos.map((video) => (
           <Link
             key={video.id}
             href={`/watch/${video.id}`}
-            className="group flex flex-col gap-3"
+            className="group flex flex-col gap-4"
           >
+            {/* Thumbnail Container */}
             <div
-              className="relative w-full rounded-2xl overflow-hidden bg-gray-100 transition-transform duration-300 group-hover:scale-[1.02]"
+              className="relative w-full rounded-2xl overflow-hidden bg-gray-200 transition-all duration-300 group-hover:rounded-none group-hover:shadow-2xl"
               style={{ paddingTop: "56.25%" }}
             >
               <Image
                 src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/thumbnails/${video.thumbnail_url}`}
                 alt={video.title}
                 fill
-                className="absolute top-0 left-0 w-full h-full object-cover"
+                className="absolute top-0 left-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                 unoptimized
               />
             </div>
 
-            <div className="flex gap-3 px-1">
+            {/* Video Meta Info */}
+            <div className="flex gap-4 px-1">
               <div className="flex-shrink-0">
-                <Image
-                  src={
-                    video.profiles?.avatar_url
-                      ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${video.profiles.avatar_url}`
-                      : `https://ui-avatars.com/api/?name=${video.profiles?.channel_name}`
-                  }
-                  alt={video.profiles?.channel_name || "Unknown"}
-                  width={36}
-                  height={36}
-                  className="rounded-full object-cover aspect-square border border-gray-100"
-                  unoptimized
-                />
+                <div className="relative w-12 h-12">
+                  <Image
+                    src={
+                      video.profiles?.avatar_url
+                        ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${video.profiles.avatar_url}`
+                        : `https://ui-avatars.com/api/?name=${video.profiles?.channel_name}`
+                    }
+                    alt={video.profiles?.channel_name || "Channel Avatar"}
+                    fill
+                    className="rounded-full object-cover border-2 border-transparent transition-colors group-hover:border-blue-500"
+                    unoptimized
+                  />
+                </div>
               </div>
-              <div className="flex flex-col min-w-0">
-                <h3 className="font-bold text-sm line-clamp-2 leading-snug group-hover:text-blue-600 transition">
+              
+              <div className="flex flex-col min-w-0 pr-4">
+                <h3 className="font-bold text-lg text-gray-900 line-clamp-2 leading-tight group-hover:text-blue-600 transition-colors">
                   {video.title}
                 </h3>
-                <div className="mt-1">
-                  <p className="text-xs text-gray-500 font-medium flex items-center gap-1">
+                <div className="mt-2">
+                  <p className="text-sm text-gray-500 font-semibold flex items-center gap-1.5 uppercase tracking-wide">
                     {video.profiles?.channel_name}
-                    {video.profiles?.is_verified && (
-                      <Image src="/verified.svg" alt="v" width={12} height={12} className="inline" />
-                    )}
-                    {video.profiles?.is_mod && (
-                      <Image src="/mod.svg" alt="m" width={12} height={12} className="inline" />
-                    )}
-                    {video.profiles?.is_bughunter && (
-                      <Image src="/bughunter.svg" alt="b" width={12} height={12} className="inline" />
-                    )}
+                    {video.profiles?.is_verified && <Image src="/verified.svg" alt="v" width={14} height={14} />}
+                    {video.profiles?.is_mod && <Image src="/mod.svg" alt="m" width={14} height={14} />}
+                    {video.profiles?.is_bughunter && <Image src="/bughunter.svg" alt="b" width={14} height={14} />}
                   </p>
-                  <div className="flex items-center text-[11px] text-gray-400 mt-0.5">
+                  <div className="flex items-center text-sm text-gray-400 mt-0.5">
                     <span>{video.views.toLocaleString()} views</span>
-                    <span className="mx-1">•</span>
+                    <span className="mx-2">•</span>
                     <span>{timeAgo(video.created_at)}</span>
                   </div>
                 </div>
