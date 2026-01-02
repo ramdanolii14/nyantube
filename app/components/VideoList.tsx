@@ -1,6 +1,6 @@
 /**
  * File: src/components/VideoList.tsx
- * Update: Grid 3x3 Large & YouTube Style UI
+ * Update: Added Skeleton Loading & Lazy Loading Image
  */
 
 "use client";
@@ -44,12 +44,29 @@ const sortOptions: {
   { value: "oldest", label: "Oldest", icon: <History size={16} /> },
 ];
 
+// KOMPONEN SKELETON (Tampilan saat loading)
+const SkeletonCard = () => (
+  <div className="flex flex-col gap-4 animate-pulse">
+    <div className="relative w-full rounded-2xl bg-gray-200" style={{ paddingTop: "56.25%" }}></div>
+    <div className="flex gap-4 px-1">
+      <div className="w-12 h-12 rounded-full bg-gray-200 flex-shrink-0"></div>
+      <div className="flex flex-col gap-2 w-full">
+        <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+        <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+        <div className="h-3 bg-gray-200 rounded w-1/4"></div>
+      </div>
+    </div>
+  </div>
+);
+
 export default function VideoList() {
   const [videos, setVideos] = useState<Video[]>([]);
+  const [loading, setLoading] = useState(true); // State loading
   const [sortBy, setSortBy] = useState<SortOption>("random");
 
   useEffect(() => {
     const fetchVideos = async () => {
+      setLoading(true);
       const { data } = await supabase
         .from("videos")
         .select("*, profiles(channel_name, avatar_url, is_verified, is_mod, is_bughunter)");
@@ -68,6 +85,7 @@ export default function VideoList() {
 
         setVideos(sortVideos(withDefaults, "random"));
       }
+      setLoading(false);
     };
 
     fetchVideos();
@@ -107,7 +125,7 @@ export default function VideoList() {
 
   return (
     <div className="w-full max-w-[1400px] mx-auto px-4 py-6">
-      {/* Header & Dropdown Section */}
+      {/* Header & Dropdown */}
       <div className="flex justify-between items-center mb-10">
         <h2 className="text-2xl font-black text-gray-900">Explore Videos</h2>
         <div className="w-56">
@@ -151,67 +169,74 @@ export default function VideoList() {
         </div>
       </div>
 
-      {/* Video Grid 3 Kolom Besar */}
+      {/* Video Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-12">
-        {videos.map((video) => (
-          <Link
-            key={video.id}
-            href={`/watch/${video.id}`}
-            className="group flex flex-col gap-4"
-          >
-            {/* Thumbnail Container */}
-            <div
-              className="relative w-full rounded-2xl overflow-hidden bg-gray-200 transition-all duration-300 group-hover:rounded-none group-hover:shadow-2xl"
-              style={{ paddingTop: "56.25%" }}
+        {loading ? (
+          // Render 6 Skeleton saat loading
+          Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)
+        ) : (
+          videos.map((video) => (
+            <Link
+              key={video.id}
+              href={`/watch/${video.id}`}
+              className="group flex flex-col gap-4"
             >
-              <Image
-                src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/thumbnails/${video.thumbnail_url}`}
-                alt={video.title}
-                fill
-                className="absolute top-0 left-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                unoptimized
-              />
-            </div>
-
-            {/* Video Meta Info */}
-            <div className="flex gap-4 px-1">
-              <div className="flex-shrink-0">
-                <div className="relative w-12 h-12">
-                  <Image
-                    src={
-                      video.profiles?.avatar_url
-                        ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${video.profiles.avatar_url}`
-                        : `https://ui-avatars.com/api/?name=${video.profiles?.channel_name}`
-                    }
-                    alt={video.profiles?.channel_name || "Channel Avatar"}
-                    fill
-                    className="rounded-full object-cover border-2 border-transparent transition-colors group-hover:border-blue-500"
-                    unoptimized
-                  />
-                </div>
+              {/* Thumbnail - Lazy Loaded by default in Next.js Image */}
+              <div
+                className="relative w-full rounded-2xl overflow-hidden bg-gray-200 transition-all duration-300 group-hover:rounded-none group-hover:shadow-2xl"
+                style={{ paddingTop: "56.25%" }}
+              >
+                <Image
+                  src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/thumbnails/${video.thumbnail_url}`}
+                  alt={video.title}
+                  fill
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                  className="absolute top-0 left-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  loading="lazy" // Mengaktifkan Native Lazy Loading
+                  unoptimized
+                />
               </div>
-              
-              <div className="flex flex-col min-w-0 pr-4">
-                <h3 className="font-bold text-lg text-gray-900 line-clamp-2 leading-tight group-hover:text-blue-600 transition-colors">
-                  {video.title}
-                </h3>
-                <div className="mt-2">
-                  <p className="text-sm text-gray-500 font-semibold flex items-center gap-1.5 uppercase tracking-wide">
-                    {video.profiles?.channel_name}
-                    {video.profiles?.is_verified && <Image src="/verified.svg" alt="v" width={14} height={14} />}
-                    {video.profiles?.is_mod && <Image src="/mod.svg" alt="m" width={14} height={14} />}
-                    {video.profiles?.is_bughunter && <Image src="/bughunter.svg" alt="b" width={14} height={14} />}
-                  </p>
-                  <div className="flex items-center text-sm text-gray-400 mt-0.5">
-                    <span>{video.views.toLocaleString()} views</span>
-                    <span className="mx-2">•</span>
-                    <span>{timeAgo(video.created_at)}</span>
+
+              {/* Meta Info */}
+              <div className="flex gap-4 px-1">
+                <div className="flex-shrink-0">
+                  <div className="relative w-12 h-12">
+                    <Image
+                      src={
+                        video.profiles?.avatar_url
+                          ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${video.profiles.avatar_url}`
+                          : `https://ui-avatars.com/api/?name=${video.profiles?.channel_name}`
+                      }
+                      alt={video.profiles?.channel_name || "Avatar"}
+                      fill
+                      className="rounded-full object-cover border-2 border-transparent transition-colors group-hover:border-blue-500"
+                      unoptimized
+                    />
+                  </div>
+                </div>
+                
+                <div className="flex flex-col min-w-0 pr-4">
+                  <h3 className="font-bold text-lg text-gray-900 line-clamp-2 leading-tight group-hover:text-blue-600 transition-colors">
+                    {video.title}
+                  </h3>
+                  <div className="mt-2">
+                    <p className="text-sm text-gray-500 font-semibold flex items-center gap-1.5 uppercase tracking-wide">
+                      {video.profiles?.channel_name}
+                      {video.profiles?.is_verified && <Image src="/verified.svg" alt="v" width={14} height={14} />}
+                      {video.profiles?.is_mod && <Image src="/mod.svg" alt="m" width={14} height={14} />}
+                      {video.profiles?.is_bughunter && <Image src="/bughunter.svg" alt="b" width={14} height={14} />}
+                    </p>
+                    <div className="flex items-center text-sm text-gray-400 mt-0.5">
+                      <span>{video.views.toLocaleString()} views</span>
+                      <span className="mx-2">•</span>
+                      <span>{timeAgo(video.created_at)}</span>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          </Link>
-        ))}
+            </Link>
+          ))
+        )}
       </div>
     </div>
   );
