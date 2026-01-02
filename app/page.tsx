@@ -55,7 +55,7 @@ export default function HomePage() {
       <Navbar />
 
       <main className="max-w-6xl mx-auto pt-24 px-4">
-        <h1 className="text-2xl font-bold mb-6">Beranda</h1>
+        <h1 className="text-2xl font-bold mb-6">[Under Huge Development]</h1>
         <VideoList />
       </main>
     </div>
