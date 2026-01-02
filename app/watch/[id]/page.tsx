@@ -1,6 +1,12 @@
+/**
+ * File: src/app/watch/[id]/page.tsx
+ * Update: Centered loading state using Suspense
+ */
+
 import { supabase } from "@/supabase/client";
 import WatchPageClient from "./WatchPageClient";
 import { Metadata } from "next";
+import { Suspense } from "react";
 
 interface Props {
   params: { id: string };
@@ -73,6 +79,21 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
+// Komponen loading sederhana yang diletakkan tepat di tengah layar
+function LoadingCenter() {
+  return (
+    <div className="min-h-screen w-full flex items-center justify-center bg-white">
+      <p className="text-gray-500 font-medium animate-pulse">
+        Loading... Jika stuck langsung refresh aja.
+      </p>
+    </div>
+  );
+}
+
 export default function WatchPage({ params }: Props) {
-  return <WatchPageClient id={params.id} />;
+  return (
+    <Suspense fallback={<LoadingCenter />}>
+      <WatchPageClient id={params.id} />
+    </Suspense>
+  );
 }
