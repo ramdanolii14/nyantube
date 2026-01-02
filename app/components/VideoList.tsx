@@ -5,7 +5,7 @@ import { supabase } from "@/supabase/client";
 import Image from "next/image";
 import Link from "next/link";
 import { Listbox, Transition } from "@headlessui/react";
-import { Eye, Clock, Heart, History, ChevronsUpDown } from "lucide-react";
+import { Eye, Clock, Heart, History, ChevronsUpDown, Shuffle } from "lucide-react";
 import { timeAgo } from "@/lib/timeAgo";
 
 interface Video {
@@ -25,13 +25,15 @@ interface Video {
   };
 }
 
-type SortOption = "views" | "latest" | "likes" | "oldest";
+// Menambahkan opsi "Random" ke dalam tipe dan daftar opsi
+type SortOption = "views" | "latest" | "likes" | "oldest" | "random";
 
 const sortOptions: {
   value: SortOption;
   label: string;
   icon: JSX.Element;
 }[] = [
+  { value: "random", label: "Random Mix", icon: <Shuffle size={16} /> },
   { value: "views", label: "Most Viewed", icon: <Eye size={16} /> },
   { value: "latest", label: "Latest", icon: <Clock size={16} /> },
   { value: "likes", label: "Most Liked", icon: <Heart size={16} className="text-red-500" /> },
@@ -40,7 +42,8 @@ const sortOptions: {
 
 export default function VideoList() {
   const [videos, setVideos] = useState<Video[]>([]);
-  const [sortBy, setSortBy] = useState<SortOption>("views");
+  // Default set ke "random" agar saat pertama buka, urutannya acak
+  const [sortBy, setSortBy] = useState<SortOption>("random");
 
   useEffect(() => {
     const fetchVideos = async () => {
@@ -60,7 +63,8 @@ export default function VideoList() {
           },
         })) as Video[];
 
-        setVideos(sortVideos(withDefaults, sortBy));
+        // Terapkan pengurutan awal (Random)
+        setVideos(sortVideos(withDefaults, "random"));
       }
     };
 
@@ -73,20 +77,28 @@ export default function VideoList() {
   };
 
   const sortVideos = (data: Video[], option: SortOption): Video[] => {
+    const clonedData = [...data];
     switch (option) {
+      case "random":
+        // Algoritma Fisher-Yates Shuffle untuk hasil acak yang sempurna
+        for (let i = clonedData.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [clonedData[i], clonedData[j]] = [clonedData[j], clonedData[i]];
+        }
+        return clonedData;
       case "likes":
-        return data.sort((a, b) => b.likes - a.likes);
+        return clonedData.sort((a, b) => (b.likes || 0) - (a.likes || 0));
       case "latest":
-        return data.sort(
+        return clonedData.sort(
           (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
         );
       case "oldest":
-        return data.sort(
+        return clonedData.sort(
           (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
         );
       case "views":
       default:
-        return data.sort((a, b) => b.views - a.views);
+        return clonedData.sort((a, b) => (b.views || 0) - (a.views || 0));
     }
   };
 
@@ -94,17 +106,17 @@ export default function VideoList() {
 
   return (
     <div>
-      {/* Header and Custom Sort Dropdown */}
-      <div className="flex justify-between items-center mb-4">
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-xl font-bold">Explore Videos</h2>
         <div className="w-48">
           <Listbox value={sortBy} onChange={handleSortChange}>
             <div className="relative">
-              <Listbox.Button className="relative w-full cursor-pointer rounded border py-1.5 pl-3 pr-8 text-left shadow-sm text-sm bg-white">
+              <Listbox.Button className="relative w-full cursor-pointer rounded-xl border border-gray-200 py-2 pl-3 pr-8 text-left shadow-sm text-sm bg-white hover:bg-gray-50 transition">
                 <span className="flex items-center gap-2">
                   {selectedOption.icon}
                   {selectedOption.label}
                 </span>
-                <span className="pointer-events-none absolute inset-y-0 right-2 flex items-center">
+                <span className="pointer-events-none absolute inset-y-0 right-2 flex items-center text-gray-400">
                   <ChevronsUpDown size={16} />
                 </span>
               </Listbox.Button>
@@ -115,13 +127,13 @@ export default function VideoList() {
                 leaveFrom="opacity-100"
                 leaveTo="opacity-0"
               >
-                <Listbox.Options className="absolute z-50 mt-1 w-full rounded-md bg-white shadow-lg border text-sm">
+                <Listbox.Options className="absolute z-50 mt-2 w-full rounded-xl bg-white shadow-xl border border-gray-100 p-1 text-sm focus:outline-none">
                   {sortOptions.map((option) => (
                     <Listbox.Option
                       key={option.value}
                       className={({ active }) =>
-                        `cursor-pointer select-none px-3 py-2 flex items-center gap-2 ${
-                          active ? "bg-gray-100" : ""
+                        `cursor-pointer select-none px-3 py-2.5 rounded-lg flex items-center gap-2 transition ${
+                          active ? "bg-gray-100 text-black" : "text-gray-600"
                         }`
                       }
                       value={option.value}
@@ -137,16 +149,15 @@ export default function VideoList() {
         </div>
       </div>
 
-      {/* Videos Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-6">
         {videos.map((video) => (
           <Link
             key={video.id}
             href={`/watch/${video.id}`}
-            className="bg-white rounded-lg shadow hover:shadow-lg transition p-2"
+            className="group flex flex-col gap-3"
           >
             <div
-              className="relative w-full rounded-md overflow-hidden"
+              className="relative w-full rounded-2xl overflow-hidden bg-gray-100 transition-transform duration-300 group-hover:scale-[1.02]"
               style={{ paddingTop: "56.25%" }}
             >
               <Image
@@ -158,68 +169,44 @@ export default function VideoList() {
               />
             </div>
 
-            <div className="flex items-center gap-2 mt-2">
-              <Image
-                src={
-                  video.profiles?.avatar_url
-                    ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${video.profiles.avatar_url}`
-                    : `https://ui-avatars.com/api/?name=${video.profiles?.channel_name}`
-                }
-                alt={video.profiles?.channel_name || "Unknown"}
-                width={40}
-                height={40}
-                className="rounded-full object-cover aspect-square"
-                unoptimized
-              />
-              <div className="flex flex-col">
-                <h3 className="font-semibold text-sm line-clamp-2 mb-2">
+            <div className="flex gap-3 px-1">
+              <div className="flex-shrink-0">
+                <Image
+                  src={
+                    video.profiles?.avatar_url
+                      ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${video.profiles.avatar_url}`
+                      : `https://ui-avatars.com/api/?name=${video.profiles?.channel_name}`
+                  }
+                  alt={video.profiles?.channel_name || "Unknown"}
+                  width={36}
+                  height={36}
+                  className="rounded-full object-cover aspect-square border border-gray-100"
+                  unoptimized
+                />
+              </div>
+              <div className="flex flex-col min-w-0">
+                <h3 className="font-bold text-sm line-clamp-2 leading-snug group-hover:text-blue-600 transition">
                   {video.title}
                 </h3>
-                <p className="text-xs text-gray-600 flex items-center gap-1">
-                  {video.profiles?.channel_name}
-                  {video.profiles?.is_verified && (
-                    <div className="relative group flex items-center">
-                      <Image
-                        src="/verified.svg"
-                        alt="verified"
-                        title="AKUN TERVERIFIKASI"
-                        width={12}
-                        height={12}
-                        className="inline-block align-middle translate-y-[0.5px]"
-                      />
-                    </div>
-                  )}
-                  {video.profiles?.is_mod && (
-                    <div className="relative group flex items-center">
-                      <Image
-                        src="/mod.svg"
-                        alt="admin"
-                        title="TERVERIFIKASI ADMIN"
-                        width={12}
-                        height={12}
-                        className="inline-block align-middle translate-y-[0.5px]"
-                      />
-                    </div>
-                  )}
-                  {video.profiles?.is_bughunter && (
-                    <div className="relative group flex items-center">
-                      <Image
-                        src="/bughunter.svg"
-                        alt="bughunter"
-                        title="TERVERIFIKASI BUGHUNTER"
-                        width={12}
-                        height={12}
-                        className="inline-block align-middle translate-y-[0.5px]"
-                      />
-                    </div>
-                  )}
-                </p>
-                <p className="text-xs text-gray-500">
-                  {video.views} x ditonton
-                </p>
-                <p className="text-xs text-gray-500">
-                  {timeAgo(video.created_at)}
-                </p>
+                <div className="mt-1">
+                  <p className="text-xs text-gray-500 font-medium flex items-center gap-1">
+                    {video.profiles?.channel_name}
+                    {video.profiles?.is_verified && (
+                      <Image src="/verified.svg" alt="v" width={12} height={12} className="inline" />
+                    )}
+                    {video.profiles?.is_mod && (
+                      <Image src="/mod.svg" alt="m" width={12} height={12} className="inline" />
+                    )}
+                    {video.profiles?.is_bughunter && (
+                      <Image src="/bughunter.svg" alt="b" width={12} height={12} className="inline" />
+                    )}
+                  </p>
+                  <div className="flex items-center text-[11px] text-gray-400 mt-0.5">
+                    <span>{video.views.toLocaleString()} views</span>
+                    <span className="mx-1">•</span>
+                    <span>{timeAgo(video.created_at)}</span>
+                  </div>
+                </div>
               </div>
             </div>
           </Link>
@@ -228,10 +215,3 @@ export default function VideoList() {
     </div>
   );
 }
-
-
-
-
-
-
-
