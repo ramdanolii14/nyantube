@@ -1,6 +1,6 @@
 /**
  * File: src/components/VideoList.tsx
- * Update: Added Skeleton Loading & Lazy Loading Image
+ * Update: YouTube Ultra-Wide Layout & Max Width Grid
  */
 
 "use client";
@@ -44,16 +44,14 @@ const sortOptions: {
   { value: "oldest", label: "Oldest", icon: <History size={16} /> },
 ];
 
-// KOMPONEN SKELETON (Tampilan saat loading)
 const SkeletonCard = () => (
-  <div className="flex flex-col gap-4 animate-pulse">
-    <div className="relative w-full rounded-2xl bg-gray-200" style={{ paddingTop: "56.25%" }}></div>
-    <div className="flex gap-4 px-1">
-      <div className="w-12 h-12 rounded-full bg-gray-200 flex-shrink-0"></div>
+  <div className="flex flex-col gap-3 animate-pulse">
+    <div className="relative w-full rounded-xl bg-gray-200" style={{ paddingTop: "56.25%" }}></div>
+    <div className="flex gap-3 mt-1">
+      <div className="w-10 h-10 rounded-full bg-gray-200 flex-shrink-0"></div>
       <div className="flex flex-col gap-2 w-full">
-        <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-        <div className="h-3 bg-gray-200 rounded w-1/2"></div>
-        <div className="h-3 bg-gray-200 rounded w-1/4"></div>
+        <div className="h-4 bg-gray-200 rounded w-[90%]"></div>
+        <div className="h-3 bg-gray-200 rounded w-[60%]"></div>
       </div>
     </div>
   </div>
@@ -61,7 +59,7 @@ const SkeletonCard = () => (
 
 export default function VideoList() {
   const [videos, setVideos] = useState<Video[]>([]);
-  const [loading, setLoading] = useState(true); // State loading
+  const [loading, setLoading] = useState(true);
   const [sortBy, setSortBy] = useState<SortOption>("random");
 
   useEffect(() => {
@@ -124,20 +122,22 @@ export default function VideoList() {
   const selectedOption = sortOptions.find((opt) => opt.value === sortBy)!;
 
   return (
-    <div className="w-full max-w-[1400px] mx-auto px-4 py-6">
-      {/* Header & Dropdown */}
-      <div className="flex justify-between items-center mb-10">
-        <h2 className="text-2xl font-black text-gray-900">Explore Videos</h2>
-        <div className="w-56">
+    // Menggunakan max-w-full agar benar-benar memenuhi layar jika monitornya lebar
+    <div className="w-full max-w-[2200px] mx-auto px-4 md:px-10 py-6">
+      
+      {/* Header Section */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+        <h2 className="text-xl font-bold text-gray-900 tracking-tight">Recommended</h2>
+        <div className="w-full sm:w-56">
           <Listbox value={sortBy} onChange={handleSortChange}>
             <div className="relative">
-              <Listbox.Button className="relative w-full cursor-pointer rounded-xl border border-gray-200 py-3 pl-4 pr-10 text-left shadow-sm text-sm bg-white hover:bg-gray-50 transition-all font-semibold">
-                <span className="flex items-center gap-2">
+              <Listbox.Button className="relative w-full cursor-pointer rounded-lg border border-gray-200 py-2 pl-3 pr-10 text-left shadow-sm text-sm bg-white hover:bg-gray-50 transition-all">
+                <span className="flex items-center gap-2 font-medium">
                   {selectedOption.icon}
                   {selectedOption.label}
                 </span>
                 <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-gray-400">
-                  <ChevronsUpDown size={18} />
+                  <ChevronsUpDown size={16} />
                 </span>
               </Listbox.Button>
 
@@ -147,12 +147,12 @@ export default function VideoList() {
                 leaveFrom="opacity-100"
                 leaveTo="opacity-0"
               >
-                <Listbox.Options className="absolute z-50 mt-2 w-full rounded-2xl bg-white shadow-2xl border border-gray-100 p-2 text-sm focus:outline-none">
+                <Listbox.Options className="absolute z-50 mt-2 w-full rounded-xl bg-white shadow-2xl border border-gray-100 p-1.5 text-sm focus:outline-none">
                   {sortOptions.map((option) => (
                     <Listbox.Option
                       key={option.value}
                       className={({ active }) =>
-                        `cursor-pointer select-none px-4 py-3 rounded-xl flex items-center gap-3 transition-colors ${
+                        `cursor-pointer select-none px-3 py-2.5 rounded-lg flex items-center gap-2.5 transition-colors ${
                           active ? "bg-gray-100 text-black" : "text-gray-600"
                         }`
                       }
@@ -169,38 +169,38 @@ export default function VideoList() {
         </div>
       </div>
 
-      {/* Video Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-12">
+      {/* Video Grid - YouTube Style Scaling */}
+      {/* 1 Kolom (Mobile), 2 Kolom (Tablet), 3 Kolom (Desktop Biasa), 4 Kolom (Layar Lebar), 5 Kolom (Ultra-Wide) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-x-4 gap-y-10">
         {loading ? (
-          // Render 6 Skeleton saat loading
-          Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)
+          Array.from({ length: 10 }).map((_, i) => <SkeletonCard key={i} />)
         ) : (
           videos.map((video) => (
             <Link
               key={video.id}
               href={`/watch/${video.id}`}
-              className="group flex flex-col gap-4"
+              className="group flex flex-col gap-3"
             >
-              {/* Thumbnail - Lazy Loaded by default in Next.js Image */}
+              {/* Thumbnail Container */}
               <div
-                className="relative w-full rounded-2xl overflow-hidden bg-gray-200 transition-all duration-300 group-hover:rounded-none group-hover:shadow-2xl"
+                className="relative w-full rounded-xl overflow-hidden bg-gray-200"
                 style={{ paddingTop: "56.25%" }}
               >
                 <Image
                   src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/thumbnails/${video.thumbnail_url}`}
                   alt={video.title}
                   fill
-                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                  className="absolute top-0 left-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                  loading="lazy" // Mengaktifkan Native Lazy Loading
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"
+                  className="absolute top-0 left-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  loading="lazy"
                   unoptimized
                 />
               </div>
 
               {/* Meta Info */}
-              <div className="flex gap-4 px-1">
-                <div className="flex-shrink-0">
-                  <div className="relative w-12 h-12">
+              <div className="flex gap-3">
+                <div className="flex-shrink-0 mt-0.5">
+                  <div className="relative w-9 h-9">
                     <Image
                       src={
                         video.profiles?.avatar_url
@@ -209,26 +209,26 @@ export default function VideoList() {
                       }
                       alt={video.profiles?.channel_name || "Avatar"}
                       fill
-                      className="rounded-full object-cover border-2 border-transparent transition-colors group-hover:border-blue-500"
+                      className="rounded-full object-cover"
                       unoptimized
                     />
                   </div>
                 </div>
                 
-                <div className="flex flex-col min-w-0 pr-4">
-                  <h3 className="font-bold text-lg text-gray-900 line-clamp-2 leading-tight group-hover:text-blue-600 transition-colors">
+                <div className="flex flex-col min-w-0">
+                  <h3 className="font-semibold text-[15px] leading-snug text-gray-900 line-clamp-2">
                     {video.title}
                   </h3>
-                  <div className="mt-2">
-                    <p className="text-sm text-gray-500 font-semibold flex items-center gap-1.5 uppercase tracking-wide">
+                  <div className="mt-1 text-[13px] text-gray-600">
+                    <p className="hover:text-black flex items-center gap-1">
                       {video.profiles?.channel_name}
-                      {video.profiles?.is_verified && <Image src="/verified.svg" alt="v" width={14} height={14} />}
-                      {video.profiles?.is_mod && <Image src="/mod.svg" alt="m" width={14} height={14} />}
-                      {video.profiles?.is_bughunter && <Image src="/bughunter.svg" alt="b" width={14} height={14} />}
+                      {video.profiles?.is_verified && <Image src="/verified.svg" alt="v" width={12} height={12} />}
+                      {video.profiles?.is_mod && <Image src="/mod.svg" alt="m" width={12} height={12} />}
+                      {video.profiles?.is_bughunter && <Image src="/bughunter.svg" alt="b" width={12} height={12} />}
                     </p>
-                    <div className="flex items-center text-sm text-gray-400 mt-0.5">
+                    <div className="flex items-center">
                       <span>{video.views.toLocaleString()} views</span>
-                      <span className="mx-2">•</span>
+                      <span className="mx-1.5">•</span>
                       <span>{timeAgo(video.created_at)}</span>
                     </div>
                   </div>
