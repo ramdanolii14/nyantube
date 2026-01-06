@@ -55,7 +55,7 @@ export default function HomePage() {
       <Navbar />
 
       <main className="w-full max-w-[1920px] mx-auto pt-24 px-6 md:px-16 lg:px-24">
-        <h1 className="text-2xl font-bold mb-6">[Proses Migrasi dari Nyanstream.my.id -> Nyanpixel.my.id]</h1>
+        <h1 className="text-2xl font-bold mb-6">[Proses Migrasi dari Nyanstream.my.id ke Nyanpixel.my.id]</h1>
         <VideoList />
       </main>
     </div>
